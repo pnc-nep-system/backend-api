@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Province extends Model
 {
-<<<<<<< HEAD
+    /** @use HasFactory<\Database\Factories\ProvinceFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -23,8 +23,4 @@ class Province extends Model
     {
         return $this->hasMany(ProgrammeLocation::class);
     }
-=======
-    /** @use HasFactory<\Database\Factories\ProvinceFactory> */
-    use HasFactory;
->>>>>>> 721ff979a023e9640342596acae0b6087b112303
-}
+};
