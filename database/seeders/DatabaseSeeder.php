@@ -2,22 +2,22 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            ProvinceSeeder::class,
+            EducationLevelSeeder::class,
+            BudgetBandSeeder::class,
+            TaxonomySeeder::class,
         ]);
+
+        // Districts intentionally left unseeded here — Cambodia has 200+
+        // districts across 25 provinces; pull the controlled list from an
+        // authoritative source (NEP's existing CRM data, if available) rather
+        // than hand-typing it here.
     }
 }
