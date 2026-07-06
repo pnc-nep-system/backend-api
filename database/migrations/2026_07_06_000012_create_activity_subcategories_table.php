@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('activity_categories')->onDelete('cascade');
             $table->string('code')->unique();
             $table->string('label');
-            $table->boolean('active')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('subcategory_id')->constrained('activity_subcategories')->onDelete('cascade');
             $table->string('code')->unique();
             $table->string('label');
-            $table->boolean('active')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->boolean('is_other')->default(false);
             $table->timestamps();
         });
