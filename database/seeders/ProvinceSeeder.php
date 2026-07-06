@@ -1,15 +1,9 @@
 <?php
-
 namespace Database\Seeders;
-
 use App\Models\Province;
 use Illuminate\Database\Seeder;
-
 class ProvinceSeeder extends Seeder
 {
-    // Verify this list against the NEP Programme Mapping Framework v1.2 —
-    // this is a standard 25-province list but the framework may use its own
-    // spelling/ordering conventions.
     public function run(): void
     {
         $provinces = [
