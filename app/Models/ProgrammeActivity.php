@@ -9,4 +9,32 @@ class ProgrammeActivity extends Model
 {
     /** @use HasFactory<\Database\Factories\ProgrammeActivityFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'programme_entry_id',
+        'activity_item_id',
+        'is_primary',
+        'inclusion_group',
+        'inclusion_type',
+        'source',
+    ];
+
+    protected $casts = [
+        'is_primary' => 'boolean',
+    ];
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
+    }
+
+    public function activityItem()
+    {
+        return $this->belongsTo(ActivityItem::class);
+    }
+
+    public function activityLevels()
+    {
+        return $this->hasMany(ProgrammeActivityLevel::class);
+    }
 }

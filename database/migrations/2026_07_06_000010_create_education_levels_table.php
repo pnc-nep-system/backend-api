@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('advisory_notes', function (Blueprint $table) {
+        Schema::create('education_levels', function (Blueprint $table) {
             $table->id();
+            $table->string('level_name');
             $table->timestamps();
         });
     }
@@ -22,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('advisory_notes');
+        Schema::dropIfExists('education_levels');
     }
 };

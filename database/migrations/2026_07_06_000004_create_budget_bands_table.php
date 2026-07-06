@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('education_levels', function (Blueprint $table) {
+        Schema::create('budget_bands', function (Blueprint $table) {
             $table->id();
+            $table->string('label');
+            $table->integer('min_amount');
+            $table->integer('max_amount')->nullable();
             $table->timestamps();
         });
     }
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('education_levels');
+        Schema::dropIfExists('budget_bands');
     }
 };

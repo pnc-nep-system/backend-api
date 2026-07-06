@@ -9,4 +9,13 @@ class EducationLevel extends Model
 {
     /** @use HasFactory<\Database\Factories\EducationLevelFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'level_name',
+    ];
+
+    public function activityLevels()
+    {
+        return $this->hasMany(ProgrammeActivityLevel::class);
+    }
 }

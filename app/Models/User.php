@@ -18,13 +18,16 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'organisation_id',
         'name',
         'email',
         'password',
+        'role',
+        'status',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Get the attributes that should be hidden for serialization.
      *
      * @var list<string>
      */
@@ -44,5 +47,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function organisation()
+    {
+        return $this->belongsTo(Organisation::class);
     }
 }

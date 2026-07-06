@@ -9,4 +9,14 @@ class EntryKeyword extends Model
 {
     /** @use HasFactory<\Database\Factories\EntryKeywordFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'programme_entry_id',
+        'keyword',
+    ];
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
+    }
 }

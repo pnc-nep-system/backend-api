@@ -9,4 +9,15 @@ class BudgetBand extends Model
 {
     /** @use HasFactory<\Database\Factories\BudgetBandFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'label',
+        'min_amount',
+        'max_amount',
+    ];
+
+    public function programmeEntries()
+    {
+        return $this->hasMany(ProgrammeEntry::class);
+    }
 }

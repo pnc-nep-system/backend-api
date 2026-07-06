@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('taxonomy_other_queues', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('programme_entry_id')->constrained('programme_entries')->onDelete('cascade');
+            $table->foreignId('item_id')->constrained('activity_items')->onDelete('cascade');
+            $table->foreignId('suggested_subcategory_id')->constrained('activity_subcategories')->onDelete('cascade');
+            $table->foreignId('promoted_item_id')->nullable()->constrained('activity_items')->onDelete('set null');
+            $table->integer('frequency')->default(1);
+            $table->string('status');
             $table->timestamps();
         });
     }

@@ -9,4 +9,19 @@ class ActivityCategory extends Model
 {
     /** @use HasFactory<\Database\Factories\ActivityCategoryFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'code',
+        'label',
+        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
+    public function subcategories()
+    {
+        return $this->hasMany(ActivitySubcategory::class, 'category_id');
+    }
 }

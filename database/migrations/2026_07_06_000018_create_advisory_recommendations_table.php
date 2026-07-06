@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('advisory_recommendations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('advisory_note_id')->constrained('advisory_notes')->onDelete('cascade');
+            $table->foreignId('programme_entry_id')->nullable()->constrained('programme_entries')->onDelete('cascade');
+            $table->string('organisation_name')->nullable();
+            $table->string('type');
+            $table->text('relational');
             $table->timestamps();
         });
     }

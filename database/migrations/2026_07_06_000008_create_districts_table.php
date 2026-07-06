@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('activity_subcategories', function (Blueprint $table) {
+        Schema::create('districts', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
+            $table->string('district_name');
             $table->timestamps();
         });
     }
@@ -22,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('activity_subcategories');
+        Schema::dropIfExists('districts');
     }
 };

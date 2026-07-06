@@ -9,4 +9,17 @@ class GovernmentAgreement extends Model
 {
     /** @use HasFactory<\Database\Factories\GovernmentAgreementFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'programme_entry_id',
+        'counterpart_agency',
+        'status',
+        'institution_name',
+        'nature',
+    ];
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
+    }
 }

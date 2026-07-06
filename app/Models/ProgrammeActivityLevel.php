@@ -9,4 +9,19 @@ class ProgrammeActivityLevel extends Model
 {
     /** @use HasFactory<\Database\Factories\ProgrammeActivityLevelFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'programme_activity_id',
+        'education_level_id',
+    ];
+
+    public function programmeActivity()
+    {
+        return $this->belongsTo(ProgrammeActivity::class);
+    }
+
+    public function educationLevel()
+    {
+        return $this->belongsTo(EducationLevel::class);
+    }
 }
