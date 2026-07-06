@@ -13,12 +13,23 @@ class ActivityCategory extends Model
     protected $fillable = [
         'code',
         'label',
+        'is_active',
         'active',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'is_active' => 'boolean',
     ];
+
+    public function getActiveAttribute()
+    {
+        return $this->is_active;
+    }
+
+    public function setActiveAttribute($value)
+    {
+        $this->attributes['is_active'] = $value;
+    }
 
     public function subcategories()
     {

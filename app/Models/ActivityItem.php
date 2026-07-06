@@ -14,14 +14,25 @@ class ActivityItem extends Model
         'subcategory_id',
         'code',
         'label',
+        'is_active',
         'active',
         'is_other',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'is_active' => 'boolean',
         'is_other' => 'boolean',
     ];
+
+    public function getActiveAttribute()
+    {
+        return $this->is_active;
+    }
+
+    public function setActiveAttribute($value)
+    {
+        $this->attributes['is_active'] = $value;
+    }
 
     public function subcategory()
     {
