@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('activity_subcategories', function (Blueprint $table) {
+        Schema::create('entry_keywords', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('programme_entry_id')->constrained('programme_entries')->onDelete('cascade');
+            $table->string('keyword');
             $table->timestamps();
+
+            $table->unique(['programme_entry_id', 'keyword']);
         });
     }
 
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('activity_subcategories');
+        Schema::dropIfExists('entry_keywords');
     }
 };

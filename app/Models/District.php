@@ -9,4 +9,19 @@ class District extends Model
 {
     /** @use HasFactory<\Database\Factories\DistrictFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'province_id',
+        'district_name',
+    ];
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function locations()
+    {
+        return $this->hasMany(ProgrammeLocation::class);
+    }
 }

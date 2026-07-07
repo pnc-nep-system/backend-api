@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('education_levels', function (Blueprint $table) {
+        Schema::create('government_agreements', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('programme_entry_id')->constrained('programme_entries')->onDelete('cascade');
+            $table->string('counterpart_agency');
+            $table->string('status');
+            $table->string('institution_name');
+            $table->string('nature');
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('education_levels');
+        Schema::dropIfExists('government_agreements');
     }
 };

@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('programme_locations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('programme_entry_id')->constrained('programme_entries')->onDelete('cascade');
+            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
+            $table->foreignId('district_id')->nullable()->constrained('districts')->onDelete('cascade');
+            $table->string('country')->nullable();
             $table->timestamps();
         });
     }

@@ -9,4 +9,18 @@ class Province extends Model
 {
     /** @use HasFactory<\Database\Factories\ProvinceFactory> */
     use HasFactory;
-}
+
+    protected $fillable = [
+        'province_name',
+    ];
+
+    public function districts()
+    {
+        return $this->hasMany(District::class);
+    }
+
+    public function locations()
+    {
+        return $this->hasMany(ProgrammeLocation::class);
+    }
+};
