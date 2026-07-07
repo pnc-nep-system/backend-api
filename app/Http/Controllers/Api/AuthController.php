@@ -35,15 +35,47 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Revoke old tokens so each login issues a clean token (optional but common)
+        $user->load('organisation');
+
         $user->tokens()->delete();
 
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful.',
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'status' => $user->status,
+                'organisation_id' => $user->organisation_id,
+                'organisation' => $user->organisation ? [
+                    'id' => $user->organisation->id,
+                    'name' => $user->organisation->name,
+                ] : null,
+            ],
             'token' => $token,
+        ]);
+    }
+
+    public function session(Request $request)
+    {
+        $user = $request->user()->load('organisation');
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'status' => $user->status,
+                'organisation_id' => $user->organisation_id,
+                'organisation' => $user->organisation ? [
+                    'id' => $user->organisation->id,
+                    'name' => $user->organisation->name,
+                ] : null,
+            ],
         ]);
     }
 
