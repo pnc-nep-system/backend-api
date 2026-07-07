@@ -16,7 +16,6 @@ class ProgrammeEntryController extends Controller
             ...$request->validated(),
             'organisation_id' => $request->user()->organisation_id,
         ]);
-
         return response()->json([
             'message' => 'Programme entry created.',
             'data' => $entry,
@@ -30,7 +29,6 @@ class ProgrammeEntryController extends Controller
                 'message' => 'You are not authorized to update this entry.',
             ], 403);
         }
-
         $programmeEntry->update($request->validated());
 
         return response()->json([
@@ -46,14 +44,12 @@ class ProgrammeEntryController extends Controller
                 'message' => 'You are not authorized to view this entry.',
             ], 403);
         }
-
         return response()->json(['data' => $programmeEntry]);
     }
 
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-
         return $user->role === 'nep_admin'
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
