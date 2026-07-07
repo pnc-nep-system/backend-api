@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Model
+class User extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, HasApiTokens, Notifiable;
 
     protected $fillable = [
         'organisation_id',
@@ -18,13 +20,29 @@ class User extends Model
         'status',
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);
     }
 
-    // Loose defaults so this scaffold runs end-to-end — tighten per field
-    // (required vs nullable, enum values, max lengths) before going to production.
     public static function validationRules(bool $update = false): array
     {
         return [
