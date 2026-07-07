@@ -19,11 +19,9 @@ class RoleMiddlewareTest extends TestCase
         Route::middleware(['api', 'auth:sanctum', 'role:nep_admin'])->get('/test-admin', function () {
             return response()->json(['message' => 'welcome admin']);
         });
-
         Route::middleware(['api', 'auth:sanctum', 'role:nep_coordinator'])->get('/test-coordinator', function () {
             return response()->json(['message' => 'welcome coordinator']);
         });
-
         Route::middleware(['api', 'auth:sanctum', 'role:member_org'])->get('/test-member', function () {
             return response()->json(['message' => 'welcome member']);
         });
@@ -38,9 +36,7 @@ class RoleMiddlewareTest extends TestCase
     public function test_nep_admin_can_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'nep_admin']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-admin');
-
         $response->assertStatus(200)
                  ->assertJson(['message' => 'welcome admin']);
     }
@@ -48,18 +44,14 @@ class RoleMiddlewareTest extends TestCase
     public function test_nep_admin_cannot_access_coordinator_route()
     {
         $user = User::factory()->create(['role' => 'nep_admin']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-coordinator');
-
         $response->assertStatus(403);
     }
 
     public function test_nep_coordinator_can_access_coordinator_route()
     {
         $user = User::factory()->create(['role' => 'nep_coordinator']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-coordinator');
-
         $response->assertStatus(200)
                  ->assertJson(['message' => 'welcome coordinator']);
     }
@@ -67,18 +59,14 @@ class RoleMiddlewareTest extends TestCase
     public function test_nep_coordinator_cannot_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'nep_coordinator']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-admin');
-
         $response->assertStatus(403);
     }
 
     public function test_member_org_can_access_member_route()
     {
         $user = User::factory()->create(['role' => 'member_org']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-member');
-
         $response->assertStatus(200)
                  ->assertJson(['message' => 'welcome member']);
     }
@@ -86,9 +74,7 @@ class RoleMiddlewareTest extends TestCase
     public function test_member_org_cannot_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'member_org']);
-
         $response = $this->actingAs($user, 'sanctum')->getJson('/test-admin');
-
         $response->assertStatus(403);
     }
 }
