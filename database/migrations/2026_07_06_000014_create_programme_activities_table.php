@@ -18,7 +18,8 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
             $table->string('inclusion_group')->nullable();
             $table->string('inclusion_type')->nullable();
-            $table->string('source')->nullable();
+            // Education levels are stored in a separate join/pivot table (programme_activity_levels) to support multi-select.
+            $table->enum('source', ['ai_confirmed', 'ai_modified', 'human_entered'])->default('human_entered');
             $table->timestamps();
         });
     }
