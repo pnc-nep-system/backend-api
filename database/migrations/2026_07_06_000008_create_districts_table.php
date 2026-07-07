@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('districts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
-            $table->string('district_name');
+            $table->unsignedBigInteger('province_id')->index();
+            $table->string('name');
             $table->timestamps();
+
+            // No FK constraint (optional). If you want FK, ensure provinces.id exists and rerun migrations.
         });
     }
 

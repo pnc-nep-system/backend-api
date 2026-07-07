@@ -1,7 +1,5 @@
 <?php
-
 namespace Database\Seeders;
-
 use App\Models\ActivityCategory;
 use App\Models\ActivityItem;
 use App\Models\ActivitySubcategory;
@@ -9,12 +7,6 @@ use Illuminate\Database\Seeder;
 
 class TaxonomySeeder extends Seeder
 {
-    // PLACEHOLDER DATA ONLY. The real B1–B9 taxonomy lives in the
-    // "NEP Programme Mapping Framework v1.2" document, which was not part of
-    // the requirements doc extracted here. This seeder exists only to prove
-    // the three-level structure works end-to-end (category > sub-category >
-    // item, each with code/label/active/version). Replace with the real
-    // taxonomy before Phase 1 (taxonomy validation) is considered complete.
     public function run(): void
     {
         $b1 = ActivityCategory::firstOrCreate(
