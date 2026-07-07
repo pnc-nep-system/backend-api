@@ -10,12 +10,15 @@ class ActivitySubcategory extends Model
     /** @use HasFactory<\Database\Factories\ActivitySubcategoryFactory> */
     use HasFactory;
 
+    protected $table = 'taxonomy_subcategories';
+
     protected $fillable = [
         'category_id',
         'code',
         'label',
         'is_active',
         'active',
+        'version',
     ];
 
     protected $casts = [

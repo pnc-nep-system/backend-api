@@ -10,6 +10,8 @@ class ActivityItem extends Model
     /** @use HasFactory<\Database\Factories\ActivityItemFactory> */
     use HasFactory;
 
+    protected $table = 'taxonomy_items';
+
     protected $fillable = [
         'subcategory_id',
         'code',
@@ -17,6 +19,7 @@ class ActivityItem extends Model
         'is_active',
         'active',
         'is_other',
+        'version',
     ];
 
     protected $casts = [
