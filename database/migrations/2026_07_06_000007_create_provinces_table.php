@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('provinces', function (Blueprint $table) {
             $table->id();
+<<<<<<< HEAD:database/migrations/2026_07_06_090741_create_provinces_table.php
+            $table->string('province_name')->unique();
+=======
             $table->string('province_name');
+>>>>>>> 0109f92088ea4df12bf0f97c8356b8d5fa57349b:database/migrations/2026_07_06_000007_create_provinces_table.php
             $table->timestamps();
         });
     }
