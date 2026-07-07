@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['nep_admin', 'nep_coordinator', 'org_account']);
+            $table->enum('role', ['nep_admin', 'nep_coordinator', 'member_org']);
             $table->string('status');
             $table->rememberToken();
             $table->timestamps();
