@@ -10,6 +10,8 @@ class ProgrammeLocation extends Model
     /** @use HasFactory<\Database\Factories\ProgrammeLocationFactory> */
     use HasFactory;
 
+    protected $table = 'programme_geography';
+
     protected $fillable = [
         'programme_entry_id',
         'province_id',
