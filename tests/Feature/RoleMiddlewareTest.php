@@ -29,15 +29,13 @@ class RoleMiddlewareTest extends TestCase
         });
     }
 
-    /** @test */
-    public function unauthenticated_requests_are_always_rejected()
+    public function test_unauthenticated_requests_are_always_rejected()
     {
         $response = $this->getJson('/test-admin');
         $response->assertStatus(401);
     }
 
-    /** @test */
-    public function nep_admin_can_access_admin_route()
+    public function test_nep_admin_can_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'nep_admin']);
 
@@ -47,8 +45,7 @@ class RoleMiddlewareTest extends TestCase
                  ->assertJson(['message' => 'welcome admin']);
     }
 
-    /** @test */
-    public function nep_admin_cannot_access_coordinator_route()
+    public function test_nep_admin_cannot_access_coordinator_route()
     {
         $user = User::factory()->create(['role' => 'nep_admin']);
 
@@ -57,8 +54,7 @@ class RoleMiddlewareTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
-    public function nep_coordinator_can_access_coordinator_route()
+    public function test_nep_coordinator_can_access_coordinator_route()
     {
         $user = User::factory()->create(['role' => 'nep_coordinator']);
 
@@ -68,8 +64,7 @@ class RoleMiddlewareTest extends TestCase
                  ->assertJson(['message' => 'welcome coordinator']);
     }
 
-    /** @test */
-    public function nep_coordinator_cannot_access_admin_route()
+    public function test_nep_coordinator_cannot_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'nep_coordinator']);
 
@@ -78,8 +73,7 @@ class RoleMiddlewareTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
-    public function member_org_can_access_member_route()
+    public function test_member_org_can_access_member_route()
     {
         $user = User::factory()->create(['role' => 'member_org']);
 
@@ -89,8 +83,7 @@ class RoleMiddlewareTest extends TestCase
                  ->assertJson(['message' => 'welcome member']);
     }
 
-    /** @test */
-    public function member_org_cannot_access_admin_route()
+    public function test_member_org_cannot_access_admin_route()
     {
         $user = User::factory()->create(['role' => 'member_org']);
 
