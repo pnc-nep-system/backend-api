@@ -12,8 +12,19 @@ class District extends Model
 
     protected $fillable = [
         'province_id',
+        'name',
         'district_name',
     ];
+
+    public function getDistrictNameAttribute()
+    {
+        return $this->name;
+    }
+
+    public function setDistrictNameAttribute($value)
+    {
+        $this->attributes['name'] = $value;
+    }
 
     public function province()
     {
