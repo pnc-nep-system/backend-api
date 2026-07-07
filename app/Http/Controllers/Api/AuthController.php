@@ -59,6 +59,26 @@ class AuthController extends Controller
         ]);
     }
 
+    public function session(Request $request)
+    {
+        $user = $request->user()->load('organisation');
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'status' => $user->status,
+                'organisation_id' => $user->organisation_id,
+                'organisation' => $user->organisation ? [
+                    'id' => $user->organisation->id,
+                    'name' => $user->organisation->name,
+                ] : null,
+            ],
+        ]);
+    }
+
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
