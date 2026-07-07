@@ -15,7 +15,6 @@ class RoleMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        // Register test routes using the role middleware
         Route::middleware(['api', 'auth:sanctum', 'role:nep_admin'])->get('/test-admin', function () {
             return response()->json(['message' => 'welcome admin']);
         });
