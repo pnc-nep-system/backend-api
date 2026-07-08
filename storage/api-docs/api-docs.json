@@ -131,69 +131,6 @@
             }
         },
         "/programme-entries/{id}": {
-            "get": {
-                "tags": [
-                    "Programme Entries"
-                ],
-                "summary": "Get a single programme entry",
-                "description": "Retrieves one programme entry. Only NEP Admins or the owning organisation may view.",
-                "operationId": "40538f9fdaaa03c22fdff74dab914822",
-                "parameters": [
-                    {
-                        "name": "programmeEntry",
-                        "in": "path",
-                        "description": "Programme entry ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Entry retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/ProgrammeEntry"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Not authorized to view this entry",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "You are not authorized to view this entry."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "404": {
-                        "description": "Entry not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
             "put": {
                 "tags": [
                     "Programme Entries"
@@ -330,6 +267,58 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/organisations/{organisation}/programme-entries": {
+            "get": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "List programme entries for an organisation",
+                "description": "Returns all programme entries belonging to the given organisation. Returns 404 (not 403) if the caller is not authorized to view that organisation's entries, per member-org scoping.",
+                "operationId": "c97841b1464d6882b1cbe745f4833b44",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "description": "Organisation ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of programme entries",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeEntry"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Organisation not found, or caller not authorized to view it"
                     }
                 },
                 "security": [

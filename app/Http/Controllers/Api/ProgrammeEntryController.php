@@ -170,55 +170,50 @@ class ProgrammeEntryController extends Controller
             'data' => $programmeEntry->fresh(),
         ]);
     }
-
-    public function index(Request $request, Organisation $organisation)
-    {
-        $user = $request->user();
-
-        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'], true)
-            && $user->organisation_id !== $organisation->id) {
-            return response()->json(['message' => 'Not Found.'], 404);
-        }
-
-        $entries = $organisation->programmeEntries()->get();
-
-        return response()->json(['data' => $entries]);
-    }
-
     #[OA\Get(
-        path: "/programme-entries/{id}",
-        summary: "Get a single programme entry",
-        description: "Retrieves one programme entry. Only NEP Admins or the owning organisation may view.",
+        path: "/organisations/{organisation}/programme-entries",
+        summary: "List programme entries for an organisation",
+        description: "Returns all programme entries belonging to the given organisation. Returns 404 (not 403) if the caller is not authorized to view that organisation's entries, per member-org scoping.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Entries"],
         parameters: [
             new OA\Parameter(
-                name: "programmeEntry",
+                name: "organisation",
                 in: "path",
                 required: true,
-                description: "Programme entry ID",
+                description: "Organisation ID",
                 schema: new OA\Schema(type: "integer")
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Entry retrieved successfully",
+                description: "List of programme entries",
                 content: new OA\JsonContent(
-                    properties: [new OA\Property(property: "data", ref: "#/components/schemas/ProgrammeEntry")]
-                )
-            ),
-            new OA\Response(
-                response: 403,
-                description: "Not authorized to view this entry",
-                content: new OA\JsonContent(
-                    properties: [new OA\Property(property: "message", type: "string", example: "You are not authorized to view this entry.")]
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
+                        ),
+                    ]
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
-            new OA\Response(response: 404, description: "Entry not found"),
+            new OA\Response(response: 404, description: "Organisation not found, or caller not authorized to view it"),
         ]
     )]
+
+    public function index(Request $request, Organisation $organisation)
+    {
+        $user = $request->user();
+        if ($user->role !== 'nep_admin' && $organisation->id !== $user->organisation_id) {
+            abort(404); 
+        }
+        $entries = ProgrammeEntry::where('organisation_id', $organisation->id)->get();
+        return response()->json(['data' => $entries]);
+    }
+
     public function show(Request $request, ProgrammeEntry $programmeEntry)
     {
         if (! $this->canManage($request, $programmeEntry)) {
