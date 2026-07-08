@@ -7,13 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class District extends Model
 {
-    /** @use HasFactory<\Database\Factories\DistrictFactory> */
     use HasFactory;
 
     protected $fillable = [
         'province_id',
         'name',
-        'district_name',
     ];
 
     public function getDistrictNameAttribute()
