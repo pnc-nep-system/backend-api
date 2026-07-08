@@ -27,27 +27,52 @@
                             "schema": {
                                 "required": [
                                     "programme_name",
-                                    "start_date"
+                                    "start_year"
                                 ],
                                 "properties": {
                                     "programme_name": {
                                         "type": "string",
                                         "example": "Youth Skills Initiative"
                                     },
-                                    "start_date": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-01-15"
+                                    "start_year": {
+                                        "type": "integer",
+                                        "example": 2026
                                     },
-                                    "end_date": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-12-31",
+                                    "end_year": {
+                                        "type": "integer",
+                                        "example": 2027,
                                         "nullable": true
+                                    },
+                                    "ongoing": {
+                                        "type": "boolean",
+                                        "example": false
                                     },
                                     "description": {
                                         "type": "string",
                                         "example": "A short summary of the programme"
+                                    },
+                                    "fte_staff": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "direct_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 150
+                                    },
+                                    "indirect_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 600
+                                    },
+                                    "method": {
+                                        "type": "string",
+                                        "example": "Workshops and mentoring"
+                                    },
+                                    "verified_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-01",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -100,7 +125,7 @@
                 },
                 "security": [
                     {
-                        "sessionAuth": []
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -115,7 +140,7 @@
                 "operationId": "40538f9fdaaa03c22fdff74dab914822",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "programmeEntry",
                         "in": "path",
                         "description": "Programme entry ID",
                         "required": true,
@@ -165,7 +190,7 @@
                 },
                 "security": [
                     {
-                        "sessionAuth": []
+                        "bearerAuth": []
                     }
                 ]
             },
@@ -178,7 +203,7 @@
                 "operationId": "0fde261313ff4dc167938c77f661f2cb",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "programmeEntry",
                         "in": "path",
                         "description": "Programme entry ID",
                         "required": true,
@@ -195,22 +220,50 @@
                                 "properties": {
                                     "programme_name": {
                                         "type": "string",
-                                        "example": "Youth Skills Initiative v2"
+                                        "example": "Youth Skills Initiative"
                                     },
-                                    "start_date": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-02-01"
-                                    },
-                                    "end_date": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "example": "2026-12-31",
+                                    "budget_band_id": {
+                                        "type": "integer",
+                                        "example": 3,
                                         "nullable": true
                                     },
-                                    "description": {
+                                    "start_year": {
+                                        "type": "integer",
+                                        "example": 2026
+                                    },
+                                    "end_year": {
+                                        "type": "integer",
+                                        "example": 2027,
+                                        "nullable": true
+                                    },
+                                    "ongoing": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "fte_staff": {
+                                        "description": "Accepts numeric input; stored/returned as decimal:2",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "indirect_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 600
+                                    },
+                                    "direct_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 150
+                                    },
+                                    "method": {
                                         "type": "string",
-                                        "example": "Updated summary"
+                                        "example": "Workshops and mentoring",
+                                        "nullable": true
+                                    },
+                                    "verified_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-01",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -281,7 +334,7 @@
                 },
                 "security": [
                     {
-                        "sessionAuth": []
+                        "bearerAuth": []
                     }
                 ]
             }
@@ -299,24 +352,51 @@
                         "type": "integer",
                         "example": 12
                     },
+                    "budget_band_id": {
+                        "type": "integer",
+                        "example": 3,
+                        "nullable": true
+                    },
                     "programme_name": {
                         "type": "string",
                         "example": "Youth Skills Initiative"
                     },
-                    "start_date": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2026-01-15"
+                    "start_year": {
+                        "type": "integer",
+                        "example": 2026
                     },
-                    "end_date": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2026-12-31",
+                    "end_year": {
+                        "type": "integer",
+                        "example": 2027,
                         "nullable": true
                     },
-                    "description": {
+                    "ongoing": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "fte_staff": {
+                        "description": "Decimal value serialized as string (Laravel decimal:2 cast)",
                         "type": "string",
-                        "example": "A short summary of the programme"
+                        "example": "2.50"
+                    },
+                    "indirect_beneficiaries": {
+                        "type": "integer",
+                        "example": 600
+                    },
+                    "direct_beneficiaries": {
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "method": {
+                        "type": "string",
+                        "example": "Workshops and mentoring",
+                        "nullable": true
+                    },
+                    "verified_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-01",
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",
@@ -331,10 +411,11 @@
             }
         },
         "securitySchemes": {
-            "sessionAuth": {
-                "type": "apiKey",
-                "name": "laravel_session",
-                "in": "cookie"
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter the token returned from /login. Example: Bearer {token}",
+                "bearerFormat": "Sanctum Token",
+                "scheme": "bearer"
             }
         }
     },

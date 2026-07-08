@@ -99,7 +99,7 @@ class ProgrammeEntryController extends Controller
         tags: ["Programme Entries"],
         parameters: [
             new OA\Parameter(
-                name: "id",
+                name: "programmeEntry",
                 in: "path",
                 required: true,
                 description: "Programme entry ID",
@@ -178,7 +178,7 @@ class ProgrammeEntryController extends Controller
         tags: ["Programme Entries"],
         parameters: [
             new OA\Parameter(
-                name: "id",
+                name: "programmeEntry",
                 in: "path",
                 required: true,
                 description: "Programme entry ID",
