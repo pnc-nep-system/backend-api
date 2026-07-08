@@ -1,0 +1,428 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "NEP Programme API",
+        "description": "API documentation for authentication and programme entry management",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "Local development server"
+        }
+    ],
+    "paths": {
+        "/programme-entries": {
+            "post": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "Create a new programme entry",
+                "description": "Creates a Section 1 programme entry, automatically scoped to the authenticated user's organisation.",
+                "operationId": "a73ca51d62e59cc204ac25ab800d03f4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_name",
+                                    "start_year"
+                                ],
+                                "properties": {
+                                    "programme_name": {
+                                        "type": "string",
+                                        "example": "Youth Skills Initiative"
+                                    },
+                                    "start_year": {
+                                        "type": "integer",
+                                        "example": 2026
+                                    },
+                                    "end_year": {
+                                        "type": "integer",
+                                        "example": 2027,
+                                        "nullable": true
+                                    },
+                                    "ongoing": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "A short summary of the programme"
+                                    },
+                                    "fte_staff": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "direct_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 150
+                                    },
+                                    "indirect_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 600
+                                    },
+                                    "method": {
+                                        "type": "string",
+                                        "example": "Workshops and mentoring"
+                                    },
+                                    "verified_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-01",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Entry created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Programme entry created."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProgrammeEntry"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/programme-entries/{id}": {
+            "get": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "Get a single programme entry",
+                "description": "Retrieves one programme entry. Only NEP Admins or the owning organisation may view.",
+                "operationId": "40538f9fdaaa03c22fdff74dab914822",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entry retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProgrammeEntry"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to view this entry",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You are not authorized to view this entry."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Entry not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "Update an existing programme entry",
+                "description": "Updates Section 1 fields. Only NEP Admins or the owning organisation may edit.",
+                "operationId": "0fde261313ff4dc167938c77f661f2cb",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "programme_name": {
+                                        "type": "string",
+                                        "example": "Youth Skills Initiative"
+                                    },
+                                    "budget_band_id": {
+                                        "type": "integer",
+                                        "example": 3,
+                                        "nullable": true
+                                    },
+                                    "start_year": {
+                                        "type": "integer",
+                                        "example": 2026
+                                    },
+                                    "end_year": {
+                                        "type": "integer",
+                                        "example": 2027,
+                                        "nullable": true
+                                    },
+                                    "ongoing": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "fte_staff": {
+                                        "description": "Accepts numeric input; stored/returned as decimal:2",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "indirect_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 600
+                                    },
+                                    "direct_beneficiaries": {
+                                        "type": "integer",
+                                        "example": 150
+                                    },
+                                    "method": {
+                                        "type": "string",
+                                        "example": "Workshops and mentoring",
+                                        "nullable": true
+                                    },
+                                    "verified_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-01",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Entry updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Programme entry updated."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProgrammeEntry"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to update this entry",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You are not authorized to update this entry."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Entry not found"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ProgrammeEntry": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "organisation_id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "budget_band_id": {
+                        "type": "integer",
+                        "example": 3,
+                        "nullable": true
+                    },
+                    "programme_name": {
+                        "type": "string",
+                        "example": "Youth Skills Initiative"
+                    },
+                    "start_year": {
+                        "type": "integer",
+                        "example": 2026
+                    },
+                    "end_year": {
+                        "type": "integer",
+                        "example": 2027,
+                        "nullable": true
+                    },
+                    "ongoing": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "fte_staff": {
+                        "description": "Decimal value serialized as string (Laravel decimal:2 cast)",
+                        "type": "string",
+                        "example": "2.50"
+                    },
+                    "indirect_beneficiaries": {
+                        "type": "integer",
+                        "example": 600
+                    },
+                    "direct_beneficiaries": {
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "method": {
+                        "type": "string",
+                        "example": "Workshops and mentoring",
+                        "nullable": true
+                    },
+                    "verified_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-01",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter the token returned from /login. Example: Bearer {token}",
+                "bearerFormat": "Sanctum Token",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Programme Entries",
+            "description": "Programme Entries"
+        }
+    ]
+}
