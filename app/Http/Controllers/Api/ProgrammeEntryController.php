@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeEntryRequest;
 use App\Http\Requests\UpdateProgrammeEntryRequest;
+use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -170,6 +171,20 @@ class ProgrammeEntryController extends Controller
         ]);
     }
 
+    public function index(Request $request, Organisation $organisation)
+    {
+        $user = $request->user();
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'], true)
+            && $user->organisation_id !== $organisation->id) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
+
+        $entries = $organisation->programmeEntries()->get();
+
+        return response()->json(['data' => $entries]);
+    }
+
     #[OA\Get(
         path: "/programme-entries/{id}",
         summary: "Get a single programme entry",
@@ -207,9 +222,7 @@ class ProgrammeEntryController extends Controller
     public function show(Request $request, ProgrammeEntry $programmeEntry)
     {
         if (! $this->canManage($request, $programmeEntry)) {
-            return response()->json([
-                'message' => 'You are not authorized to view this entry.',
-            ], 403);
+            return response()->json(['message' => 'Not Found.'], 404);
         }
         return response()->json(['data' => $programmeEntry]);
     }
