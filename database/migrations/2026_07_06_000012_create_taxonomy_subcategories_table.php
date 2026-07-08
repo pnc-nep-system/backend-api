@@ -6,25 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    
     public function up(): void
     {
-        Schema::create('activity_categories', function (Blueprint $table) {
+        Schema::create('taxonomy_subcategories', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('category_id')->constrained('taxonomy_categories')->onDelete('cascade');
             $table->string('code')->unique();
             $table->string('label');
             $table->boolean('is_active')->default(true);
+            $table->string('version')->nullable();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
-        Schema::dropIfExists('activity_categories');
+        Schema::dropIfExists('taxonomy_subcategories');
     }
 };

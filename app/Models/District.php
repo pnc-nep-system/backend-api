@@ -14,6 +14,16 @@ class District extends Model
         'name',
     ];
 
+    public function getDistrictNameAttribute()
+    {
+        return $this->name;
+    }
+
+    public function setDistrictNameAttribute($value)
+    {
+        $this->attributes['name'] = $value;
+    }
+
     public function province()
     {
         return $this->belongsTo(Province::class);

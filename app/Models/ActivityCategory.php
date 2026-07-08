@@ -7,14 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivityCategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\ActivityCategoryFactory> */
+    
     use HasFactory;
+
+    protected $table = 'taxonomy_categories';
 
     protected $fillable = [
         'code',
         'label',
         'is_active',
         'active',
+        'version',
     ];
 
     protected $casts = [

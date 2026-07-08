@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivitySubcategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\ActivitySubcategoryFactory> */
+    
     use HasFactory;
+
+    protected $table = 'taxonomy_subcategories';
 
     protected $fillable = [
         'category_id',
@@ -16,6 +18,7 @@ class ActivitySubcategory extends Model
         'label',
         'is_active',
         'active',
+        'version',
     ];
 
     protected $casts = [

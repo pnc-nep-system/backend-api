@@ -6,24 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    
     public function up(): void
     {
         Schema::create('districts', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('province_id')->index();
+            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
             $table->string('name');
             $table->timestamps();
-
-            // No FK constraint (optional). If you want FK, ensure provinces.id exists and rerun migrations.
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    
     public function down(): void
     {
         Schema::dropIfExists('districts');
