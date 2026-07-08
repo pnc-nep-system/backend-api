@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeEntryRequest;
 use App\Http\Requests\UpdateProgrammeEntryRequest;
+use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
 
@@ -35,6 +36,20 @@ class ProgrammeEntryController extends Controller
             'message' => 'Programme entry updated.',
             'data' => $programmeEntry->fresh(),
         ]);
+    }
+
+    public function index(Request $request, Organisation $organisation)
+    {
+        $user = $request->user();
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'], true)
+            && $user->organisation_id !== $organisation->id) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
+
+        $entries = $organisation->programmeEntries()->get();
+
+        return response()->json(['data' => $entries]);
     }
 
     public function show(Request $request, ProgrammeEntry $programmeEntry)

@@ -14,4 +14,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
     Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
+
+    Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
 });
