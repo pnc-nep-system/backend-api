@@ -12,10 +12,11 @@ use OpenApi\Attributes as OA;
     description: "API documentation for authentication and programme entry management"
 )]
 #[OA\SecurityScheme(
-    securityScheme: "sessionAuth",
-    type: "apiKey",
-    in: "cookie",
-    name: "laravel_session"
+    securityScheme: "bearerAuth",
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "Sanctum Token",
+    description: "Enter the token returned from /login. Example: Bearer {token}"
 )]
 #[OA\Server(
     url: "/api",
