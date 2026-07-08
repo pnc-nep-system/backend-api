@@ -101,13 +101,13 @@ class ProgrammeEntryTest extends TestCase
         $response->assertJsonPath('data.id', $this->entryInOrgA->id);
     }
 
-    public function test_member_org_gets_403_for_other_org_entry()
+    public function test_member_org_gets_404_for_other_org_entry()
     {
         $response = $this->actingAs($this->memberUser)
             ->getJson("/api/programme-entries/{$this->entryInOrgB->id}");
 
-        $response->assertForbidden();
-        $response->assertJsonPath('message', 'You are not authorized to view this entry.');
+        $response->assertNotFound();
+        $response->assertJsonPath('message', 'Not Found.');
     }
 
     public function test_nep_admin_can_view_any_entry()
@@ -119,12 +119,12 @@ class ProgrammeEntryTest extends TestCase
         $response->assertJsonPath('data.id', $this->entryInOrgB->id);
     }
 
-    public function test_coordinator_gets_403_for_show_when_not_in_org()
+    public function test_coordinator_gets_404_for_show_when_not_in_org()
     {
         $response = $this->actingAs($this->coordinatorUser)
             ->getJson("/api/programme-entries/{$this->entryInOrgA->id}");
 
-        $response->assertForbidden();
+        $response->assertNotFound();
     }
 
     public function test_show_404_for_nonexistent_entry()

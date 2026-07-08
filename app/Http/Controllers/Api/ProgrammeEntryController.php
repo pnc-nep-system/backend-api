@@ -55,9 +55,7 @@ class ProgrammeEntryController extends Controller
     public function show(Request $request, ProgrammeEntry $programmeEntry)
     {
         if (! $this->canManage($request, $programmeEntry)) {
-            return response()->json([
-                'message' => 'You are not authorized to view this entry.',
-            ], 403);
+            return response()->json(['message' => 'Not Found.'], 404);
         }
         return response()->json(['data' => $programmeEntry]);
     }
