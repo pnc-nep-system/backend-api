@@ -93,7 +93,7 @@ class ProgrammeEntryController extends Controller
     }
 
     #[OA\Put(
-        path: "/programme-entries/{id}",
+        path: "/programme-entries/{programmeEntry}",
         summary: "Update an existing programme entry",
         description: "Updates Section 1 fields. Only NEP Admins or the owning organisation may edit.",
         security: [["bearerAuth" => []]],
@@ -171,36 +171,36 @@ class ProgrammeEntryController extends Controller
         ]);
     }
     #[OA\Get(
-        path: "/organisations/{organisation}/programme-entries",
-        summary: "List programme entries for an organisation",
-        description: "Returns all programme entries belonging to the given organisation. Returns 404 (not 403) if the caller is not authorized to view that organisation's entries, per member-org scoping.",
+        path: "/programme-entries/{programmeEntry}",
+        summary: "Get a single programme entry",
+        description: "Retrieves one programme entry. Returns 404 if the entry does not exist or the caller is not authorized to view it, per member-org scoping.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Entries"],
         parameters: [
             new OA\Parameter(
-                name: "organisation",
+                name: "programmeEntry",
                 in: "path",
                 required: true,
-                description: "Organisation ID",
+                description: "Programme entry ID",
                 schema: new OA\Schema(type: "integer")
             ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "List of programme entries",
+                description: "Entry retrieved successfully",
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(
-                            property: "data",
-                            type: "array",
-                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
-                        ),
-                    ]
+                    properties: [new OA\Property(property: "data", ref: "#/components/schemas/ProgrammeEntry")]
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
-            new OA\Response(response: 404, description: "Organisation not found, or caller not authorized to view it"),
+            new OA\Response(
+                response: 404,
+                description: "Entry not found, or caller not authorized to view it",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Not Found.")]
+                )
+            ),
         ]
     )]
 
@@ -208,7 +208,7 @@ class ProgrammeEntryController extends Controller
     {
         $user = $request->user();
         if ($user->role !== 'nep_admin' && $organisation->id !== $user->organisation_id) {
-            abort(404); 
+            abort(404);
         }
         $entries = ProgrammeEntry::where('organisation_id', $organisation->id)->get();
         return response()->json(['data' => $entries]);
