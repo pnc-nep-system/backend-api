@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
             EducationLevelSeeder::class,
             BudgetBandSeeder::class,
             TaxonomySeeder::class,
+            OrganisationSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
