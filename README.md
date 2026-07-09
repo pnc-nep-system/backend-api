@@ -1,66 +1,250 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# NEP Programme API Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Welcome to the backend API for the **NEP Programme System**. This application is built using the **Laravel 12** framework, utilizing **Sanctum** for secure API token-based authentication and **L5-Swagger** for OpenAPI documentation.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🛠️ Technology Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Framework:** Laravel 12.x
+- **PHP Version:** ^8.2
+- **Database:** SQLite (default for development), support for MySQL / PostgreSQL / MariaDB
+- **Authentication:** Laravel Sanctum (Token Authentication)
+- **API Documentation:** Swagger UI (via `darkaonline/l5-swagger`)
+- **Asset Bundler:** Vite with Tailwind CSS v4.0 (for frontend components/assets)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 💻 Local Development Setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Follow these steps to set up the backend application locally:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 1. Prerequisites
+Ensure you have the following installed on your local environment:
+- PHP >= 8.2 (with sqlite3, mbstring, openssl, xml, zip, and curl extensions enabled)
+- Composer
+- Node.js & NPM
+- SQLite (or another database server like MySQL if preferred)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. Installation Steps
 
-## Laravel Sponsors
+1. **Clone the Repository:**
+   ```bash
+   git clone <repository-url>
+   cd backend-api
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2. **Install PHP Dependencies:**
+   ```bash
+   composer install
+   ```
 
-### Premium Partners
+3. **Install NPM Dependencies:**
+   ```bash
+   npm install
+   ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+4. **Environment Configuration:**
+   Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   Open the `.env` file and configure your database settings. By default, it is configured for SQLite:
+   ```env
+   DB_CONNECTION=sqlite
+   ```
 
-## Contributing
+5. **Generate Application Key:**
+   ```bash
+   php artisan key:generate
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+6. **Run Database Migrations & Seeders:**
+   This command creates the tables and seeds the database with initial lookup tables (Provinces, Districts, Education Levels, Budget Bands, and Taxonomy Categories):
+   ```bash
+   # For SQLite, ensure the file database/database.sqlite exists. If not, Laravel will prompt you to create it.
+   php artisan migrate --seed
+   ```
 
-## Code of Conduct
+7. **Generate API Documentation (Swagger):**
+   ```bash
+   php artisan l5-swagger:generate
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 3. Running the Server
 
-## Security Vulnerabilities
+To start the local development environment, run:
+```bash
+composer run dev
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+This custom composer script runs the following services concurrently:
+- **Server:** Laravel local development server (accessible at `http://127.0.0.1:8000`)
+- **Queue:** Laravel queue listener (`php artisan queue:listen`)
+- **Logs:** Laravel Pail interactive log viewer
+- **Vite:** Vite dev server for asset compilation
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🚀 Production Deployment Guide
+
+When deploying this backend to a production server (Ubuntu/Debian, CentOS, etc.), follow this guide to ensure security, performance, and reliability.
+
+### 1. Server Prerequisites
+- Web Server: Nginx (recommended) or Apache
+- PHP >= 8.2 with FPM
+- Database: MySQL, PostgreSQL, MariaDB, or SQLite
+- Process Manager: Supervisor (for running background queue workers)
+
+### 2. Deploying the Code
+1. Clone your repository into your web root directory (e.g., `/var/www/nep-backend`).
+2. Set correct directory ownership and permissions. The web server user (e.g., `www-data`) needs write access to the `storage` and `bootstrap/cache` directories:
+   ```bash
+   sudo chown -R www-data:www-data /var/www/nep-backend
+   sudo chmod -R 775 /var/www/nep-backend/storage /var/www/nep-backend/bootstrap/cache
+   ```
+
+### 3. Setup Production Environment
+1. Create and configure your production `.env` file:
+   ```bash
+   cp .env.example .env
+   ```
+2. Set production-specific variables:
+   ```env
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://api.yourdomain.com
+
+   # Configure your production database
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=nep_production
+   DB_USERNAME=nep_user
+   DB_PASSWORD=secure_password
+   ```
+3. Generate the application key if not already set:
+   ```bash
+   php artisan key:generate
+   ```
+
+### 4. Install Production Dependencies
+Run Composer with flags to optimize autoloading and exclude dev dependencies:
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+### 5. Compile Frontend Assets (Vite)
+If your backend requires frontend asset compilation:
+```bash
+npm install
+npm run build
+```
+
+### 6. Run Production Migrations
+Run your migrations with the `--force` flag so that Laravel runs them without confirmation prompts:
+```bash
+php artisan migrate --force
+```
+*(Optional) If this is the initial deployment and you need to seed lookup data:*
+```bash
+php artisan db:seed --force
+```
+
+### 7. Performance Optimizations
+For production, cache configuration and routes to significantly speed up request processing:
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan l5-swagger:generate
+```
+> **Note:** Whenever you change your `.env` file or add new routes, you must clear and regenerate the cache using these commands.
+
+### 8. Web Server Configuration (Nginx)
+Create an Nginx server block pointing to the `public` directory of the application:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.yourdomain.com;
+    root /var/www/nep-backend/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+```
+
+### 9. Queue Worker Setup (Supervisor)
+This application processes tasks (e.g., mail sending, background imports) using queues. To keep the queue process running continuously, configure Supervisor.
+
+1. Install Supervisor:
+   ```bash
+   sudo apt-get install supervisor
+   ```
+2. Create a configuration file at `/etc/supervisor/conf.d/nep-worker.conf`:
+   ```ini
+   [program:nep-worker]
+   process_name=%(program_name)s_%(process_num)02d
+   command=php /var/www/nep-backend/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+   autostart=true
+   autorestart=true
+   stopasgroup=true
+   killasgroup=true
+   user=www-data
+   numprocs=2
+   redirect_stderr=true
+   stdout_logfile=/var/www/nep-backend/storage/logs/worker.log
+   stopwaitsecs=3600
+   ```
+3. Start and update Supervisor:
+   ```bash
+   sudo supervisorctl reread
+   sudo supervisorctl update
+   sudo supervisorctl start nep-worker:*
+   ```
+
+---
+
+## 📖 API Documentation (Swagger)
+
+API routes and request/response specifications are documented interactively via Swagger.
+- **URL to access UI:** `http://localhost:8000/api/documentation` (or `https://yourdomain.com/api/documentation` in production).
+- To update the documentation after making changes to controller annotations, run:
+  ```bash
+  php artisan l5-swagger:generate
+  ```
+
+---
+
+## 🧪 Testing
+
+To run automated tests on the backend API:
+```bash
+php artisan test
+```
