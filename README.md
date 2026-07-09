@@ -83,39 +83,22 @@ php artisan serve
 
 API will be available at `http://127.0.0.1:8000`.
 
-## 7. Create a test user (via Tinker)
+## 7. Test users (seeded)
 
-```bash
-php artisan tinker
-```
+The `db:seed` command (step 5) already creates the following test users via `UserSeeder`:
 
-```php
-$org = App\Models\Organisation::create([
-    'name' => 'Test Org',
-    'contact_name' => 'Test Contact',
-    'email' => 'testorg@example.com',
-    'member_since' => 2026,
-    'status' => 'active',
-]);
-
-$user = App\Models\User::create([
-    'organisation_id' => $org->id,
-    'name' => 'Test User',
-    'email' => 'test@example.com',
-    'password' => 'password123',
-    'role' => 'member_org', // or 'nep_admin' / 'nep_coordinator'
-    'status' => 'active',
-]);
-```
-
-> **Note:** Do not wrap the password in `Hash::make()` — the User model hashes it automatically via `casts()`.
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@example.com` | `password` | `nep_admin` |
+| `coordinator@example.com` | `password` | `nep_coordinator` |
+| `orgadmin@example.com` | `password` | `member_org` |
 
 ## 8. Authentication flow (Postman / API client)
 
 **Login:**
 ```
 POST /api/login
-Body: { "email": "test@example.com", "password": "password123" }
+Body: { "email": "admin@example.com", "password": "password" }
 ```
 Returns a token — use it as `Authorization: Bearer <token>` on all subsequent requests.
 
