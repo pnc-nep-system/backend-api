@@ -287,6 +287,141 @@
                 ]
             }
         },
+        "/programme-entries/{programmeEntry}/activities": {
+            "post": {
+                "tags": [
+                    "Programme Activities"
+                ],
+                "summary": "Save Section 2 activity selections for a programme entry",
+                "description": "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items.",
+                "operationId": "7fcc2d764aa4b8e08d57f0be2737fe7a",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "activities"
+                                ],
+                                "properties": {
+                                    "activities": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "activity_item_id": {
+                                                    "type": "integer",
+                                                    "example": 12
+                                                },
+                                                "is_primary": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "inclusion_group": {
+                                                    "type": "string",
+                                                    "example": "gender",
+                                                    "nullable": true
+                                                },
+                                                "inclusion_type": {
+                                                    "type": "string",
+                                                    "example": "girls",
+                                                    "nullable": true
+                                                },
+                                                "source": {
+                                                    "type": "string",
+                                                    "example": "human_entered",
+                                                    "enum": [
+                                                        "ai_confirmed",
+                                                        "ai_modified",
+                                                        "human_entered"
+                                                    ]
+                                                },
+                                                "education_level_ids": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        1,
+                                                        2,
+                                                        3
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Activities saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Activities saved."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeActivity"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    },
+                    "422": {
+                        "description": "Validation failed — includes rejection of inactive/deprecated taxonomy items",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/programme-entries": {
             "post": {
                 "tags": [
@@ -666,6 +801,67 @@
     },
     "components": {
         "schemas": {
+            "ProgrammeActivity": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 78
+                    },
+                    "programme_entry_id": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "activity_item_id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "is_primary": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "inclusion_group": {
+                        "type": "string",
+                        "example": "gender",
+                        "nullable": true
+                    },
+                    "inclusion_type": {
+                        "type": "string",
+                        "example": "girls",
+                        "nullable": true
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "ai_confirmed",
+                            "ai_modified",
+                            "human_entered"
+                        ]
+                    },
+                    "activity_levels": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "education_level_id": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeEntry": {
                 "properties": {
                     "id": {
@@ -747,6 +943,10 @@
         {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Programme Activities",
+            "description": "Programme Activities"
         },
         {
             "name": "Programme Entries",
