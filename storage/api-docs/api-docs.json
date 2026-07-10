@@ -287,6 +287,142 @@
                 ]
             }
         },
+        "/programme-entries/{programmeEntry}/government-agreements": {
+            "put": {
+                "tags": [
+                    "Government Agreements"
+                ],
+                "summary": "Save Section 4 government agreements for a programme entry",
+                "description": "Accepts an array of agreement records. Existing rows (identified by id) are updated, new rows (no id) are created, and any existing rows not present in the array are deleted. Each enum field is validated against its allowed values.",
+                "operationId": "4e39bab8985c66e26d87b2d6d1c908b8",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "agreements"
+                                ],
+                                "properties": {
+                                    "agreements": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Omit for new rows",
+                                                    "type": "integer",
+                                                    "example": 3,
+                                                    "nullable": true
+                                                },
+                                                "counterpart_agency": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "MoEYS national level",
+                                                        "Provincial Office of Education",
+                                                        "District Office of Education",
+                                                        "Teacher Education Institution",
+                                                        "specific school or cluster",
+                                                        "other government ministry"
+                                                    ]
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "active",
+                                                        "expired",
+                                                        "under renewal",
+                                                        "under negotiation"
+                                                    ]
+                                                },
+                                                "institution_name": {
+                                                    "type": "string",
+                                                    "example": "Kampong Cham Provincial Office of Education"
+                                                },
+                                                "nature": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "MoU",
+                                                        "Letter of Understanding",
+                                                        "official approval letter",
+                                                        "informal working arrangement"
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Agreements saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Agreements saved."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/GovernmentAgreement"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/programme-entries/{programmeEntry}/activities": {
             "post": {
                 "tags": [
@@ -801,6 +937,39 @@
     },
     "components": {
         "schemas": {
+            "GovernmentAgreement": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "programme_entry_id": {
+                        "type": "integer",
+                        "example": 8
+                    },
+                    "counterpart_agency": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "institution_name": {
+                        "type": "string"
+                    },
+                    "nature": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeActivity": {
                 "properties": {
                     "id": {
@@ -943,6 +1112,10 @@
         {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Government Agreements",
+            "description": "Government Agreements"
         },
         {
             "name": "Programme Activities",
