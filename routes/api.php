@@ -23,5 +23,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
 
     Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
-    Route::post('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
+    Route::put('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
 });

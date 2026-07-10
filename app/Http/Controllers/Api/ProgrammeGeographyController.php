@@ -4,185 +4,192 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeGeographyRequest;
-use App\Http\Resources\ProgrammeGeographyResource;
 use App\Models\ProgrammeEntry;
-use App\Models\ProgrammeGeography;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
-/**
- * @OA\Tag(
- *     name="Programme Geography",
- *     description="Section 3 — provinces, districts, and countries covered by a programme entry"
- * )
- */
+#[OA\Schema(
+    schema: "ProgrammeGeography",
+    type: "object",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 15),
+        new OA\Property(property: "programme_entry_id", type: "integer", example: 8),
+        new OA\Property(property: "province_id", type: "integer", nullable: true, example: 1),
+        new OA\Property(property: "district_id", type: "integer", nullable: true, example: 5),
+        new OA\Property(property: "country", type: "string", nullable: true, example: "Thailand"),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+    ]
+)]
 class ProgrammeGeographyController extends Controller
 {
-    /**
-     * @OA\Get(
-     *     path="/api/programme-entries/{programmeEntry}/geography",
-     *     tags={"Programme Geography"},
-     *     summary="List saved geography for a programme entry",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="programmeEntry",
-     *         in="path",
-     *         required=true,
-     *         description="Programme entry ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Geography retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(ref="#/components/schemas/ProgrammeGeography")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(response=401, description="Unauthenticated"),
-     *     @OA\Response(response=404, description="Programme entry not found")
-     * )
-     */
-    public function index(ProgrammeEntry $programmeEntry): JsonResponse
+    #[OA\Get(
+        path: "/programme-entries/{programmeEntry}/geography",
+        summary: "Get saved geographic coverage for a programme entry",
+        description: "Returns all saved province, district, and other-country rows for the entry.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Geography"],
+        parameters: [
+            new OA\Parameter(
+                name: "programmeEntry",
+                in: "path",
+                required: true,
+                description: "Programme entry ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Geography retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeGeography")
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 404, description: "Programme entry not found, or caller not authorized"),
+        ]
+    )]
+    public function index(Request $request, ProgrammeEntry $programmeEntry)
     {
-        $geography = $programmeEntry->geography()
-            ->with(['province', 'district'])
-            ->get();
+        if (! $this->canManage($request, $programmeEntry)) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
 
         return response()->json([
-            'data' => ProgrammeGeographyResource::collection($geography),
+            'data' => $programmeEntry->locations()->get(),
         ]);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/programme-entries/{programmeEntry}/geography",
-     *     tags={"Programme Geography"},
-     *     summary="Save Section 3 geography (provinces, districts, countries)",
-     *     description="Replaces all existing geography rows for this programme entry with the submitted set. Districts, if provided, must belong to their declared province.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="programmeEntry",
-     *         in="path",
-     *         required=true,
-     *         description="Programme entry ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(
-     *                 property="provinces",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     @OA\Property(property="province_id", type="integer", example=1),
-     *                     @OA\Property(
-     *                         property="district_ids",
-     *                         type="array",
-     *                         @OA\Items(type="integer"),
-     *                         example={4, 7},
-     *                         description="Optional — omit or send empty array for zero districts"
-     *                     )
-     *                 )
-     *             ),
-     *             @OA\Property(
-     *                 property="countries",
-     *                 type="array",
-     *                 @OA\Items(type="string"),
-     *                 example={"USA", "United Kingdom"},
-     *                 description="Free-text countries outside the covered provinces"
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Programme geography saved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Programme geography saved successfully."),
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(ref="#/components/schemas/ProgrammeGeography")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(response=401, description="Unauthenticated"),
-     *     @OA\Response(response=404, description="Programme entry not found"),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation failed (e.g. district does not belong to declared province)",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="The provinces.0.district_ids field is invalid."),
-     *             @OA\Property(
-     *                 property="errors",
-     *                 type="object",
-     *                 example={"provinces.0.district_ids": {"One or more selected districts do not belong to the selected province."}}
-     *             )
-     *         )
-     *     )
-     * )
-     */
-    public function store(StoreProgrammeGeographyRequest $request, ProgrammeEntry $programmeEntry): JsonResponse
+    #[OA\Put(
+        path: "/programme-entries/{programmeEntry}/geography",
+        summary: "Save Section 3 geographic coverage for a programme entry",
+        description: "Accepts selected provinces with optional districts per province, and free-text other countries. Districts are validated as children of their selected province. Zero districts per province is supported. This replaces all existing geography rows for the entry.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Geography"],
+        parameters: [
+            new OA\Parameter(
+                name: "programmeEntry",
+                in: "path",
+                required: true,
+                description: "Programme entry ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["provinces", "other_countries"],
+                properties: [
+                    new OA\Property(
+                        property: "provinces",
+                        type: "array",
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: "province_id", type: "integer", example: 1),
+                                new OA\Property(
+                                    property: "district_ids",
+                                    type: "array",
+                                    items: new OA\Items(type: "integer"),
+                                    example: [5, 6],
+                                    description: "Can be an empty array — districts are optional"
+                                ),
+                            ]
+                        )
+                    ),
+                    new OA\Property(
+                        property: "other_countries",
+                        type: "array",
+                        items: new OA\Items(type: "string"),
+                        example: ["Thailand", "Vietnam"]
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Geography saved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Geography saved."),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeGeography")
+                        ),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 404, description: "Programme entry not found, or caller not authorized"),
+            new OA\Response(
+                response: 422,
+                description: "Validation failed — includes district-does-not-belong-to-province errors",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string"),
+                        new OA\Property(property: "errors", type: "object"),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function store(StoreProgrammeGeographyRequest $request, ProgrammeEntry $programmeEntry)
     {
-        $validated = $request->validated();
+        if (! $this->canManage($request, $programmeEntry)) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
 
-        DB::transaction(function () use ($programmeEntry, $validated) {
-            $programmeEntry->geography()->delete();
+        DB::transaction(function () use ($programmeEntry, $request) {
+            $programmeEntry->locations()->delete();
 
-            $rows = [];
-            $now = now();
-
-            foreach ($validated['provinces'] ?? [] as $entry) {
-                $districtIds = $entry['district_ids'] ?? [];
+            foreach ($request->validated('provinces') as $provinceData) {
+                $districtIds = $provinceData['district_ids'] ?? [];
 
                 if (empty($districtIds)) {
-                    $rows[] = [
-                        'programme_entry_id' => $programmeEntry->id,
-                        'province_id'        => $entry['province_id'],
-                        'district_id'        => null,
-                        'country'            => null,
-                        'created_at'         => $now,
-                        'updated_at'         => $now,
-                    ];
+                    $programmeEntry->locations()->create([
+                        'province_id' => $provinceData['province_id'],
+                        'district_id' => null,
+                        'country' => null,
+                    ]);
                 } else {
                     foreach ($districtIds as $districtId) {
-                        $rows[] = [
-                            'programme_entry_id' => $programmeEntry->id,
-                            'province_id'        => $entry['province_id'],
-                            'district_id'        => $districtId,
-                            'country'            => null,
-                            'created_at'         => $now,
-                            'updated_at'         => $now,
-                        ];
+                        $programmeEntry->locations()->create([
+                            'province_id' => $provinceData['province_id'],
+                            'district_id' => $districtId,
+                            'country' => null,
+                        ]);
                     }
                 }
             }
 
-            foreach ($validated['countries'] ?? [] as $country) {
-                $rows[] = [
-                    'programme_entry_id' => $programmeEntry->id,
-                    'province_id'        => null,
-                    'district_id'        => null,
-                    'country'            => $country,
-                    'created_at'         => $now,
-                    'updated_at'         => $now,
-                ];
-            }
-
-            if (!empty($rows)) {
-                ProgrammeGeography::insert($rows);
+            foreach ($request->validated('other_countries') as $country) {
+                $programmeEntry->locations()->create([
+                    'province_id' => null,
+                    'district_id' => null,
+                    'country' => $country,
+                ]);
             }
         });
 
-        $geography = $programmeEntry->geography()->with(['province', 'district'])->get();
-
         return response()->json([
-            'message' => 'Programme geography saved successfully.',
-            'data'    => ProgrammeGeographyResource::collection($geography),
-        ], 201);
+            'message' => 'Geography saved.',
+            'data' => $programmeEntry->locations()->get(),
+        ]);
+    }
+
+    protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
+    {
+        $user = $request->user();
+        return $user->role === 'nep_admin'
+            || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }
