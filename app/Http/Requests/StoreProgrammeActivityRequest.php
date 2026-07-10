@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Models\District;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
-class StoreProgrammeActivityRequest extends FormRequest
+class StoreProgrammeGeographyRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,25 +17,65 @@ class StoreProgrammeActivityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activities' => ['required', 'array', 'min:1'],
-            'activities.*.activity_item_id' => [
-                'required',
+            'provinces' => ['sometimes', 'array'],
+            'provinces.*.province_id' => [
+                'required_with:provinces',
                 'integer',
-                Rule::exists('taxonomy_items', 'id')->where('is_active', true),
+                'distinct',
+                Rule::exists('provinces', 'id'),
             ],
-            'activities.*.is_primary' => ['sometimes', 'boolean'],
-            'activities.*.inclusion_group' => ['nullable', 'string'],
-            'activities.*.inclusion_type' => ['nullable', 'string'],
-            'activities.*.source' => ['sometimes', Rule::in(['ai_confirmed', 'ai_modified', 'human_entered'])],
-            'activities.*.education_level_ids' => ['required', 'array', 'min:1'],
-            'activities.*.education_level_ids.*' => ['integer', 'exists:education_levels,id'],
+            'provinces.*.district_ids' => ['sometimes', 'array'],
+            'provinces.*.district_ids.*' => [
+                'integer',
+                Rule::exists('districts', 'id'),
+            ],
+
+            'countries' => ['sometimes', 'array'],
+            'countries.*' => ['string', 'max:255'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'activities.*.activity_item_id.exists' => 'The selected activity is invalid, inactive, or deprecated.',
+            'provinces.*.province_id.exists' => 'The selected province is invalid.',
+            'provinces.*.district_ids.*.exists' => 'One or more selected districts are invalid.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $provinces = $this->input('provinces', []);
+            $countries = $this->input('countries', []);
+
+            if (empty($provinces) && empty($countries)) {
+                $validator->errors()->add(
+                    'provinces',
+                    'Select at least one province or enter a country.'
+                );
+                return;
+            }
+
+            foreach ($provinces as $index => $entry) {
+                $provinceId = $entry['province_id'] ?? null;
+                $districtIds = $entry['district_ids'] ?? [];
+
+                if (empty($districtIds) || !$provinceId) {
+                    continue;
+                }
+
+                $validCount = District::where('province_id', $provinceId)
+                    ->whereIn('id', $districtIds)
+                    ->count();
+
+                if ($validCount !== count(array_unique($districtIds))) {
+                    $validator->errors()->add(
+                        "provinces.$index.district_ids",
+                        'One or more selected districts do not belong to the selected province.'
+                    );
+                }
+            }
+        });
     }
 }

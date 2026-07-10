@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
+use App\Http\Controllers\Api\ProgrammeGeographyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,4 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
 
     Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
+
+    Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
+    Route::post('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
 });
