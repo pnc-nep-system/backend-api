@@ -253,6 +253,13 @@ class ProgrammeEntryController extends Controller
         if (! $this->canManage($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
+
+        $programmeEntry->load([
+            'activities.activityLevels',
+            'locations',
+            'governmentAgreements',
+        ]);
+
         return response()->json(['data' => $programmeEntry]);
     }
 
