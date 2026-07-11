@@ -113,20 +113,28 @@ class GovernmentAgreementController extends Controller
         $incomingIds = $incoming->pluck('id')->filter()->all();
 
         DB::transaction(function () use ($programmeEntry, $incoming, $incomingIds) {
+            
             $programmeEntry->governmentAgreements()
                 ->whereNotIn('id', $incomingIds)
                 ->delete();
 
             foreach ($incoming as $row) {
-                $programmeEntry->governmentAgreements()->updateOrCreate(
-                    ['id' => $row['id'] ?? null],
-                    [
-                        'counterpart_agency' => $row['counterpart_agency'],
-                        'status' => $row['status'],
-                        'institution_name' => $row['institution_name'],
-                        'nature' => $row['nature'],
-                    ]
-                );
+                $attributes = [
+                    'counterpart_agency' => $row['counterpart_agency'],
+                    'status' => $row['status'],
+                    'institution_name' => $row['institution_name'],
+                    'nature' => $row['nature'],
+                ];
+
+                if (! empty($row['id'])) {
+                    
+                    $programmeEntry->governmentAgreements()
+                        ->where('id', $row['id'])
+                        ->update($attributes);
+                } else {
+                    
+                    $programmeEntry->governmentAgreements()->create($attributes);
+                }
             }
         });
 
