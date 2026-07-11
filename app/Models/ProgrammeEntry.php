@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class ProgrammeEntry extends Model
 {
@@ -29,7 +30,20 @@ class ProgrammeEntry extends Model
         'fte_staff' => 'decimal:2',
         'verified_date' => 'date',
         'last_updated_at' => 'datetime',
+        'is_unverified' => 'boolean',
     ];
+    
+    protected static function booted(): void
+    {
+        static::saving(function (ProgrammeEntry $entry) {
+            $entry->last_updated_at = now();
+            $entry->is_unverified = false; // any real save clears the stale flag
+
+            if (Auth::check()) {
+                $entry->last_updated_by = Auth::id();
+            }
+        });
+    }
 
     public function organisation()
     {
