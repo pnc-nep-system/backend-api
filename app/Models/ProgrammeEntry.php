@@ -47,16 +47,7 @@ class ProgrammeEntry extends Model
         });
     }
 
-    protected static function booted()
-    {
-        static::saving(function ($model) {
-            $model->last_updated_at = now();
-
-            if (auth()->check()) {
-                $model->last_updated_by = auth()->id();
-            }
-        });
-    }
+   
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);

@@ -14,7 +14,7 @@ class FlagStaleProgrammeEntries extends Command
     {
         $cutoff = now()->subMonths(18);
         $affected = DB::table('programme_entries')
-            ->where('last_updated_at', '<', $cutoff)
+            ->where('last_updated_at', '<=', $cutoff)
             ->where('is_unverified', false)
             ->update(['is_unverified' => true]);
 
