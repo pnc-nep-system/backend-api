@@ -28,6 +28,7 @@ class ProgrammeEntry extends Model
         'ongoing' => 'boolean',
         'fte_staff' => 'decimal:2',
         'verified_date' => 'date',
+        'last_updated_at' => 'datetime',
     ];
 
     public function organisation()
@@ -68,5 +69,10 @@ class ProgrammeEntry extends Model
     public function taxonomyOtherQueues()
     {
         return $this->hasMany(TaxonomyOtherQueue::class);
+    }
+
+    public function lastUpdatedBy()
+    {
+        return $this->belongsTo(User::class, 'last_updated_by');
     }
 }
