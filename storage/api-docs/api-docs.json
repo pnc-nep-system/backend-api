@@ -797,6 +797,179 @@
                     }
                 ]
             }
+        },
+        "/programme-entries/{programmeEntry}/geography": {
+            "get": {
+                "tags": [
+                    "Programme Geography"
+                ],
+                "summary": "Get saved geographic coverage for a programme entry",
+                "description": "Returns all saved province, district, and other-country rows for the entry.",
+                "operationId": "1c4ee70fa50bc002cc4bdf6ee08ec34c",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Geography retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeGeography"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Programme Geography"
+                ],
+                "summary": "Save Section 3 geographic coverage for a programme entry",
+                "description": "Accepts selected provinces with optional districts per province, and free-text other countries. Districts are validated as children of their selected province. Zero districts per province is supported. This replaces all existing geography rows for the entry.",
+                "operationId": "9a65c12011c22cbb603a415a983bc924",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "provinces",
+                                    "other_countries"
+                                ],
+                                "properties": {
+                                    "provinces": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "province_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "district_ids": {
+                                                    "description": "Can be an empty array — districts are optional",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        5,
+                                                        6
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "other_countries": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "Thailand",
+                                            "Vietnam"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Geography saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Geography saved."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeGeography"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    },
+                    "422": {
+                        "description": "Validation failed — includes district-does-not-belong-to-province errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -928,6 +1101,42 @@
                     }
                 },
                 "type": "object"
+            },
+            "ProgrammeGeography": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "programme_entry_id": {
+                        "type": "integer",
+                        "example": 8
+                    },
+                    "province_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "district_id": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "country": {
+                        "type": "string",
+                        "example": "Thailand",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -951,6 +1160,10 @@
         {
             "name": "Programme Entries",
             "description": "Programme Entries"
+        },
+        {
+            "name": "Programme Geography",
+            "description": "Programme Geography"
         }
     ]
 }
