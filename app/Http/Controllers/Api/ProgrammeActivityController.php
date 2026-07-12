@@ -110,9 +110,10 @@ class ProgrammeActivityController extends Controller
     )]
     public function store(StoreProgrammeActivityRequest $request, ProgrammeEntry $programmeEntry)
     {
-        if (! $this->canManage($request, $programmeEntry)) {
+        if (! $this->canWrite($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
+
         $created = [];
 
         foreach ($request->validated('activities') as $activityData) {
@@ -123,21 +124,24 @@ class ProgrammeActivityController extends Controller
                 'inclusion_type' => $activityData['inclusion_type'] ?? null,
                 'source' => $activityData['source'] ?? 'human_entered',
             ]);
+
             $activity->activityLevels()->createMany(
                 array_map(
                     fn($levelId) => ['education_level_id' => $levelId],
                     $activityData['education_level_ids']
                 )
             );
+
             $created[] = $activity->load('activityLevels');
         }
+
         return response()->json([
             'message' => 'Activities saved.',
             'data' => $created,
         ], 201);
     }
 
-    protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
+    protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
         return $user->role === 'nep_admin'

@@ -105,7 +105,7 @@ class GovernmentAgreementController extends Controller
     )]
     public function store(StoreGovernmentAgreementsRequest $request, ProgrammeEntry $programmeEntry)
     {
-        if (! $this->canManage($request, $programmeEntry)) {
+        if (! $this->canWrite($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
@@ -144,7 +144,7 @@ class GovernmentAgreementController extends Controller
         ]);
     }
 
-    protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
+    protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
         return $user->role === 'nep_admin'

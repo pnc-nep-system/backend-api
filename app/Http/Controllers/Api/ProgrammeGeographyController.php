@@ -59,7 +59,7 @@ class ProgrammeGeographyController extends Controller
     )]
     public function index(Request $request, ProgrammeEntry $programmeEntry)
     {
-        if (! $this->canManage($request, $programmeEntry)) {
+        if (! $this->canView($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
@@ -144,7 +144,7 @@ class ProgrammeGeographyController extends Controller
     )]
     public function store(StoreProgrammeGeographyRequest $request, ProgrammeEntry $programmeEntry)
     {
-        if (! $this->canManage($request, $programmeEntry)) {
+        if (! $this->canWrite($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
@@ -186,7 +186,14 @@ class ProgrammeGeographyController extends Controller
         ]);
     }
 
-    protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
+    protected function canView(Request $request, ProgrammeEntry $programmeEntry): bool
+    {
+        $user = $request->user();
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
+            || $programmeEntry->organisation_id === $user->organisation_id;
+    }
+
+    protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
         return $user->role === 'nep_admin'
