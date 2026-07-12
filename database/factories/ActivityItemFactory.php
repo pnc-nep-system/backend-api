@@ -3,22 +3,22 @@
 namespace Database\Factories;
 
 use App\Models\ActivityItem;
+use App\Models\ActivitySubcategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
-/**
- * @extends Factory<ActivityItem>
- */
+
 class ActivityItemFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'subcategory_id' => ActivitySubcategory::factory(),
+            'code' => strtoupper(Str::random(6)),
+            'label' => $this->faker->words(3, true),
+            'is_active' => true,
+            'is_other' => false,
+            'version' => '1.0',
         ];
     }
 }

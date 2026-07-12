@@ -141,10 +141,25 @@ class ProgrammeActivityController extends Controller
         ], 201);
     }
 
+    protected function canView(Request $request, ProgrammeEntry $programmeEntry): bool
+    {
+        $user = $request->user();
+
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return true;
+        }
+
+        return $programmeEntry->organisation_id === $user->organisation_id;
+    }
+
     protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-        return $user->role === 'nep_admin'
-            || $programmeEntry->organisation_id === $user->organisation_id;
+
+        if ($user->role === 'nep_admin') {
+            return true;
+        }
+
+        return $programmeEntry->organisation_id === $user->organisation_id;
     }
 }

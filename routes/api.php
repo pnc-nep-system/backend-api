@@ -18,14 +18,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
     Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
-    Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify']);
-
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
 
-    Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
+    Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify'])
+        ->middleware('role:nep_admin');
 
-    Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
-    Route::put('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
+    Route::middleware('role:nep_admin,member_org')->group(function () {
+        Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
+        Route::put('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
+        Route::put('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'store']);
+    });
 
-    Route::put('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'store']);
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
+        Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
+    });
 });

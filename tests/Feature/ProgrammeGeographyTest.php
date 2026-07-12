@@ -85,4 +85,51 @@ class ProgrammeGeographyTest extends TestCase
         $response->assertUnprocessable()
             ->assertJsonValidationErrors('provinces.0.district_ids');
     }
+
+    public function test_member_org_cannot_write_to_another_organisations_entry(): void
+    {
+        $ownOrg = Organisation::factory()->create();
+        $otherOrg = Organisation::factory()->create();
+        $user = User::factory()->create(['organisation_id' => $ownOrg->id, 'role' => 'member_org']);
+        $entry = ProgrammeEntry::factory()->create(['organisation_id' => $otherOrg->id]);
+
+        $response = $this->actingAs($user)->putJson(
+            "/api/programme-entries/{$entry->id}/geography",
+            ['provinces' => [], 'other_countries' => []]
+        );
+
+        $response->assertStatus(404);
+    }
+
+    public function test_nep_coordinator_can_read_but_not_write(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $coordinator = User::factory()->create(['role' => 'nep_coordinator']);
+        $entry = ProgrammeEntry::factory()->create(['organisation_id' => $organisation->id]);
+
+        $readResponse = $this->actingAs($coordinator)->getJson(
+            "/api/programme-entries/{$entry->id}/geography"
+        );
+        $readResponse->assertStatus(200);
+
+        $writeResponse = $this->actingAs($coordinator)->putJson(
+            "/api/programme-entries/{$entry->id}/geography",
+            ['provinces' => [], 'other_countries' => []]
+        );
+        $writeResponse->assertStatus(403);
+    }
+
+    public function test_nep_admin_can_write_to_any_entry(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+        $entry = ProgrammeEntry::factory()->create(['organisation_id' => $organisation->id]);
+
+        $response = $this->actingAs($admin)->putJson(
+            "/api/programme-entries/{$entry->id}/geography",
+            ['provinces' => [], 'other_countries' => []]
+        );
+
+        $response->assertStatus(200);
+    }
 }
