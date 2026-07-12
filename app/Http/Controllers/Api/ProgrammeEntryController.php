@@ -263,6 +263,52 @@ class ProgrammeEntryController extends Controller
         return response()->json(['data' => $programmeEntry]);
     }
 
+    #[OA\Patch(
+        path: "/programme-entries/{programmeEntry}/verify",
+        summary: "Mark a programme entry as verified (NEP Admin only)",
+        description: "Clears the unverified flag and records the review date. Restricted to NEP Administrator role per SRS 8.2 annual review workflow.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "programmeEntry",
+                in: "path",
+                required: true,
+                description: "Programme entry ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Entry verified successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Entry verified."),
+                        new OA\Property(property: "data", ref: "#/components/schemas/ProgrammeEntry"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Only NEP Admin may verify entries"),
+            new OA\Response(response: 404, description: "Programme entry not found"),
+        ]
+    )]
+    public function verify(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if ($request->user()->role !== 'nep_admin') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $programmeEntry->verified_date = now();
+        $programmeEntry->save(); // saving() hook automatically sets is_unverified = false
+
+        return response()->json([
+            'message' => 'Entry verified.',
+            'data' => $programmeEntry->fresh(),
+        ]);
+    }
+
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();

@@ -934,6 +934,62 @@
                 ]
             }
         },
+        "/programme-entries/{programmeEntry}/verify": {
+            "patch": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "Mark a programme entry as verified (NEP Admin only)",
+                "description": "Clears the unverified flag and records the review date. Restricted to NEP Administrator role per SRS 8.2 annual review workflow.",
+                "operationId": "b8a944993c438ced79ce9bbd45e324e7",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entry verified successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Entry verified."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ProgrammeEntry"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Only NEP Admin may verify entries"
+                    },
+                    "404": {
+                        "description": "Programme entry not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/programme-entries/{programmeEntry}/geography": {
             "get": {
                 "tags": [
