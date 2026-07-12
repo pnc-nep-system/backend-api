@@ -39,7 +39,7 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'organisation_id' => 1,
+                'organisation_id' => \App\Models\Organisation::first()->id,
                 'name' => 'Organisation Admin',
                 'email' => 'orgadmin@example.com',
                 'email_verified_at' => now(),

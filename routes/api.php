@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
+use App\Http\Controllers\Api\MapEntryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,5 +32,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
+        Route::get('/map/entries', [MapEntryController::class, 'index']);
     });
 });
