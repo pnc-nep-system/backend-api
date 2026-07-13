@@ -19,6 +19,10 @@ class MapEntryController extends Controller
             new OA\Parameter(name: "category_id", in: "query", required: false, description: "Filter by taxonomy category ID", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "subcategory_id", in: "query", required: false, description: "Filter by taxonomy sub-category ID", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "item_id", in: "query", required: false, description: "Filter by taxonomy item ID", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "province_id", in: "query", required: false, description: "Filter by province ID (matches entries with locations in this province or its districts)", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "district_id", in: "query", required: false, description: "Filter by district ID", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "agreement_counterpart_type", in: "query", required: false, description: "Filter by government agreement counterpart agency type", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "agreement_status", in: "query", required: false, description: "Filter by government agreement status", schema: new OA\Schema(type: "string")),
         ],
         responses: [
             new OA\Response(
@@ -63,6 +67,37 @@ class MapEntryController extends Controller
         if ($request->filled('item_id')) {
             $query->whereHas('activities', function ($q) use ($request) {
                 $q->where('activity_item_id', $request->input('item_id'));
+            });
+        }
+
+        if ($request->filled('province_id')) {
+            $provinceId = $request->input('province_id');
+            $query->whereHas('locations', function ($q) use ($provinceId) {
+                // Match entries where the location is directly in the province OR in a district within the province
+                $q->where(function ($subQ) use ($provinceId) {
+                    $subQ->where('province_id', $provinceId)
+                          ->orWhereHas('district', function ($districtQ) use ($provinceId) {
+                              $districtQ->where('province_id', $provinceId);
+                          });
+                });
+            });
+        }
+
+        if ($request->filled('district_id')) {
+            $query->whereHas('locations', function ($q) use ($request) {
+                $q->where('district_id', $request->input('district_id'));
+            });
+        }
+
+        if ($request->filled('agreement_counterpart_type')) {
+            $query->whereHas('governmentAgreements', function ($q) use ($request) {
+                $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
+            });
+        }
+
+        if ($request->filled('agreement_status')) {
+            $query->whereHas('governmentAgreements', function ($q) use ($request) {
+                $q->where('status', $request->input('agreement_status'));
             });
         }
 
