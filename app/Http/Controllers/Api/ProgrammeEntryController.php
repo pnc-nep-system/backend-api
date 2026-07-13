@@ -207,8 +207,8 @@ class ProgrammeEntryController extends Controller
     public function index(Request $request, Organisation $organisation)
     {
         $user = $request->user();
-        if ($user->role !== 'nep_admin' && $organisation->id !== $user->organisation_id) {
-            abort(404);
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator']) && $organisation->id !== $user->organisation_id) {
+            return response()->json(['message' => 'Not Found.'], 404);
         }
         $entries = ProgrammeEntry::where('organisation_id', $organisation->id)->get();
         return response()->json(['data' => $entries]);

@@ -515,4 +515,90 @@ class MapEntryTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $entry1->id);
     }
+
+    public function test_province_and_district_filters_require_same_location(): void
+    {
+        // This test validates the code review fix: province and district must come from the SAME location record
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province1 = Province::create(['province_name' => 'Province 1']);
+        $province2 = Province::create(['province_name' => 'Province 2']);
+        $district1 = District::create([
+            'province_id' => $province1->id,
+            'name' => 'District 1',
+        ]);
+        $district2 = District::create([
+            'province_id' => $province2->id,
+            'name' => 'District 2',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        
+        // Entry has location in province1/district1 AND location in province2/district2
+        // This should NOT match when filtering for province1 + district2 (different locations)
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province1->id,
+            'district_id' => $district1->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province2->id,
+            'district_id' => $district2->id,
+        ]);
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/map/entries?province_id=' . $province1->id . '&district_id=' . $district2->id
+        );
+
+        // Should NOT match because no single location has both province1 AND district2
+        $response->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_agreement_filters_require_same_agreement(): void
+    {
+        // This test validates the code review fix: counterpart type and status must come from the SAME agreement
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        
+        // Agreement 1: MoEYS national level + active
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Institution 1',
+            'nature' => 'MoU',
+        ]);
+        
+        // Agreement 2: Provincial Office + expired
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'Provincial Office of Education',
+            'status' => 'expired',
+            'institution_name' => 'Institution 2',
+            'nature' => 'MoU',
+        ]);
+
+        // This should NOT match because no single agreement has both MoEYS + expired
+        $response = $this->actingAs($user)->getJson(
+            '/api/map/entries?agreement_counterpart_type=MoEYS national level&agreement_status=expired'
+        );
+
+        $response->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
 }

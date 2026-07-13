@@ -55,52 +55,54 @@ class MapEntryController extends Controller
         // BE-030: Use distinct to prevent duplicate rows when entries match through multiple joined rows
         $query->distinct();
 
-        if ($request->filled('category_id')) {
-            $query->whereHas('activities.activityItem.subcategory', function ($q) use ($request) {
-                $q->where('category_id', $request->input('category_id'));
-            });
-        }
-
-        if ($request->filled('subcategory_id')) {
-            $query->whereHas('activities.activityItem', function ($q) use ($request) {
-                $q->where('subcategory_id', $request->input('subcategory_id'));
-            });
-        }
-
-        if ($request->filled('item_id')) {
+        if ($request->filled('category_id') || $request->filled('subcategory_id') || $request->filled('item_id')) {
             $query->whereHas('activities', function ($q) use ($request) {
-                $q->where('activity_item_id', $request->input('item_id'));
+                if ($request->filled('item_id')) {
+                    $q->where('activity_item_id', $request->input('item_id'));
+                }
+                
+                if ($request->filled('subcategory_id') || $request->filled('category_id')) {
+                    $q->whereHas('activityItem.subcategory', function ($subQ) use ($request) {
+                        if ($request->filled('subcategory_id')) {
+                            $subQ->where('subcategory_id', $request->input('subcategory_id'));
+                        }
+                        
+                        if ($request->filled('category_id')) {
+                            $subQ->where('category_id', $request->input('category_id'));
+                        }
+                    });
+                }
             });
         }
 
-        if ($request->filled('province_id')) {
-            $provinceId = $request->input('province_id');
-            $query->whereHas('locations', function ($q) use ($provinceId) {
-                // Match entries where the location is directly in the province OR in a district within the province
-                $q->where(function ($subQ) use ($provinceId) {
-                    $subQ->where('province_id', $provinceId)
-                          ->orWhereHas('district', function ($districtQ) use ($provinceId) {
-                              $districtQ->where('province_id', $provinceId);
-                          });
-                });
-            });
-        }
-
-        if ($request->filled('district_id')) {
+        if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
-                $q->where('district_id', $request->input('district_id'));
+                if ($request->filled('province_id')) {
+                    $provinceId = $request->input('province_id');
+                    // Match entries where the location is directly in the province OR in a district within the province
+                    $q->where(function ($subQ) use ($provinceId) {
+                        $subQ->where('province_id', $provinceId)
+                              ->orWhereHas('district', function ($districtQ) use ($provinceId) {
+                                  $districtQ->where('province_id', $provinceId);
+                              });
+                    });
+                }
+                
+                if ($request->filled('district_id')) {
+                    $q->where('district_id', $request->input('district_id'));
+                }
             });
         }
 
-        if ($request->filled('agreement_counterpart_type')) {
+        if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
-                $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
-            });
-        }
-
-        if ($request->filled('agreement_status')) {
-            $query->whereHas('governmentAgreements', function ($q) use ($request) {
-                $q->where('status', $request->input('agreement_status'));
+                if ($request->filled('agreement_counterpart_type')) {
+                    $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
+                }
+                
+                if ($request->filled('agreement_status')) {
+                    $q->where('status', $request->input('agreement_status'));
+                }
             });
         }
 
