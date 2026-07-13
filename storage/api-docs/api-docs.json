@@ -423,13 +423,103 @@
                 ]
             }
         },
+        "/provinces": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get all provinces",
+                "description": "Returns a list of all provinces for populating frontend dropdowns.",
+                "operationId": "ddbf99a7248ded5195b4e6ca31b74ddf",
+                "responses": {
+                    "200": {
+                        "description": "List of provinces",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Province"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/provinces/{province}/districts": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get districts by province",
+                "description": "Returns districts belonging to the specified province.",
+                "operationId": "0e872ab24ed7070702e4e3976897d280",
+                "parameters": [
+                    {
+                        "name": "province",
+                        "in": "path",
+                        "description": "Province ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of districts for the province",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/District"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Province not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/map/entries": {
             "get": {
                 "tags": [
                     "Map Query & Export"
                 ],
-                "summary": "Query programme entries for map display, filterable by taxonomy category/sub-category/item, education level, and inclusion group/type",
-                "description": "Returns entries with at least one activity matching the given category, sub-category, item, education level, inclusion group, and/or inclusion type filter. Filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
+                "summary": "Query programme entries for map display, filterable by taxonomy, education level, inclusion, location, agreement, keyword, organisation, and scale",
+                "description": "Returns entries matching the given filters. Taxonomy (category/sub-category/item), education level, and inclusion group/type filters match entries with at least one qualifying activity. Location filters match via programme_locations. Agreement filters match via government_agreements. Keyword and organisation name filters use case-insensitive partial matching. Scale filters bucket by budget band, or by numeric staff/beneficiary ranges. All filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
                 "operationId": "07f62762c22c9a433eb51266e58b011d",
                 "parameters": [
                     {
@@ -484,6 +574,69 @@
                         "required": false,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Case-insensitive partial match against entry keywords",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "organisation_name",
+                        "in": "query",
+                        "description": "Case-insensitive partial match against organisation name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "budget_band_id",
+                        "in": "query",
+                        "description": "Filter by budget band ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "min_staff",
+                        "in": "query",
+                        "description": "Minimum FTE staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "max_staff",
+                        "in": "query",
+                        "description": "Maximum FTE staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "min_beneficiaries",
+                        "in": "query",
+                        "description": "Minimum direct beneficiaries",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "max_beneficiaries",
+                        "in": "query",
+                        "description": "Maximum direct beneficiaries",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],
@@ -1293,6 +1446,47 @@
                 },
                 "type": "object"
             },
+            "Province": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "province_name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "District": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "province_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeActivity": {
                 "properties": {
                     "id": {
@@ -1475,6 +1669,10 @@
         {
             "name": "Government Agreements",
             "description": "Government Agreements"
+        },
+        {
+            "name": "Locations",
+            "description": "Locations"
         },
         {
             "name": "Map Query & Export",
