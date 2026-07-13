@@ -5,24 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class MapEntryController extends Controller
 {
     #[OA\Get(
         path: "/map/entries",
-        summary: "Query programme entries for map display, filterable by taxonomy category/sub-category/item",
-        description: "Returns entries with at least one activity matching the given category, sub-category, or item filter. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
+        summary: "Query programme entries for map display, filterable by taxonomy category/sub-category/item, education level, and inclusion group/type",
+        description: "Returns entries with at least one activity matching the given category, sub-category, item, education level, inclusion group, and/or inclusion type filter. Filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
         security: [["bearerAuth" => []]],
         tags: ["Map Query & Export"],
         parameters: [
             new OA\Parameter(name: "category_id", in: "query", required: false, description: "Filter by taxonomy category ID", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "subcategory_id", in: "query", required: false, description: "Filter by taxonomy sub-category ID", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "item_id", in: "query", required: false, description: "Filter by taxonomy item ID", schema: new OA\Schema(type: "integer")),
-            new OA\Parameter(name: "province_id", in: "query", required: false, description: "Filter by province ID (matches entries with locations in this province or its districts)", schema: new OA\Schema(type: "integer")),
-            new OA\Parameter(name: "district_id", in: "query", required: false, description: "Filter by district ID", schema: new OA\Schema(type: "integer")),
-            new OA\Parameter(name: "agreement_counterpart_type", in: "query", required: false, description: "Filter by government agreement counterpart agency type", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "agreement_status", in: "query", required: false, description: "Filter by government agreement status", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "education_level_id", in: "query", required: false, description: "Filter by education level ID (via programme_activity_levels)", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "inclusion_group", in: "query", required: false, description: "Filter by inclusion group value", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "inclusion_type", in: "query", required: false, description: "Filter by inclusion type value", schema: new OA\Schema(type: "string")),
         ],
         responses: [
             new OA\Response(
@@ -43,43 +43,37 @@ class MapEntryController extends Controller
     )]
     public function index(Request $request)
     {
-        $user = $request->user();
+        $request->validate([
+            'category_id' => 'sometimes|integer',
+            'subcategory_id' => 'sometimes|integer',
+            'item_id' => 'sometimes|integer',
+            'education_level_id' => 'sometimes|integer',
+            'inclusion_group' => 'sometimes|string',
+            'inclusion_type' => 'sometimes|string',
+            'province_id' => 'sometimes|integer',
+            'district_id' => 'sometimes|integer',
+            'agreement_counterpart_type' => 'sometimes|string',
+            'agreement_status' => 'sometimes|string',
+        ]);
 
+        $user = $request->user();
         $query = ProgrammeEntry::query();
 
-        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all; member_org sees only their own organisation's entries
+        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all;
+        // member_org sees only their own organisation's entries.
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
         }
 
-        if ($request->filled('category_id')) {
-            $query->whereHas('activities.activityItem.subcategory', function ($q) use ($request) {
-                $q->where('category_id', $request->input('category_id'));
-            });
-        }
+        $hasActivityFilter = collect($request->only([
+            'category_id', 'subcategory_id', 'item_id',
+            'education_level_id', 'inclusion_group', 'inclusion_type',
+        ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        if ($request->filled('subcategory_id')) {
-            $query->whereHas('activities.activityItem', function ($q) use ($request) {
-                $q->where('subcategory_id', $request->input('subcategory_id'));
-            });
-        }
-
-        if ($request->filled('item_id')) {
-            $query->whereHas('activities', function ($q) use ($request) {
-                $q->where('activity_item_id', $request->input('item_id'));
-            });
-        }
-
+        // Location filters – match via programme_locations table.
         if ($request->filled('province_id')) {
-            $provinceId = $request->input('province_id');
-            $query->whereHas('locations', function ($q) use ($provinceId) {
-                // Match entries where the location is directly in the province OR in a district within the province
-                $q->where(function ($subQ) use ($provinceId) {
-                    $subQ->where('province_id', $provinceId)
-                          ->orWhereHas('district', function ($districtQ) use ($provinceId) {
-                              $districtQ->where('province_id', $provinceId);
-                          });
-                });
+            $query->whereHas('locations', function ($q) use ($request) {
+                $q->where('province_id', $request->input('province_id'));
             });
         }
 
@@ -89,6 +83,7 @@ class MapEntryController extends Controller
             });
         }
 
+        // Government agreement filters – match via government_agreements table.
         if ($request->filled('agreement_counterpart_type')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
                 $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
@@ -98,6 +93,48 @@ class MapEntryController extends Controller
         if ($request->filled('agreement_status')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
                 $q->where('status', $request->input('agreement_status'));
+            });
+        }
+        if ($hasActivityFilter) {
+            $query->whereHas('activities', function ($q) use ($request) {
+                if ($request->filled('category_id')) {
+                    $q->whereHas('activityItem.subcategory', function ($sub) use ($request) {
+                        $sub->where('category_id', $request->input('category_id'));
+                    });
+                }
+
+                if ($request->filled('subcategory_id')) {
+                    $q->whereHas('activityItem', function ($sub) use ($request) {
+                        $sub->where('subcategory_id', $request->input('subcategory_id'));
+                    });
+                }
+
+                if ($request->filled('item_id')) {
+                    $q->where('activity_item_id', $request->input('item_id'));
+                }
+
+                // BE-027: education level lives on the programme_activity_levels
+                // pivot (many-to-many between activities and education_levels).
+                // whereColumn scopes the EXISTS to this same activity row.
+                if ($request->filled('education_level_id')) {
+                    $educationLevelId = $request->input('education_level_id');
+                    $q->whereExists(function ($sub) use ($educationLevelId) {
+                        $sub->select(DB::raw(1))
+                            ->from('programme_activity_levels')
+                            ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
+                            ->where('programme_activity_levels.education_level_id', $educationLevelId);
+                    });
+                }
+
+                // BE-027: inclusion group/type are plain columns directly on
+                // programme_activities (not foreign keys, not IDs).
+                if ($request->filled('inclusion_group')) {
+                    $q->where('inclusion_group', $request->input('inclusion_group'));
+                }
+
+                if ($request->filled('inclusion_type')) {
+                    $q->where('inclusion_type', $request->input('inclusion_type'));
+                }
             });
         }
 

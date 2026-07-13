@@ -72,6 +72,7 @@ class MapEntryTest extends TestCase
             ->assertJsonPath('data.0.id', $entry->id);
     }
 
+
     public function test_province_filter_excludes_other_provinces(): void
     {
         $organisation = Organisation::factory()->create();
