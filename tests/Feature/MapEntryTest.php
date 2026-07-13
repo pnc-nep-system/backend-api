@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\District;
+use App\Models\EntryKeyword;
 use App\Models\GovernmentAgreement;
 use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
@@ -601,5 +602,214 @@ class MapEntryTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_csv_export_returns_csv_file(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Test Programme',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->assertHeader('Content-Disposition');
+        
+        $contentDisposition = $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('attachment', $contentDisposition);
+        $this->assertStringContainsString('.csv', $contentDisposition);
+    }
+
+    public function test_csv_export_includes_all_key_fields(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Test Programme',
+            'start_year' => 2023,
+            'end_year' => 2025,
+            'ongoing' => false,
+            'fte_staff' => 10.5,
+            'direct_beneficiaries' => 100,
+            'indirect_beneficiaries' => 500,
+            'method' => 'Direct implementation',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Check for CSV headers
+        $this->assertStringContainsString('Entry ID', $content);
+        $this->assertStringContainsString('Programme Name', $content);
+        $this->assertStringContainsString('Organisation Name', $content);
+        $this->assertStringContainsString('Budget Band', $content);
+        $this->assertStringContainsString('Start Year', $content);
+        $this->assertStringContainsString('End Year', $content);
+        $this->assertStringContainsString('Ongoing', $content);
+        $this->assertStringContainsString('FTE Staff', $content);
+        $this->assertStringContainsString('Direct Beneficiaries', $content);
+        $this->assertStringContainsString('Indirect Beneficiaries', $content);
+        $this->assertStringContainsString('Method', $content);
+        $this->assertStringContainsString('Keywords', $content);
+        $this->assertStringContainsString('Locations', $content);
+        $this->assertStringContainsString('Activities', $content);
+        $this->assertStringContainsString('Education Levels', $content);
+        $this->assertStringContainsString('Government Agreements', $content);
+    }
+
+    public function test_csv_export_respects_filters(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Programme in Province',
+        ]);
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Programme Outside Province',
+        ]);
+        
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry1->id,
+            'province_id' => $province->id,
+            'district_id' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export?province_id=' . $province->id);
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Should contain entry1 but not entry2
+        $this->assertStringContainsString('Programme in Province', $content);
+        $this->assertStringNotContainsString('Programme Outside Province', $content);
+    }
+
+    public function test_csv_export_respects_permissions(): void
+    {
+        $org1 = Organisation::factory()->create();
+        $org2 = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $org1->id,
+            'role' => 'member_org',
+        ]);
+        
+        $ownEntry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org1->id,
+            'programme_name' => 'Own Programme',
+        ]);
+        $otherEntry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org2->id,
+            'programme_name' => 'Other Programme',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Should contain own entry but not other entry
+        $this->assertStringContainsString('Own Programme', $content);
+        $this->assertStringNotContainsString('Other Programme', $content);
+    }
+
+    public function test_csv_export_nep_admin_sees_all_entries(): void
+    {
+        $org1 = Organisation::factory()->create();
+        $org2 = Organisation::factory()->create();
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+        
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org1->id,
+            'programme_name' => 'Org1 Programme',
+        ]);
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org2->id,
+            'programme_name' => 'Org2 Programme',
+        ]);
+
+        $response = $this->actingAs($admin)->get('/api/map/entries/export');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Admin should see both entries
+        $this->assertStringContainsString('Org1 Programme', $content);
+        $this->assertStringContainsString('Org2 Programme', $content);
+    }
+
+    public function test_csv_export_includes_related_data(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        $district = District::create([
+            'province_id' => $province->id,
+            'name' => 'Test District',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        
+        // Add keyword
+        EntryKeyword::create([
+            'programme_entry_id' => $entry->id,
+            'keyword' => 'education',
+        ]);
+        
+        // Add location
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province->id,
+            'district_id' => $district->id,
+        ]);
+        
+        // Add government agreement
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution',
+            'nature' => 'MoU',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Check that related data is included
+        $this->assertStringContainsString('education', $content);
+        $this->assertStringContainsString('Test Province', $content);
+        $this->assertStringContainsString('Test District', $content);
+        $this->assertStringContainsString('MoEYS national level', $content);
+        $this->assertStringContainsString('active', $content);
     }
 }

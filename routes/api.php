@@ -37,5 +37,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
         Route::get('/map/entries', [MapEntryController::class, 'index']);
+        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
     });
 });
