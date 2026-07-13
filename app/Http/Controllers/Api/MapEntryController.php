@@ -50,6 +50,10 @@ class MapEntryController extends Controller
             'education_level_id' => 'sometimes|integer',
             'inclusion_group' => 'sometimes|string',
             'inclusion_type' => 'sometimes|string',
+            'province_id' => 'sometimes|integer',
+            'district_id' => 'sometimes|integer',
+            'agreement_counterpart_type' => 'sometimes|string',
+            'agreement_status' => 'sometimes|string',
         ]);
 
         $user = $request->user();
@@ -66,12 +70,31 @@ class MapEntryController extends Controller
             'education_level_id', 'inclusion_group', 'inclusion_type',
         ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        // BE-027: all activity-scoped filters must be evaluated against the
-        // SAME activity row. Merging them into one whereHas closure (rather
-        // than a separate whereHas per filter) ensures "category=X AND
-        // inclusion_group=Y" means one activity satisfying both conditions,
-        // not two different activities on the same entry each satisfying
-        // one condition independently.
+        // Location filters – match via programme_locations table.
+        if ($request->filled('province_id')) {
+            $query->whereHas('locations', function ($q) use ($request) {
+                $q->where('province_id', $request->input('province_id'));
+            });
+        }
+
+        if ($request->filled('district_id')) {
+            $query->whereHas('locations', function ($q) use ($request) {
+                $q->where('district_id', $request->input('district_id'));
+            });
+        }
+
+        // Government agreement filters – match via government_agreements table.
+        if ($request->filled('agreement_counterpart_type')) {
+            $query->whereHas('governmentAgreements', function ($q) use ($request) {
+                $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
+            });
+        }
+
+        if ($request->filled('agreement_status')) {
+            $query->whereHas('governmentAgreements', function ($q) use ($request) {
+                $q->where('status', $request->input('agreement_status'));
+            });
+        }
         if ($hasActivityFilter) {
             $query->whereHas('activities', function ($q) use ($request) {
                 if ($request->filled('category_id')) {
