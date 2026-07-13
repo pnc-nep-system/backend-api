@@ -261,7 +261,7 @@ class DistrictSeeder extends Seeder
                 'Svay Theab',
             ],
 
-            'Takeo' => [
+            'Takéo' => [
                 'Angkor Borei',
                 'Bati',
                 'Borei Cholsar',
