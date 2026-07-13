@@ -812,4 +812,210 @@ class MapEntryTest extends TestCase
         $this->assertStringContainsString('MoEYS national level', $content);
         $this->assertStringContainsString('active', $content);
     }
+
+    public function test_pdf_export_returns_pdf_file(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Test Programme',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition');
+        
+        $contentDisposition = $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('attachment', $contentDisposition);
+        $this->assertStringContainsString('.pdf', $contentDisposition);
+    }
+
+    public function test_pdf_export_includes_entry_data(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Test Programme PDF',
+            'start_year' => 2023,
+            'fte_staff' => 15,
+            'direct_beneficiaries' => 200,
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
+
+        $response->assertOk();
+        
+        // Verify PDF was generated with correct headers
+        $response->assertHeader('Content-Type', 'application/pdf');
+        $contentDisposition = $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('attachment', $contentDisposition);
+        $this->assertStringContainsString('.pdf', $contentDisposition);
+        
+        // Verify it's a valid PDF (starts with %PDF)
+        $content = $response->getContent();
+        $this->assertStringStartsWith('%PDF', $content);
+        
+        // Verify the PDF contains EOF marker
+        $this->assertStringContainsString('%%EOF', $content);
+    }
+
+    public function test_pdf_export_respects_filters(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Programme in Province',
+        ]);
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+            'programme_name' => 'Programme Outside Province',
+        ]);
+        
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry1->id,
+            'province_id' => $province->id,
+            'district_id' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export/pdf?province_id=' . $province->id);
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Verify it's a valid PDF
+        $this->assertStringStartsWith('%PDF', $content);
+        $this->assertStringContainsString('%%EOF', $content);
+        
+        // Verify the PDF is non-empty (has content)
+        $this->assertGreaterThan(1000, strlen($content));
+    }
+
+    public function test_pdf_export_respects_permissions(): void
+    {
+        $org1 = Organisation::factory()->create();
+        $org2 = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $org1->id,
+            'role' => 'member_org',
+        ]);
+        
+        $ownEntry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org1->id,
+            'programme_name' => 'Own Programme',
+        ]);
+        $otherEntry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org2->id,
+            'programme_name' => 'Other Programme',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Verify it's a valid PDF
+        $this->assertStringStartsWith('%PDF', $content);
+        $this->assertStringContainsString('%%EOF', $content);
+        
+        // Verify the PDF is non-empty (has content)
+        $this->assertGreaterThan(1000, strlen($content));
+    }
+
+    public function test_pdf_export_nep_admin_sees_all_entries(): void
+    {
+        $org1 = Organisation::factory()->create();
+        $org2 = Organisation::factory()->create();
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+        
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org1->id,
+            'programme_name' => 'Org1 Programme',
+        ]);
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $org2->id,
+            'programme_name' => 'Org2 Programme',
+        ]);
+
+        $response = $this->actingAs($admin)->get('/api/map/entries/export/pdf');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Verify it's a valid PDF
+        $this->assertStringStartsWith('%PDF', $content);
+        $this->assertStringContainsString('%%EOF', $content);
+        
+        // Verify the PDF is non-empty (has content for 2 entries)
+        $this->assertGreaterThan(1000, strlen($content));
+    }
+
+    public function test_pdf_export_includes_related_data(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        $district = District::create([
+            'province_id' => $province->id,
+            'name' => 'Test District',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        
+        // Add keyword
+        EntryKeyword::create([
+            'programme_entry_id' => $entry->id,
+            'keyword' => 'education',
+        ]);
+        
+        // Add location
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province->id,
+            'district_id' => $district->id,
+        ]);
+        
+        // Add government agreement
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution',
+            'nature' => 'MoU',
+        ]);
+
+        $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
+
+        $response->assertOk();
+        $content = $response->getContent();
+        
+        // Verify it's a valid PDF with substantial content
+        $this->assertStringStartsWith('%PDF', $content);
+        $this->assertStringContainsString('%%EOF', $content);
+        $this->assertGreaterThan(2000, strlen($content));
+    }
 }
