@@ -300,8 +300,10 @@ class MapEntryController extends Controller
             })->filter()->unique()->implode('; ');
 
             $educationLevels = $entry->activities->flatMap(function ($activity) {
-                return $activity->educationLevels->pluck('level_name');
-            })->unique()->implode('; ');
+                return $activity->activityLevels->map(function ($al) {
+                    return $al->educationLevel?->level_name;
+                });
+            })->filter()->unique()->implode('; ');
 
             $inclusionGroups = $entry->activities->pluck('inclusion_group')->filter()->unique()->implode('; ');
             $inclusionTypes = $entry->activities->pluck('inclusion_type')->filter()->unique()->implode('; ');
@@ -373,7 +375,7 @@ class MapEntryController extends Controller
                 'activities.activityItem.subcategory.category',
                 'activities.activityItem.subcategory',
                 'activities.activityItem',
-                'activities.educationLevels',
+                'activities.activityLevels.educationLevel',
                 'governmentAgreements',
             ]);
 
