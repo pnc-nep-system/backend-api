@@ -428,8 +428,8 @@
                 "tags": [
                     "Map Query & Export"
                 ],
-                "summary": "Query programme entries for map display, filterable by taxonomy category/sub-category/item",
-                "description": "Returns entries with at least one activity matching the given category, sub-category, or item filter. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
+                "summary": "Query programme entries for map display, filterable by taxonomy, keyword, organisation, and scale",
+                "description": "Returns entries matching the given filters. Keyword and organisation name filters use case-insensitive partial matching. Scale filters bucket by budget band, or by numeric staff/beneficiary ranges. Respects BE-010/BE-025 visibility rules.",
                 "operationId": "07f62762c22c9a433eb51266e58b011d",
                 "parameters": [
                     {
@@ -454,6 +454,69 @@
                         "name": "item_id",
                         "in": "query",
                         "description": "Filter by taxonomy item ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Case-insensitive partial match against entry keywords",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "organisation_name",
+                        "in": "query",
+                        "description": "Case-insensitive partial match against organisation name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "budget_band_id",
+                        "in": "query",
+                        "description": "Filter by budget band ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "min_staff",
+                        "in": "query",
+                        "description": "Minimum FTE staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "max_staff",
+                        "in": "query",
+                        "description": "Maximum FTE staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "min_beneficiaries",
+                        "in": "query",
+                        "description": "Minimum direct beneficiaries",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "max_beneficiaries",
+                        "in": "query",
+                        "description": "Maximum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
