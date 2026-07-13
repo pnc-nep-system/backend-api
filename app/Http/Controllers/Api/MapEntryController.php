@@ -1,10 +1,13 @@
 <?php
+
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
+
 class MapEntryController extends Controller
 {
     #[OA\Get(
@@ -40,54 +43,75 @@ class MapEntryController extends Controller
     )]
     public function index(Request $request)
     {
+        $request->validate([
+            'category_id' => 'sometimes|integer',
+            'subcategory_id' => 'sometimes|integer',
+            'item_id' => 'sometimes|integer',
+            'education_level_id' => 'sometimes|integer',
+            'inclusion_group' => 'sometimes|string',
+            'inclusion_type' => 'sometimes|string',
+        ]);
+
         $user = $request->user();
         $query = ProgrammeEntry::query();
-        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all; member_org sees only their own organisation's entries
+
+        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all;
+        // member_org sees only their own organisation's entries.
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
         }
-        if ($request->filled('category_id')) {
-            $query->whereHas('activities.activityItem.subcategory', function ($q) use ($request) {
-                $q->where('category_id', $request->input('category_id'));
-            });
-        }
-        if ($request->filled('subcategory_id')) {
-            $query->whereHas('activities.activityItem', function ($q) use ($request) {
-                $q->where('subcategory_id', $request->input('subcategory_id'));
-            });
-        }
-        if ($request->filled('item_id')) {
-            $query->whereHas('activities', function ($q) use ($request) {
-                $q->where('activity_item_id', $request->input('item_id'));
-            });
-        }
 
-        // BE-027: education level — lives on the programme_activity_levels
-        // pivot table (many-to-many between activities and education_levels),
-        // so we filter via a subquery against that pivot rather than a
-        // direct column on programme_activities.
-        if ($request->filled('education_level_id')) {
-            $educationLevelId = $request->input('education_level_id');
-            $query->whereHas('activities', function ($q) use ($educationLevelId) {
-                $q->whereExists(function ($sub) use ($educationLevelId) {
-                    $sub->select(DB::raw(1))
-                        ->from('programme_activity_levels')
-                        ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
-                        ->where('programme_activity_levels.education_level_id', $educationLevelId);
-                });
-            });
-        }
+        $hasActivityFilter = collect($request->only([
+            'category_id', 'subcategory_id', 'item_id',
+            'education_level_id', 'inclusion_group', 'inclusion_type',
+        ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        // BE-027: inclusion group / inclusion type — plain columns directly
-        // on programme_activities (not foreign keys, not IDs).
-        if ($request->filled('inclusion_group')) {
+        // BE-027: all activity-scoped filters must be evaluated against the
+        // SAME activity row. Merging them into one whereHas closure (rather
+        // than a separate whereHas per filter) ensures "category=X AND
+        // inclusion_group=Y" means one activity satisfying both conditions,
+        // not two different activities on the same entry each satisfying
+        // one condition independently.
+        if ($hasActivityFilter) {
             $query->whereHas('activities', function ($q) use ($request) {
-                $q->where('inclusion_group', $request->input('inclusion_group'));
-            });
-        }
-        if ($request->filled('inclusion_type')) {
-            $query->whereHas('activities', function ($q) use ($request) {
-                $q->where('inclusion_type', $request->input('inclusion_type'));
+                if ($request->filled('category_id')) {
+                    $q->whereHas('activityItem.subcategory', function ($sub) use ($request) {
+                        $sub->where('category_id', $request->input('category_id'));
+                    });
+                }
+
+                if ($request->filled('subcategory_id')) {
+                    $q->whereHas('activityItem', function ($sub) use ($request) {
+                        $sub->where('subcategory_id', $request->input('subcategory_id'));
+                    });
+                }
+
+                if ($request->filled('item_id')) {
+                    $q->where('activity_item_id', $request->input('item_id'));
+                }
+
+                // BE-027: education level lives on the programme_activity_levels
+                // pivot (many-to-many between activities and education_levels).
+                // whereColumn scopes the EXISTS to this same activity row.
+                if ($request->filled('education_level_id')) {
+                    $educationLevelId = $request->input('education_level_id');
+                    $q->whereExists(function ($sub) use ($educationLevelId) {
+                        $sub->select(DB::raw(1))
+                            ->from('programme_activity_levels')
+                            ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
+                            ->where('programme_activity_levels.education_level_id', $educationLevelId);
+                    });
+                }
+
+                // BE-027: inclusion group/type are plain columns directly on
+                // programme_activities (not foreign keys, not IDs).
+                if ($request->filled('inclusion_group')) {
+                    $q->where('inclusion_group', $request->input('inclusion_group'));
+                }
+
+                if ($request->filled('inclusion_type')) {
+                    $q->where('inclusion_type', $request->input('inclusion_type'));
+                }
             });
         }
 
