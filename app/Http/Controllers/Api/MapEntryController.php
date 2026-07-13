@@ -52,6 +52,9 @@ class MapEntryController extends Controller
             $query->where('organisation_id', $user->organisation_id);
         }
 
+        // BE-030: Use distinct to prevent duplicate rows when entries match through multiple joined rows
+        $query->distinct();
+
         if ($request->filled('category_id')) {
             $query->whereHas('activities.activityItem.subcategory', function ($q) use ($request) {
                 $q->where('category_id', $request->input('category_id'));

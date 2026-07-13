@@ -315,4 +315,204 @@ class MapEntryTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $ownEntry->id);
     }
+
+    public function test_three_filters_applied_simultaneously_returns_intersected_results(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        $district = District::create([
+            'province_id' => $province->id,
+            'name' => 'Test District',
+        ]);
+        
+        // Entry 1: matches all 3 filters (province + district + agreement status)
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry1->id,
+            'province_id' => $province->id,
+            'district_id' => $district->id,
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry1->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution',
+            'nature' => 'MoU',
+        ]);
+        
+        // Entry 2: matches province and district but NOT agreement status
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry2->id,
+            'province_id' => $province->id,
+            'district_id' => $district->id,
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry2->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'expired',
+            'institution_name' => 'Test Institution 2',
+            'nature' => 'MoU',
+        ]);
+        
+        // Entry 3: matches agreement status but NOT province
+        $entry3 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        $otherProvince = Province::create(['province_name' => 'Other Province']);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry3->id,
+            'province_id' => $otherProvince->id,
+            'district_id' => null,
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry3->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution 3',
+            'nature' => 'MoU',
+        ]);
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/map/entries?province_id=' . $province->id . '&district_id=' . $district->id . '&agreement_status=active'
+        );
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $entry1->id);
+    }
+
+    public function test_no_duplicate_rows_when_entry_matches_multiple_joined_rows(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        $district1 = District::create([
+            'province_id' => $province->id,
+            'name' => 'District 1',
+        ]);
+        $district2 = District::create([
+            'province_id' => $province->id,
+            'name' => 'District 2',
+        ]);
+        
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        
+        // Create multiple locations for the same entry (one in province directly, one in district)
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province->id,
+            'district_id' => null,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province->id,
+            'district_id' => $district1->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry->id,
+            'province_id' => $province->id,
+            'district_id' => $district2->id,
+        ]);
+        
+        // Create multiple agreements for the same entry
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Institution 1',
+            'nature' => 'MoU',
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry->id,
+            'counterpart_agency' => 'Provincial Office of Education',
+            'status' => 'active',
+            'institution_name' => 'Institution 2',
+            'nature' => 'MoU',
+        ]);
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/map/entries?province_id=' . $province->id . '&agreement_status=active'
+        );
+
+        // Should return exactly 1 entry, not duplicates
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $entry->id);
+    }
+
+    public function test_four_filters_applied_simultaneously(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        
+        $province = Province::create(['province_name' => 'Test Province']);
+        $district = District::create([
+            'province_id' => $province->id,
+            'name' => 'Test District',
+        ]);
+        
+        // Entry 1: matches all 4 filters
+        $entry1 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry1->id,
+            'province_id' => $province->id,
+            'district_id' => $district->id,
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry1->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution',
+            'nature' => 'MoU',
+        ]);
+        
+        // Entry 2: matches 3 filters but not district
+        $entry2 = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        ProgrammeLocation::create([
+            'programme_entry_id' => $entry2->id,
+            'province_id' => $province->id,
+            'district_id' => null,
+        ]);
+        GovernmentAgreement::create([
+            'programme_entry_id' => $entry2->id,
+            'counterpart_agency' => 'MoEYS national level',
+            'status' => 'active',
+            'institution_name' => 'Test Institution 2',
+            'nature' => 'MoU',
+        ]);
+
+        $response = $this->actingAs($user)->getJson(
+            '/api/map/entries?province_id=' . $province->id . 
+            '&district_id=' . $district->id . 
+            '&agreement_status=active' .
+            '&agreement_counterpart_type=MoEYS national level'
+        );
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $entry1->id);
+    }
 }
