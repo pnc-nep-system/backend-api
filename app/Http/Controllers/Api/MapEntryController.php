@@ -30,6 +30,10 @@ class MapEntryController extends Controller
             new OA\Parameter(name: "max_staff", in: "query", required: false, description: "Maximum FTE staff", schema: new OA\Schema(type: "number")),
             new OA\Parameter(name: "min_beneficiaries", in: "query", required: false, description: "Minimum direct beneficiaries", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "max_beneficiaries", in: "query", required: false, description: "Maximum direct beneficiaries", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "province_id", in: "query", required: false, description: "Filter by province ID (matches entries with locations in this province or its districts)", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "district_id", in: "query", required: false, description: "Filter by district ID", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "agreement_counterpart_type", in: "query", required: false, description: "Filter by government agreement counterpart agency type", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "agreement_status", in: "query", required: false, description: "Filter by government agreement status", schema: new OA\Schema(type: "string")),
         ],
         responses: [
             new OA\Response(
@@ -73,19 +77,17 @@ class MapEntryController extends Controller
             $query->where('organisation_id', $user->organisation_id);
         }
 
+        // BE-030: Use distinct to prevent duplicate rows when entries match through multiple joined rows
+        $query->distinct();
+
         $hasActivityFilter = collect($request->only([
             'category_id', 'subcategory_id', 'item_id',
             'education_level_id', 'inclusion_group', 'inclusion_type',
         ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
         // Location filters – match via programme_locations table.
-        if ($request->filled('province_id')) {
-            $query->whereHas('locations', function ($q) use ($request) {
-                $q->where('province_id', $request->input('province_id'));
-            });
-        }
-
-        if ($request->filled('district_id')) {
+        // BE-030: Combined province and district filters in single whereHas to ensure they apply to the same location record
+        if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
                 if ($request->filled('province_id')) {
                     $provinceId = $request->input('province_id');
@@ -105,7 +107,8 @@ class MapEntryController extends Controller
         }
 
         // Government agreement filters – match via government_agreements table.
-        if ($request->filled('agreement_counterpart_type')) {
+        // BE-030: Combined counterpart type and status filters in single whereHas to ensure they apply to the same agreement record
+        if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
                 if ($request->filled('agreement_counterpart_type')) {
                     $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
@@ -117,24 +120,25 @@ class MapEntryController extends Controller
             });
         }
 
+        // Activity filters – match via programme_activities table.
+        // BE-030: All activity-related filters are combined in single whereHas to ensure they apply to the same activity record
         if ($hasActivityFilter) {
             $query->whereHas('activities', function ($q) use ($request) {
-                if ($request->filled('category_id')) {
-                    $q->whereHas('activityItem.subcategory', function ($sub) use ($request) {
-                        $sub->where('category_id', $request->input('category_id'));
-                    });
-                }
-
-                if ($request->filled('subcategory_id')) {
-                    $q->whereHas('activityItem', function ($sub) use ($request) {
-                        $sub->where('subcategory_id', $request->input('subcategory_id'));
-                    });
-                }
-
                 if ($request->filled('item_id')) {
                     $q->where('activity_item_id', $request->input('item_id'));
                 }
-
+                
+                if ($request->filled('subcategory_id') || $request->filled('category_id')) {
+                    $q->whereHas('activityItem.subcategory', function ($subQ) use ($request) {
+                        if ($request->filled('subcategory_id')) {
+                            $subQ->where('subcategory_id', $request->input('subcategory_id'));
+                        }
+                        
+                        if ($request->filled('category_id')) {
+                            $subQ->where('category_id', $request->input('category_id'));
+                        }
+                    });
+                }
 
                 // BE-027: education level lives on the programme_activity_levels
                 // pivot (many-to-many between activities and education_levels).
