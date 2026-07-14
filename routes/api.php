@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries', [MapEntryController::class, 'index']);
         Route::get('/map/entries/export', [MapEntryController::class, 'export']);
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
+        Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
@@ -54,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
         Route::get('/categories', [TaxonomyController::class, 'listCategories']);
+        // Categories
         Route::post('/categories', [TaxonomyController::class, 'createCategory']);
         Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
         Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);

@@ -335,7 +335,7 @@ class TaxonomyTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'member_org']);
         
-        $response = $this->actingAs($user)->getJson('/api/taxonomy/categories');
+        $response = $this->actingAs($user)->postJson('/api/taxonomy/categories', ['code' => 'test', 'label' => 'Test']);
         $response->assertStatus(403);
     }
 
@@ -343,7 +343,7 @@ class TaxonomyTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'nep_coordinator']);
         
-        $response = $this->actingAs($user)->getJson('/api/taxonomy/categories');
+        $response = $this->actingAs($user)->postJson('/api/taxonomy/categories', ['code' => 'test', 'label' => 'Test']);
         $response->assertStatus(403);
     }
 
