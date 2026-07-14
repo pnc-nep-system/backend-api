@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
+use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
 use Illuminate\Http\Request;
@@ -40,4 +41,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export', [MapEntryController::class, 'export']);
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
     });
+
+    Route::middleware('auth:sanctum')->group(function () {
+    // ... your existing routes ...
+
+    Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
+        Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
+        Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
+    });
+});
 });
