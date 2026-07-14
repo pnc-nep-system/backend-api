@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\GovernmentAgreementController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
+use App\Http\Controllers\Api\TaxonomyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
     });
 
+<<<<<<< HEAD
     Route::middleware('auth:sanctum')->group(function () {
     // ... your existing routes ...
 
@@ -55,3 +57,24 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 });
+=======
+    // Taxonomy Management - NEP Admin only
+    Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
+        // Categories
+        Route::get('/categories', [TaxonomyController::class, 'listCategories']);
+        Route::post('/categories', [TaxonomyController::class, 'createCategory']);
+        Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
+        Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);
+
+        // Subcategories
+        Route::post('/subcategories', [TaxonomyController::class, 'createSubcategory']);
+        Route::put('/subcategories/{subcategory}', [TaxonomyController::class, 'renameSubcategory']);
+        Route::patch('/subcategories/{subcategory}/deprecate', [TaxonomyController::class, 'deprecateSubcategory']);
+
+        // Items
+        Route::post('/items', [TaxonomyController::class, 'createItem']);
+        Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
+        Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
+    });
+});
+>>>>>>> 679d71493c7015094f03d6eab19d51898a431214

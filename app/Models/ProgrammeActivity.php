@@ -16,6 +16,7 @@ class ProgrammeActivity extends Model
         'inclusion_group',
         'inclusion_type',
         'source',
+        'taxonomy_version',
     ];
 
     protected $casts = [
