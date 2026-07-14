@@ -119,7 +119,9 @@ class TaxonomyController extends Controller
             'label' => 'required|string|max:255',
         ]);
 
-        $category = ActivityCategory::create($validated);
+        $category = ActivityCategory::create(array_merge($validated, [
+            'version' => now()->toIso8601String(),
+        ]));
 
         return response()->json($category, 201);
     }
@@ -254,7 +256,9 @@ class TaxonomyController extends Controller
             'label' => 'required|string|max:255',
         ]);
 
-        $subcategory = ActivitySubcategory::create($validated);
+        $subcategory = ActivitySubcategory::create(array_merge($validated, [
+            'version' => now()->toIso8601String(),
+        ]));
 
         return response()->json($subcategory, 201);
     }
@@ -391,7 +395,9 @@ class TaxonomyController extends Controller
             'is_other' => 'sometimes|boolean',
         ]);
 
-        $item = ActivityItem::create($validated);
+        $item = ActivityItem::create(array_merge($validated, [
+            'version' => now()->toIso8601String(),
+        ]));
 
         return response()->json($item, 201);
     }
