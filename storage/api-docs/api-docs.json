@@ -12,6 +12,446 @@
         }
     ],
     "paths": {
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "List user accounts",
+                "description": "Only accessible to nep_admin. Supports filtering by role and status.",
+                "operationId": "2e4510a1a2e170a7a5289d75333798c6",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "nep_admin",
+                                "nep_coordinator",
+                                "member_org"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "inactive"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/User"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Create a user account",
+                "description": "Creates an NEP staff or member organisation account. If no password is supplied, a temporary password is generated and returned once in the response.",
+                "operationId": "23d2034a45f8d768ad5926bf59938d6c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "organisation_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Jane Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jane@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "optional-plain-text",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "nep_admin",
+                                            "nep_coordinator",
+                                            "member_org"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Account created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account created."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "temporary_password": {
+                                            "type": "string",
+                                            "example": "Xk9$mQ2vLp4T",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}": {
+            "patch": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Edit a user account",
+                "description": "Update user account fields. Leave password blank to keep the current password.",
+                "operationId": "3e6aefdfa93166efe9a2b859cd4e937b",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "organisation_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "description": "Leave blank to keep current password",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "nep_admin",
+                                            "nep_coordinator",
+                                            "member_org"
+                                        ]
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Account updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account updated."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}/deactivate": {
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Deactivate a user account",
+                "description": "Sets status to inactive and revokes all API tokens. An admin cannot deactivate their own account.",
+                "operationId": "ee10e4d8f35c70dd05001a95a6736ccc",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account deactivated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account deactivated."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Cannot deactivate your own account"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}/reactivate": {
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Reactivate a previously deactivated user account",
+                "description": "Sets the account status back to active.",
+                "operationId": "286a1060aabdbb7facbddf364ffec41a",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account reactivated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account reactivated."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}/reset-credentials": {
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Reset a user's credentials",
+                "description": "Generates a new temporary password server-side and revokes all existing tokens. The temporary password is returned once in the response for the admin to relay securely.",
+                "operationId": "2004ebb19cbfefe590f5e72781b8cb9b",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credentials reset",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Credentials reset. Share the temporary password with the user securely."
+                                        },
+                                        "temporary_password": {
+                                            "type": "string",
+                                            "example": "Xk9$mQ2vLp4T"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/login": {
             "post": {
                 "tags": [
@@ -69,7 +509,7 @@
                                                 },
                                                 "email": {
                                                     "type": "string",
-                                                    "example": "user@example.com"
+                                                    "example": "admin@example.com"
                                                 },
                                                 "role": {
                                                     "type": "string",
@@ -2400,6 +2840,52 @@
     },
     "components": {
         "schemas": {
+            "User": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "organisation_id": {
+                        "type": "integer",
+                        "example": 12,
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Jane Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "jane@example.com"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "nep_admin",
+                            "nep_coordinator",
+                            "member_org"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "inactive"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "GovernmentAgreement": {
                 "properties": {
                     "id": {
@@ -2763,6 +3249,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Admin - User Management",
+            "description": "Admin - User Management"
+        },
         {
             "name": "Authentication",
             "description": "Authentication"

@@ -51,6 +51,9 @@ class ProgrammeEntryTest extends TestCase
         ]);
     }
 
+    /**
+     * @dataProvider roleCanListOwnOrgProvider
+     */
     public function test_index_returns_own_org_entries(string $role)
     {
         $user = User::factory()->create([
@@ -66,6 +69,9 @@ class ProgrammeEntryTest extends TestCase
         $response->assertJsonPath('data.0.id', $this->entryInOrgA->id);
     }
 
+    /**
+     * @dataProvider roleCanListAnyOrgProvider
+     */
     public function test_index_nep_staff_can_list_any_org(string $role)
     {
         $user = User::factory()->create([

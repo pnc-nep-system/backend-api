@@ -36,7 +36,7 @@ class AuthController extends Controller
                         new OA\Property(property: "user", type: "object", properties: [
                             new OA\Property(property: "id", type: "integer", example: 1),
                             new OA\Property(property: "name", type: "string", example: "John Doe"),
-                            new OA\Property(property: "email", type: "string", example: "user@example.com"),
+                            new OA\Property(property: "email", type: "string", example: "admin@example.com"),
                             new OA\Property(property: "role", type: "string", example: "member_org"),
                             new OA\Property(property: "status", type: "string", example: "active"),
                             new OA\Property(property: "organisation_id", type: "integer", example: 12, nullable: true),
@@ -55,6 +55,15 @@ class AuthController extends Controller
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string", example: "Invalid credentials."),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 403,
+                description: "Account deactivated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Account is deactivated."),
                     ]
                 )
             ),
@@ -86,14 +95,24 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
 
-        if (! Auth::attempt($credentials)) {
+        $guard = Auth::guard('web');
+
+        if (! $guard->once($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
         /** @var \App\Models\User $user */
-        $user = Auth::user();
+        $user = $guard->user();
+
+        if ($user->status !== User::STATUS_ACTIVE) {
+            $guard->logout();
+
+            return response()->json([
+                'message' => 'Account is deactivated.',
+            ], 403);
+        }
 
         $user->load('organisation');
 

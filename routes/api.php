@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
+use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\TaxonomyController;
@@ -40,22 +41,29 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries', [MapEntryController::class, 'index']);
         Route::get('/map/entries/export', [MapEntryController::class, 'export']);
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
+        Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
     });
 
-    // Taxonomy Management - NEP Admin only
+    Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
+        Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
+        Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
+    });
+
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
-        // Categories
         Route::get('/categories', [TaxonomyController::class, 'listCategories']);
+        // Categories
         Route::post('/categories', [TaxonomyController::class, 'createCategory']);
         Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
         Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);
 
-        // Subcategories
         Route::post('/subcategories', [TaxonomyController::class, 'createSubcategory']);
         Route::put('/subcategories/{subcategory}', [TaxonomyController::class, 'renameSubcategory']);
         Route::patch('/subcategories/{subcategory}/deprecate', [TaxonomyController::class, 'deprecateSubcategory']);
 
-        // Items
         Route::post('/items', [TaxonomyController::class, 'createItem']);
         Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
         Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
