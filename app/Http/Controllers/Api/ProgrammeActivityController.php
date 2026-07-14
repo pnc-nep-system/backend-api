@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
+use App\Models\ActivityItem;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -117,12 +118,15 @@ class ProgrammeActivityController extends Controller
         $created = [];
 
         foreach ($request->validated('activities') as $activityData) {
+            $activityItem = ActivityItem::findOrFail($activityData['activity_item_id']);
+            
             $activity = $programmeEntry->activities()->create([
                 'activity_item_id' => $activityData['activity_item_id'],
                 'is_primary' => $activityData['is_primary'] ?? false,
                 'inclusion_group' => $activityData['inclusion_group'] ?? null,
                 'inclusion_type' => $activityData['inclusion_type'] ?? null,
                 'source' => $activityData['source'] ?? 'human_entered',
+                'taxonomy_version' => $activityItem->version,
             ]);
 
             $activity->activityLevels()->createMany(
