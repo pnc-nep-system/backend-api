@@ -59,5 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/items', [TaxonomyController::class, 'createItem']);
         Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
         Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
+
+        // Other Entries Review
+        Route::get('/other-entries', [TaxonomyController::class, 'listOtherEntries']);
     });
 });
