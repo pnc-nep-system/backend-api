@@ -2396,6 +2396,42 @@
                     }
                 ]
             }
+        },
+        "/taxonomy/other-entries": {
+            "get": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "List all 'Other' free-text entries for annual review",
+                "description": "Returns all 'Other (please specify)' free-text entries grouped by text with frequency counts. Only accessible by NEP Admin.",
+                "operationId": "76ec357a2b31a9c17c241557b59325ea",
+                "responses": {
+                    "200": {
+                        "description": "List of 'Other' entries with frequency counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaxonomyOtherEntry"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -2751,14 +2787,36 @@
                     }
                 },
                 "type": "object"
+            },
+            "TaxonomyOtherEntry": {
+                "properties": {
+                    "other_text": {
+                        "type": "string",
+                        "example": "Community Health Workers"
+                    },
+                    "frequency": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "item": {
+                        "$ref": "#/components/schemas/TaxonomyItem"
+                    },
+                    "subcategory": {
+                        "$ref": "#/components/schemas/TaxonomySubcategory"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/TaxonomyCategory"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
             "bearerAuth": {
                 "type": "http",
-                "description": "Enter the token returned from /login. Example: Bearer {token}",
-                "bearerFormat": "Sanctum Token",
-                "scheme": "bearer"
+                "scheme": "bearer",
+                "bearerFormat": " Sanctum Token",
+                "description": "Enter your Sanctum API token"
             }
         }
     },
@@ -2794,6 +2852,11 @@
         {
             "name": "Taxonomy",
             "description": "Taxonomy"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
         }
     ]
 }

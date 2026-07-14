@@ -5,7 +5,9 @@ return [
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'L5 Swagger UI',
+                'title' => 'NEP System API',
+                'description' => 'National Education Programme (NEP) System API Documentation',
+                'version' => '1.0.0',
             ],
 
             'routes' => [
@@ -97,14 +99,16 @@ return [
         
         'securityDefinitions' => [
             'securitySchemes' => [
-                
-
-           
+                'bearerAuth' => [
+                    'type' => 'http',
+                    'scheme' => 'bearer',
+                    'bearerFormat' => ' Sanctum Token',
+                    'description' => 'Enter your Sanctum API token',
+                ],
             ],
             'security' => [
-                
                 [
-                   
+                    'bearerAuth' => [],
                 ],
             ],
         ],
