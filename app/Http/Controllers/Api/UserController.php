@@ -10,8 +10,6 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        // NOTE: add ->paginate() and filter-by-query-param support once the
-        // Map's filter dimensions are finalised (see search_map_entries in the MCP server).
         return User::query()->paginate(50);
     }
 

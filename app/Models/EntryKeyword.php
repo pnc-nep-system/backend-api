@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class EntryKeyword extends Model
 {
-    /** @use HasFactory<\Database\Factories\EntryKeywordFactory> */
     use HasFactory;
 
     protected $fillable = [

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProgrammeActivityLevel extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProgrammeActivityLevelFactory> */
     use HasFactory;
 
     protected $fillable = [

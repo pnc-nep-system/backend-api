@@ -18,12 +18,6 @@ class ProgrammeEntryLastUpdatedTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * Creates an entry, then sets last_updated_at and is_unverified directly
-     * via the query builder — bypassing Eloquent entirely, since the model's
-     * `saving` hook would otherwise force last_updated_at = now() and
-     * is_unverified = false on any save() call.
-     */
     protected function createEntryWithState(Carbon $lastUpdatedAt, bool $unverified): ProgrammeEntry
     {
         $entry = ProgrammeEntry::factory()->create();
@@ -70,14 +64,11 @@ class ProgrammeEntryLastUpdatedTest extends TestCase
     {
         Carbon::setTestNow(Carbon::parse('2026-07-11'));
 
-        // Backdate to exactly the cutoff instant the command will compute.
         $boundaryEntry = $this->createEntryWithState(
             now()->subMonths(18),
             unverified: false
         );
 
-        // Freeze "now" for the command run at the exact same instant,
-        // so the comparison is deterministic instead of racing the clock.
         $this->artisan('programme-entries:flag-stale')->assertExitCode(0);
 
         $this->assertFalse($boundaryEntry->fresh()->is_unverified);

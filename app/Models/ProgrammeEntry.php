@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class ProgrammeEntry extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProgrammeEntryFactory> */
     use HasFactory;
 
     protected $fillable = [

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class AdvisoryRecommendation extends Model
 {
-    /** @use HasFactory<\Database\Factories\AdvisoryRecommendationFactory> */
     use HasFactory;
 
     protected $fillable = [

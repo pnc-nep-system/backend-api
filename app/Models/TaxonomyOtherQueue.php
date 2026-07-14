@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class TaxonomyOtherQueue extends Model
 {
-    /** @use HasFactory<\Database\Factories\TaxonomyOtherQueueFactory> */
     use HasFactory;
 
     protected $fillable = [

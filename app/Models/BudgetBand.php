@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class BudgetBand extends Model
 {
-    /** @use HasFactory<\Database\Factories\BudgetBandFactory> */
     use HasFactory;
 
     protected $fillable = [

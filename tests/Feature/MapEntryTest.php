@@ -214,8 +214,7 @@ class MapEntryTest extends TestCase
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
-        
-        // Entry 1: matches all filters
+
         ProgrammeLocation::create([
             'programme_entry_id' => $entry1->id,
             'province_id' => $province->id,
@@ -228,8 +227,7 @@ class MapEntryTest extends TestCase
             'institution_name' => 'Test Institution',
             'nature' => 'MoU',
         ]);
-        
-        // Entry 2: matches province but not agreement status
+
         ProgrammeLocation::create([
             'programme_entry_id' => $entry2->id,
             'province_id' => $province->id,
@@ -331,8 +329,7 @@ class MapEntryTest extends TestCase
             'province_id' => $province->id,
             'name' => 'Test District',
         ]);
-        
-        // Entry 1: matches all 3 filters (province + district + agreement status)
+
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
@@ -348,8 +345,7 @@ class MapEntryTest extends TestCase
             'institution_name' => 'Test Institution',
             'nature' => 'MoU',
         ]);
-        
-        // Entry 2: matches province and district but NOT agreement status
+
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
@@ -365,8 +361,7 @@ class MapEntryTest extends TestCase
             'institution_name' => 'Test Institution 2',
             'nature' => 'MoU',
         ]);
-        
-        // Entry 3: matches agreement status but NOT province
+
         $entry3 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
@@ -414,8 +409,7 @@ class MapEntryTest extends TestCase
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
-        
-        // Create multiple locations for the same entry (one in province directly, one in district)
+
         ProgrammeLocation::create([
             'programme_entry_id' => $entry->id,
             'province_id' => $province->id,
@@ -431,8 +425,7 @@ class MapEntryTest extends TestCase
             'province_id' => $province->id,
             'district_id' => $district2->id,
         ]);
-        
-        // Create multiple agreements for the same entry
+
         GovernmentAgreement::create([
             'programme_entry_id' => $entry->id,
             'counterpart_agency' => 'MoEYS national level',
@@ -452,7 +445,6 @@ class MapEntryTest extends TestCase
             '/api/map/entries?province_id=' . $province->id . '&agreement_status=active'
         );
 
-        // Should return exactly 1 entry, not duplicates
         $response->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $entry->id);
@@ -471,8 +463,7 @@ class MapEntryTest extends TestCase
             'province_id' => $province->id,
             'name' => 'Test District',
         ]);
-        
-        // Entry 1: matches all 4 filters
+
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
@@ -489,7 +480,6 @@ class MapEntryTest extends TestCase
             'nature' => 'MoU',
         ]);
         
-        // Entry 2: matches 3 filters but not district
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
@@ -520,7 +510,6 @@ class MapEntryTest extends TestCase
 
     public function test_province_and_district_filters_require_same_location(): void
     {
-        // This test validates the code review fix: province and district must come from the SAME location record
         $organisation = Organisation::factory()->create();
         $user = User::factory()->create([
             'organisation_id' => $organisation->id,
@@ -542,8 +531,6 @@ class MapEntryTest extends TestCase
             'organisation_id' => $organisation->id,
         ]);
         
-        // Entry has location in province1/district1 AND location in province2/district2
-        // This should NOT match when filtering for province1 + district2 (different locations)
         ProgrammeLocation::create([
             'programme_entry_id' => $entry->id,
             'province_id' => $province1->id,
@@ -559,14 +546,12 @@ class MapEntryTest extends TestCase
             '/api/map/entries?province_id=' . $province1->id . '&district_id=' . $district2->id
         );
 
-        // Should NOT match because no single location has both province1 AND district2
         $response->assertOk()
             ->assertJsonCount(0, 'data');
     }
 
     public function test_agreement_filters_require_same_agreement(): void
     {
-        // This test validates the code review fix: counterpart type and status must come from the SAME agreement
         $organisation = Organisation::factory()->create();
         $user = User::factory()->create([
             'organisation_id' => $organisation->id,
@@ -576,8 +561,7 @@ class MapEntryTest extends TestCase
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
-        
-        // Agreement 1: MoEYS national level + active
+
         GovernmentAgreement::create([
             'programme_entry_id' => $entry->id,
             'counterpart_agency' => 'MoEYS national level',
@@ -585,8 +569,7 @@ class MapEntryTest extends TestCase
             'institution_name' => 'Institution 1',
             'nature' => 'MoU',
         ]);
-        
-        // Agreement 2: Provincial Office + expired
+
         GovernmentAgreement::create([
             'programme_entry_id' => $entry->id,
             'counterpart_agency' => 'Provincial Office of Education',
@@ -595,7 +578,6 @@ class MapEntryTest extends TestCase
             'nature' => 'MoU',
         ]);
 
-        // This should NOT match because no single agreement has both MoEYS + expired
         $response = $this->actingAs($user)->getJson(
             '/api/map/entries?agreement_counterpart_type=MoEYS national level&agreement_status=expired'
         );
@@ -652,8 +634,7 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Check for CSV headers
+
         $this->assertStringContainsString('Entry ID', $content);
         $this->assertStringContainsString('Programme Name', $content);
         $this->assertStringContainsString('Organisation Name', $content);
@@ -701,8 +682,7 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Should contain entry1 but not entry2
+
         $this->assertStringContainsString('Programme in Province', $content);
         $this->assertStringNotContainsString('Programme Outside Province', $content);
     }
@@ -729,8 +709,7 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Should contain own entry but not other entry
+
         $this->assertStringContainsString('Own Programme', $content);
         $this->assertStringNotContainsString('Other Programme', $content);
     }
@@ -754,8 +733,7 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Admin should see both entries
+
         $this->assertStringContainsString('Org1 Programme', $content);
         $this->assertStringContainsString('Org2 Programme', $content);
     }
@@ -777,21 +755,18 @@ class MapEntryTest extends TestCase
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
         ]);
-        
-        // Add keyword
+
         EntryKeyword::create([
             'programme_entry_id' => $entry->id,
             'keyword' => 'education',
         ]);
-        
-        // Add location
+
         ProgrammeLocation::create([
             'programme_entry_id' => $entry->id,
             'province_id' => $province->id,
             'district_id' => $district->id,
         ]);
-        
-        // Add government agreement
+
         GovernmentAgreement::create([
             'programme_entry_id' => $entry->id,
             'counterpart_agency' => 'MoEYS national level',
@@ -804,8 +779,7 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Check that related data is included
+
         $this->assertStringContainsString('education', $content);
         $this->assertStringContainsString('Test Province', $content);
         $this->assertStringContainsString('Test District', $content);
@@ -856,18 +830,14 @@ class MapEntryTest extends TestCase
         $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
 
         $response->assertOk();
-        
-        // Verify PDF was generated with correct headers
+
         $response->assertHeader('Content-Type', 'application/pdf');
         $contentDisposition = $response->headers->get('Content-Disposition');
         $this->assertStringContainsString('attachment', $contentDisposition);
         $this->assertStringContainsString('.pdf', $contentDisposition);
         
-        // Verify it's a valid PDF (starts with %PDF)
         $content = $response->getContent();
         $this->assertStringStartsWith('%PDF', $content);
-        
-        // Verify the PDF contains EOF marker
         $this->assertStringContainsString('%%EOF', $content);
     }
 
@@ -901,11 +871,9 @@ class MapEntryTest extends TestCase
         $response->assertOk();
         $content = $response->getContent();
         
-        // Verify it's a valid PDF
+
         $this->assertStringStartsWith('%PDF', $content);
         $this->assertStringContainsString('%%EOF', $content);
-        
-        // Verify the PDF is non-empty (has content)
         $this->assertGreaterThan(1000, strlen($content));
     }
 
@@ -931,12 +899,9 @@ class MapEntryTest extends TestCase
 
         $response->assertOk();
         $content = $response->getContent();
-        
-        // Verify it's a valid PDF
+
         $this->assertStringStartsWith('%PDF', $content);
         $this->assertStringContainsString('%%EOF', $content);
-        
-        // Verify the PDF is non-empty (has content)
         $this->assertGreaterThan(1000, strlen($content));
     }
 
@@ -960,11 +925,8 @@ class MapEntryTest extends TestCase
         $response->assertOk();
         $content = $response->getContent();
         
-        // Verify it's a valid PDF
         $this->assertStringStartsWith('%PDF', $content);
         $this->assertStringContainsString('%%EOF', $content);
-        
-        // Verify the PDF is non-empty (has content for 2 entries)
         $this->assertGreaterThan(1000, strlen($content));
     }
 
@@ -986,20 +948,17 @@ class MapEntryTest extends TestCase
             'organisation_id' => $organisation->id,
         ]);
         
-        // Add keyword
         EntryKeyword::create([
             'programme_entry_id' => $entry->id,
             'keyword' => 'education',
         ]);
         
-        // Add location
         ProgrammeLocation::create([
             'programme_entry_id' => $entry->id,
             'province_id' => $province->id,
             'district_id' => $district->id,
         ]);
-        
-        // Add government agreement
+
         GovernmentAgreement::create([
             'programme_entry_id' => $entry->id,
             'counterpart_agency' => 'MoEYS national level',
@@ -1009,11 +968,9 @@ class MapEntryTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
-
         $response->assertOk();
         $content = $response->getContent();
         
-        // Verify it's a valid PDF with substantial content
         $this->assertStringStartsWith('%PDF', $content);
         $this->assertStringContainsString('%%EOF', $content);
         $this->assertGreaterThan(2000, strlen($content));
