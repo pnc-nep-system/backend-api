@@ -95,7 +95,7 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
 
-        if (! Auth::attempt($credentials)) {
+        if (! Auth::once($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
