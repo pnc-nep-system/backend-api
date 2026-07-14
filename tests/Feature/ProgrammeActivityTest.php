@@ -105,4 +105,65 @@ class ProgrammeActivityTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_other_activity_requires_free_text(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        $item = ActivityItem::factory()->create([
+            'is_active' => true,
+            'is_other' => true,
+        ]);
+        $level = EducationLevel::factory()->create();
+        $payload = $this->validPayload($item, $level);
+        $payload['activities'][0]['other_text'] = '   ';
+
+        $response = $this->actingAs($user)->postJson(
+            "/api/programme-entries/{$entry->id}/activities",
+            $payload
+        );
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['activities.0.other_text']);
+    }
+
+    public function test_other_activity_free_text_is_stored_in_review_queue(): void
+    {
+        $organisation = Organisation::factory()->create();
+        $user = User::factory()->create([
+            'organisation_id' => $organisation->id,
+            'role' => 'member_org',
+        ]);
+        $entry = ProgrammeEntry::factory()->create([
+            'organisation_id' => $organisation->id,
+        ]);
+        $item = ActivityItem::factory()->create([
+            'is_active' => true,
+            'is_other' => true,
+        ]);
+        $level = EducationLevel::factory()->create();
+        $payload = $this->validPayload($item, $level);
+        $payload['activities'][0]['other_text'] = 'Community radio literacy programme';
+
+        $response = $this->actingAs($user)->postJson(
+            "/api/programme-entries/{$entry->id}/activities",
+            $payload
+        );
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('taxonomy_other_queues', [
+            'programme_entry_id' => $entry->id,
+            'item_id' => $item->id,
+            'other_text' => 'Community radio literacy programme',
+            'suggested_subcategory_id' => $item->subcategory_id,
+            'status' => 'pending',
+        ]);
+    }
 }

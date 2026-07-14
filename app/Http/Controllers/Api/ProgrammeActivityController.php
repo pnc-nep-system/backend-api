@@ -146,7 +146,7 @@ class ProgrammeActivityController extends Controller
                 TaxonomyOtherQueue::create([
                     'programme_entry_id' => $programmeEntry->id,
                     'item_id' => $activityItem->id,
-                    'other_text' => $activityData['other_text'],
+                    'other_text' => $activityData['other_text'] ?? null,
                     'suggested_subcategory_id' => $activityItem->subcategory_id,
                     'frequency' => 1,
                     'status' => 'pending',

@@ -12,6 +12,7 @@ class TaxonomyOtherQueue extends Model
     protected $fillable = [
         'programme_entry_id',
         'item_id',
+        'other_text',
         'suggested_subcategory_id',
         'promoted_item_id',
         'frequency',
