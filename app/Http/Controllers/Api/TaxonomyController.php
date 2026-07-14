@@ -8,6 +8,7 @@ use App\Models\ActivityItem;
 use App\Models\ActivitySubcategory;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -81,7 +82,10 @@ class TaxonomyController extends Controller
     )]
     public function listCategories()
     {
-        $categories = ActivityCategory::with(['subcategories.items'])->get();
+        $categories = Cache::remember('taxonomy:categories:all', now()->addHours(24), function () {
+            return ActivityCategory::with(['subcategories.items'])->get();
+        });
+
         return response()->json($categories);
     }
 
@@ -124,6 +128,8 @@ class TaxonomyController extends Controller
         $category = ActivityCategory::create(array_merge($validated, [
             'version' => now()->toIso8601String(),
         ]));
+
+        Cache::forget('taxonomy:categories:all');
 
         return response()->json($category, 201);
     }
@@ -177,6 +183,8 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($category);
     }
 
@@ -215,10 +223,10 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($category);
     }
-
-    // ==================== SUBCATEGORIES ====================
 
     #[OA\Post(
         path: "/taxonomy/subcategories",
@@ -261,6 +269,8 @@ class TaxonomyController extends Controller
         $subcategory = ActivitySubcategory::create(array_merge($validated, [
             'version' => now()->toIso8601String(),
         ]));
+
+        Cache::forget('taxonomy:categories:all');
 
         return response()->json($subcategory, 201);
     }
@@ -314,6 +324,8 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($subcategory);
     }
 
@@ -352,10 +364,10 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($subcategory);
     }
-
-    // ==================== ITEMS ====================
 
     #[OA\Post(
         path: "/taxonomy/items",
@@ -400,6 +412,8 @@ class TaxonomyController extends Controller
         $item = ActivityItem::create(array_merge($validated, [
             'version' => now()->toIso8601String(),
         ]));
+
+        Cache::forget('taxonomy:categories:all');
 
         return response()->json($item, 201);
     }
@@ -453,6 +467,8 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($item);
     }
 
@@ -491,10 +507,11 @@ class TaxonomyController extends Controller
             'version' => now()->toIso8601String(),
         ]);
 
+        Cache::forget('taxonomy:categories:all');
+
         return response()->json($item);
     }
 
-    // ==================== OTHER ENTRIES REVIEW ====================
 
     #[OA\Schema(
         schema: "TaxonomyOtherEntry",
@@ -534,39 +551,36 @@ class TaxonomyController extends Controller
         $otherEntries = TaxonomyOtherQueue::with([
             'item.subcategory.category'
         ])
-        ->select('other_text', 'item_id', DB::raw('SUM(frequency) as frequency'))
-        ->groupBy('other_text', 'item_id')
-        ->orderByDesc('frequency')
-        ->get()
-        ->map(function ($entry) {
-            return [
-                'other_text' => $entry->other_text,
-                'frequency' => (int) $entry->frequency,
-                'item' => $entry->item ? [
-                    'id' => $entry->item->id,
-                    'code' => $entry->item->code,
-                    'label' => $entry->item->label,
-                    'is_other' => $entry->item->is_other,
-                ] : null,
-                'subcategory' => $entry->item?->subcategory ? [
-                    'id' => $entry->item->subcategory->id,
-                    'code' => $entry->item->subcategory->code,
-                    'label' => $entry->item->subcategory->label,
-                ] : null,
-                'category' => $entry->item?->subcategory?->category ? [
-                    'id' => $entry->item->subcategory->category->id,
-                    'code' => $entry->item->subcategory->category->code,
-                    'label' => $entry->item->subcategory->category->label,
-                ] : null,
-            ];
-        });
+            ->select('other_text', 'item_id', DB::raw('SUM(frequency) as frequency'))
+            ->groupBy('other_text', 'item_id')
+            ->orderByDesc('frequency')
+            ->get()
+            ->map(function ($entry) {
+                return [
+                    'other_text' => $entry->other_text,
+                    'frequency' => (int) $entry->frequency,
+                    'item' => $entry->item ? [
+                        'id' => $entry->item->id,
+                        'code' => $entry->item->code,
+                        'label' => $entry->item->label,
+                        'is_other' => $entry->item->is_other,
+                    ] : null,
+                    'subcategory' => $entry->item?->subcategory ? [
+                        'id' => $entry->item->subcategory->id,
+                        'code' => $entry->item->subcategory->code,
+                        'label' => $entry->item->subcategory->label,
+                    ] : null,
+                    'category' => $entry->item?->subcategory?->category ? [
+                        'id' => $entry->item->subcategory->category->id,
+                        'code' => $entry->item->subcategory->category->code,
+                        'label' => $entry->item->subcategory->category->label,
+                    ] : null,
+                ];
+            });
 
         return response()->json($otherEntries);
     }
 
-    /**
-     * Ensure the user has NEP Admin role.
-     */
     protected function authorizeAdmin(Request $request): void
     {
         $user = $request->user();

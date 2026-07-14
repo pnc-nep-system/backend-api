@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\District;
 use App\Models\Province;
+use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -55,7 +56,10 @@ class LocationController extends Controller
     )]
     public function index()
     {
-        return response()->json(['data' => Province::all()]);
+        $provinces = Cache::remember('provinces:all', now()->addHours(24), function () {
+            return Province::all();
+        });
+        return response()->json(['data' => $provinces]);
     }
 
     #[OA\Get(
@@ -93,6 +97,10 @@ class LocationController extends Controller
     )]
     public function districts(Province $province)
     {
-        return response()->json(['data' => $province->districts]);
+        $districts = Cache::remember("districts:province:{$province->id}", now()->addHours(24), function () use ($province) {
+            return $province->districts;
+        });
+
+        return response()->json(['data' => $districts]);
     }
 }

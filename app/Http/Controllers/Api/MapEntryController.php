@@ -73,13 +73,10 @@ class MapEntryController extends Controller
         $user = $request->user();
         $query = ProgrammeEntry::query();
 
-        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all;
-        // member_org sees only their own organisation's entries.
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
         }
 
-        // BE-030: Use distinct to prevent duplicate rows when entries match through multiple joined rows
         $query->distinct();
 
         $hasActivityFilter = collect($request->only([
@@ -87,13 +84,11 @@ class MapEntryController extends Controller
             'education_level_id', 'inclusion_group', 'inclusion_type',
         ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        // Location filters – match via programme_locations table.
-        // BE-030: Combined province and district filters in single whereHas to ensure they apply to the same location record
         if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
                 if ($request->filled('province_id')) {
                     $provinceId = $request->input('province_id');
-                    // Match entries where the location is directly in the province OR in a district within the province
+
                     $q->where(function ($subQ) use ($provinceId) {
                         $subQ->where('province_id', $provinceId)
                               ->orWhereHas('district', function ($districtQ) use ($provinceId) {
@@ -108,8 +103,6 @@ class MapEntryController extends Controller
             });
         }
 
-        // Government agreement filters – match via government_agreements table.
-        // BE-030: Combined counterpart type and status filters in single whereHas to ensure they apply to the same agreement record
         if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
                 if ($request->filled('agreement_counterpart_type')) {
@@ -122,8 +115,6 @@ class MapEntryController extends Controller
             });
         }
 
-        // Activity filters – match via programme_activities table.
-        // BE-030: All activity-related filters are combined in single whereHas to ensure they apply to the same activity record
         if ($hasActivityFilter) {
             $query->whereHas('activities', function ($q) use ($request) {
                 if ($request->filled('item_id')) {
@@ -142,9 +133,6 @@ class MapEntryController extends Controller
                     });
                 }
 
-                // BE-027: education level lives on the programme_activity_levels
-                // pivot (many-to-many between activities and education_levels).
-                // whereColumn scopes the EXISTS to this same activity row.
                 if ($request->filled('education_level_id')) {
                     $educationLevelId = $request->input('education_level_id');
                     $q->whereExists(function ($sub) use ($educationLevelId) {
@@ -155,8 +143,6 @@ class MapEntryController extends Controller
                     });
                 }
 
-                // BE-027: inclusion group/type are plain columns directly on
-                // programme_activities (not foreign keys, not IDs).
                 if ($request->filled('inclusion_group')) {
                     $q->where('inclusion_group', $request->input('inclusion_group'));
                 }
@@ -243,11 +229,9 @@ class MapEntryController extends Controller
     public function generateCsv(array $entries): string
     {
         $handle = fopen('php://temp', 'w+');
-        
-        // Add UTF-8 BOM for Excel compatibility
+
         fwrite($handle, "\xEF\xBB\xBF");
 
-        // CSV Headers
         fputcsv($handle, [
             'Entry ID',
             'Programme Name',
@@ -380,8 +364,6 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all;
-        // member_org sees only their own organisation's entries.
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
         }
@@ -393,7 +375,6 @@ class MapEntryController extends Controller
             'education_level_id', 'inclusion_group', 'inclusion_type',
         ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        // Location filters
         if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
                 if ($request->filled('province_id')) {
@@ -412,7 +393,6 @@ class MapEntryController extends Controller
             });
         }
 
-        // Government agreement filters
         if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
             $query->whereHas('governmentAgreements', function ($q) use ($request) {
                 if ($request->filled('agreement_counterpart_type')) {
@@ -575,8 +555,6 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        // BE-010/BE-025 visibility: nep_admin and nep_coordinator see all;
-        // member_org sees only their own organisation's entries.
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
         }
@@ -588,7 +566,6 @@ class MapEntryController extends Controller
             'education_level_id', 'inclusion_group', 'inclusion_type',
         ]))->filter(fn ($v) => filled($v))->isNotEmpty();
 
-        // Location filters
         if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
                 if ($request->filled('province_id')) {
@@ -691,8 +668,6 @@ class MapEntryController extends Controller
             $query->where('direct_beneficiaries', '<=', $request->input('max_beneficiaries'));
         }
 
-        // BE-032: Handle large result sets with chunking to prevent timeouts
-        // Process entries in chunks of 50 for PDF generation
         $entries = collect();
         $query->chunk(50, function ($chunk) use ($entries) {
             $entries->push(...$chunk);
@@ -705,7 +680,6 @@ class MapEntryController extends Controller
         ]);
 
         $filename = 'programme-entries-report-' . now()->format('Y-m-d-H-i-s') . '.pdf';
-
         return $pdf->download($filename);
     }
 }
