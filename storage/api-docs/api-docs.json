@@ -1084,7 +1084,7 @@
                     "Programme Activities"
                 ],
                 "summary": "Save Section 2 activity selections for a programme entry",
-                "description": "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items.",
+                "description": "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the accompanying free-text value is required (SRS 5.5) and is captured in the taxonomy other-queue for later admin review.",
                 "operationId": "7fcc2d764aa4b8e08d57f0be2737fe7a",
                 "parameters": [
                     {
@@ -1137,6 +1137,12 @@
                                                         "human_entered"
                                                     ]
                                                 },
+                                                "other_text": {
+                                                    "description": "Required when the selected activity_item_id is flagged as \"Other\" (SRS 5.5)",
+                                                    "type": "string",
+                                                    "example": "Community radio literacy programme",
+                                                    "nullable": true
+                                                },
                                                 "education_level_ids": {
                                                     "type": "array",
                                                     "items": {
@@ -1188,7 +1194,7 @@
                         "description": "Programme entry not found, or caller not authorized"
                     },
                     "422": {
-                        "description": "Validation failed — includes rejection of inactive/deprecated taxonomy items",
+                        "description": "Validation failed — includes rejection of inactive/deprecated taxonomy items, and missing free-text when \"Other\" is selected",
                         "content": {
                             "application/json": {
                                 "schema": {

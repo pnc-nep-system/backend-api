@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
+use App\Models\ActivityItem;
 use App\Models\ProgrammeEntry;
+use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -40,7 +42,7 @@ class ProgrammeActivityController extends Controller
     #[OA\Post(
         path: "/programme-entries/{programmeEntry}/activities",
         summary: "Save Section 2 activity selections for a programme entry",
-        description: "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items.",
+        description: "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the accompanying free-text value is required (SRS 5.5) and is captured in the taxonomy other-queue for later admin review.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Activities"],
         parameters: [
@@ -67,6 +69,7 @@ class ProgrammeActivityController extends Controller
                                 new OA\Property(property: "inclusion_group", type: "string", example: "gender", nullable: true),
                                 new OA\Property(property: "inclusion_type", type: "string", example: "girls", nullable: true),
                                 new OA\Property(property: "source", type: "string", enum: ["ai_confirmed", "ai_modified", "human_entered"], example: "human_entered"),
+                                new OA\Property(property: "other_text", type: "string", example: "Community radio literacy programme", nullable: true, description: "Required when the selected activity_item_id is flagged as \"Other\" (SRS 5.5)"),
                                 new OA\Property(
                                     property: "education_level_ids",
                                     type: "array",
@@ -98,7 +101,7 @@ class ProgrammeActivityController extends Controller
             new OA\Response(response: 404, description: "Programme entry not found, or caller not authorized"),
             new OA\Response(
                 response: 422,
-                description: "Validation failed — includes rejection of inactive/deprecated taxonomy items",
+                description: "Validation failed — includes rejection of inactive/deprecated taxonomy items, and missing free-text when \"Other\" is selected",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string"),
@@ -115,6 +118,11 @@ class ProgrammeActivityController extends Controller
         }
 
         $created = [];
+        $itemIds = collect($request->validated('activities'))
+            ->pluck('activity_item_id')
+            ->unique();
+
+        $activityItems = ActivityItem::whereIn('id', $itemIds)->get()->keyBy('id');
 
         foreach ($request->validated('activities') as $activityData) {
             $activity = $programmeEntry->activities()->create([
@@ -131,6 +139,19 @@ class ProgrammeActivityController extends Controller
                     $activityData['education_level_ids']
                 )
             );
+
+            $activityItem = $activityItems->get($activityData['activity_item_id']);
+
+            if ($activityItem && $activityItem->is_other) {
+                TaxonomyOtherQueue::create([
+                    'programme_entry_id' => $programmeEntry->id,
+                    'item_id' => $activityItem->id,
+                    'other_text' => $activityData['other_text'],
+                    'suggested_subcategory_id' => $activityItem->subcategory_id,
+                    'frequency' => 1,
+                    'status' => 'pending',
+                ]);
+            }
 
             $created[] = $activity->load('activityLevels');
         }
