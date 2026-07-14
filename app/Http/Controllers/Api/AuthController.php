@@ -59,6 +59,15 @@ class AuthController extends Controller
                 )
             ),
             new OA\Response(
+                response: 403,
+                description: "Account deactivated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Account is deactivated."),
+                    ]
+                )
+            ),
+            new OA\Response(
                 response: 422,
                 description: "Validation failed",
                 content: new OA\JsonContent(
@@ -94,6 +103,14 @@ class AuthController extends Controller
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        if ($user->status !== User::STATUS_ACTIVE) {
+            Auth::logout();
+
+            return response()->json([
+                'message' => 'Account is deactivated.',
+            ], 403);
+        }
 
         $user->load('organisation');
 

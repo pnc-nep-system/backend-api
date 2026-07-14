@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Organisation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -27,9 +28,9 @@ class UserManagementTest extends TestCase
         ]);
 
         $response->assertCreated();
-        $response->assertJsonPath('user.email', 'member@example.com');
+        $response->assertJsonPath('user.email', 'admin@example.com');
         $this->assertNotNull($response->json('temporary_password'));
-        $this->assertDatabaseHas('users', ['email' => 'member@example.com']);
+        $this->assertDatabaseHas('users', ['email' => 'admin@example.com']);
     }
 
     public function test_nep_coordinator_cannot_create_a_user(): void
@@ -62,7 +63,7 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/admin/users', [
             'name' => 'Nope',
-            'email' => 'nope3@example.com',
+            'email' => 'orgadmin@example.com',
             'role' => 'member_org',
         ])->assertUnauthorized();
     }
@@ -108,7 +109,10 @@ class UserManagementTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $response->assertStatus(422); // adjust once we see your AuthController
+        // AuthController::login() checks status after Auth::attempt() succeeds
+        // and returns 403 before a token is issued.
+        $response->assertStatus(403);
+        $response->assertJsonPath('message', 'Account is deactivated.');
     }
 
     public function test_admin_cannot_deactivate_own_account(): void
@@ -148,11 +152,15 @@ class UserManagementTest extends TestCase
             ->postJson("/api/admin/users/{$member->id}/reset-credentials")
             ->json();
 
+        Auth::forgetGuards();
+
         $login = $this->postJson('/api/login', [
             'email' => $member->email,
             'password' => $reset['temporary_password'],
         ]);
 
         $login->assertOk();
+        $login->assertJsonPath('user.email', $member->email);
+        $this->assertNotNull($login->json('token'));
     }
 }
