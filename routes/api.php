@@ -43,10 +43,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
     });
 
-<<<<<<< HEAD
-    Route::middleware('auth:sanctum')->group(function () {
-    // ... your existing routes ...
-
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
         Route::post('/', [UserManagementController::class, 'store'])->name('store');
@@ -55,26 +51,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
         Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
     });
-});
-});
-=======
-    // Taxonomy Management - NEP Admin only
+
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
-        // Categories
         Route::get('/categories', [TaxonomyController::class, 'listCategories']);
         Route::post('/categories', [TaxonomyController::class, 'createCategory']);
         Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
         Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);
 
-        // Subcategories
         Route::post('/subcategories', [TaxonomyController::class, 'createSubcategory']);
         Route::put('/subcategories/{subcategory}', [TaxonomyController::class, 'renameSubcategory']);
         Route::patch('/subcategories/{subcategory}/deprecate', [TaxonomyController::class, 'deprecateSubcategory']);
 
-        // Items
         Route::post('/items', [TaxonomyController::class, 'createItem']);
         Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
         Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
     });
 });
->>>>>>> 679d71493c7015094f03d6eab19d51898a431214

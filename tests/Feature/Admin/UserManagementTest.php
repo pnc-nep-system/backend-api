@@ -83,6 +83,21 @@ class UserManagementTest extends TestCase
 
     // ── AC #2: Deactivated accounts cannot log in ───────────────────────
 
+    public function test_editing_a_user_to_inactive_revokes_their_tokens(): void
+    {
+        $admin = User::factory()->create(['role' => 'nep_admin', 'status' => 'active']);
+        $user = User::factory()->create(['role' => 'member_org', 'status' => 'active']);
+        $user->createToken('test-token');
+
+        $response = $this->actingAs($admin, 'sanctum')->patchJson("/api/admin/users/{$user->id}", [
+            'status' => 'inactive',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'status' => 'inactive']);
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
     public function test_deactivating_a_user_revokes_their_tokens(): void
     {
         $admin = User::factory()->create(['role' => 'nep_admin', 'status' => 'active']);

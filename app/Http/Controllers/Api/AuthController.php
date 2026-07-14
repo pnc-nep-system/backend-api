@@ -95,17 +95,19 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
 
-        if (! Auth::once($credentials)) {
+        $guard = Auth::guard('web');
+
+        if (! $guard->once($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
         /** @var \App\Models\User $user */
-        $user = Auth::user();
+        $user = $guard->user();
 
         if ($user->status !== User::STATUS_ACTIVE) {
-            Auth::logout();
+            $guard->logout();
 
             return response()->json([
                 'message' => 'Account is deactivated.',

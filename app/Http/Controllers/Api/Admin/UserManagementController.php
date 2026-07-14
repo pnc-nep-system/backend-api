@@ -180,7 +180,13 @@ class UserManagementController extends Controller
             unset($data['password']);
         }
 
-        $user->update($data);
+        DB::transaction(function () use ($user, $data) {
+            $user->update($data);
+
+            if (($data['status'] ?? null) === User::STATUS_INACTIVE) {
+                $user->tokens()->delete();
+            }
+        });
 
         return response()->json([
             'message' => 'Account updated.',
