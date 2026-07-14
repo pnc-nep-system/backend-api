@@ -1823,6 +1823,579 @@
                     }
                 ]
             }
+        },
+        "/taxonomy/categories": {
+            "get": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "List all taxonomy categories",
+                "description": "Returns all taxonomy categories with their subcategories and items",
+                "operationId": "d527e559bfe14e66aff320d6a685f151",
+                "responses": {
+                    "200": {
+                        "description": "List of categories",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TaxonomyCategory"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Create a new taxonomy category",
+                "description": "Creates a new taxonomy category. Only accessible by NEP Admin.",
+                "operationId": "a8c499fbc1a71f647f20806537c78f3d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "code",
+                                    "label"
+                                ],
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "example": "health"
+                                    },
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Health"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Category created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyCategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/categories/{category}": {
+            "put": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Rename a taxonomy category",
+                "description": "Updates the label of a taxonomy category and increments the version timestamp. Only accessible by NEP Admin.",
+                "operationId": "d9166cedbb2bd1f85065801c2b3c9c73",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "label"
+                                ],
+                                "properties": {
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Health and Nutrition"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Category renamed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyCategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Category not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/categories/{category}/deprecate": {
+            "patch": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Deprecate a taxonomy category",
+                "description": "Sets is_active to false and increments the version timestamp. Does not delete the category. Only accessible by NEP Admin.",
+                "operationId": "105e3b65b9bb03fe7be212e327337e01",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category deprecated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyCategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Category not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/subcategories": {
+            "post": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Create a new taxonomy subcategory",
+                "description": "Creates a new taxonomy subcategory under a category. Only accessible by NEP Admin.",
+                "operationId": "76101e4786a5837e4175f8c13063d4dd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "category_id",
+                                    "code",
+                                    "label"
+                                ],
+                                "properties": {
+                                    "category_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "primary_ed"
+                                    },
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Primary Education"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Subcategory created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomySubcategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/subcategories/{subcategory}": {
+            "put": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Rename a taxonomy subcategory",
+                "description": "Updates the label of a taxonomy subcategory and increments the version timestamp. Only accessible by NEP Admin.",
+                "operationId": "25f21fe811d131f4f04b7f029a2feea6",
+                "parameters": [
+                    {
+                        "name": "subcategory",
+                        "in": "path",
+                        "description": "Subcategory ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "label"
+                                ],
+                                "properties": {
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Primary and Secondary Education"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subcategory renamed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomySubcategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Subcategory not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/subcategories/{subcategory}/deprecate": {
+            "patch": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Deprecate a taxonomy subcategory",
+                "description": "Sets is_active to false and increments the version timestamp. Does not delete the subcategory. Only accessible by NEP Admin.",
+                "operationId": "722b858a19498480d7956411105bf333",
+                "parameters": [
+                    {
+                        "name": "subcategory",
+                        "in": "path",
+                        "description": "Subcategory ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subcategory deprecated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomySubcategory"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Subcategory not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/items": {
+            "post": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Create a new taxonomy item",
+                "description": "Creates a new taxonomy item under a subcategory. Only accessible by NEP Admin.",
+                "operationId": "8754977d1ef3acd745758e1dca8209e5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "subcategory_id",
+                                    "code",
+                                    "label"
+                                ],
+                                "properties": {
+                                    "subcategory_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "teacher_training"
+                                    },
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Teacher Training"
+                                    },
+                                    "is_other": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyItem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/items/{item}": {
+            "put": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Rename a taxonomy item",
+                "description": "Updates the label of a taxonomy item and increments the version timestamp. Only accessible by NEP Admin.",
+                "operationId": "0bd7065c7fb5005e4b122851128a5960",
+                "parameters": [
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "label"
+                                ],
+                                "properties": {
+                                    "label": {
+                                        "type": "string",
+                                        "example": "Teacher Training and Development"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item renamed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyItem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Item not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/taxonomy/items/{item}/deprecate": {
+            "patch": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Deprecate a taxonomy item",
+                "description": "Sets is_active to false and increments the version timestamp. Does not delete the item. Only accessible by NEP Admin.",
+                "operationId": "d86b0c64588182b91b8e69271a1934ea",
+                "parameters": [
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "description": "Item ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item deprecated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaxonomyItem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - NEP Admin only"
+                    },
+                    "404": {
+                        "description": "Item not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -2064,6 +2637,120 @@
                     }
                 },
                 "type": "object"
+            },
+            "TaxonomyCategory": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "education"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "Education"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "version": {
+                        "type": "string",
+                        "example": "2026-07-14T10:00:00Z",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "TaxonomySubcategory": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "primary_education"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "Primary Education"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "version": {
+                        "type": "string",
+                        "example": "2026-07-14T10:00:00Z",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "TaxonomyItem": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "subcategory_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "teacher_training"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "Teacher Training"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "is_other": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "version": {
+                        "type": "string",
+                        "example": "2026-07-14T10:00:00Z",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -2103,6 +2790,10 @@
         {
             "name": "Programme Geography",
             "description": "Programme Geography"
+        },
+        {
+            "name": "Taxonomy",
+            "description": "Taxonomy"
         }
     ]
 }
