@@ -7,6 +7,7 @@ use App\Models\ActivityItem;
 use App\Models\ActivitySubcategory;
 use App\Models\ProgrammeEntry;
 use App\Models\ProgrammeActivity;
+use App\Models\TaxonomyOtherQueue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -375,5 +376,101 @@ class TaxonomyTest extends TestCase
         $response->assertJsonFragment([
             'subcategory_id' => $subcategory->id,
         ]);
+    }
+
+    // ==================== OTHER ENTRIES REVIEW TESTS ====================
+
+    public function test_nep_admin_can_list_other_entries(): void
+    {
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create(['category_id' => $category->id]);
+        $item = ActivityItem::factory()->create(['subcategory_id' => $subcategory->id, 'is_other' => true]);
+        
+        // Create some "Other" entries
+        TaxonomyOtherQueue::create([
+            'programme_entry_id' => ProgrammeEntry::factory()->create()->id,
+            'item_id' => $item->id,
+            'suggested_subcategory_id' => $subcategory->id,
+            'other_text' => 'Custom Activity',
+            'frequency' => 5,
+            'status' => 'pending',
+        ]);
+        TaxonomyOtherQueue::create([
+            'programme_entry_id' => ProgrammeEntry::factory()->create()->id,
+            'item_id' => $item->id,
+            'suggested_subcategory_id' => $subcategory->id,
+            'other_text' => 'Custom Activity',
+            'frequency' => 3,
+            'status' => 'pending',
+        ]);
+        TaxonomyOtherQueue::create([
+            'programme_entry_id' => ProgrammeEntry::factory()->create()->id,
+            'item_id' => $item->id,
+            'suggested_subcategory_id' => $subcategory->id,
+            'other_text' => 'Another Activity',
+            'frequency' => 10,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson('/api/taxonomy/other-entries');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                '*' => [
+                    'other_text',
+                    'frequency',
+                    'item' => ['id', 'code', 'label', 'is_other'],
+                    'subcategory' => ['id', 'code', 'label'],
+                    'category' => ['id', 'code', 'label'],
+                ],
+            ]);
+
+        // Verify frequencies are summed correctly
+        $response->assertJsonFragment([
+            'other_text' => 'Custom Activity',
+            'frequency' => 8, // 5 + 3
+        ]);
+        
+        // Verify ordering by frequency descending
+        $data = $response->json();
+        $this->assertEquals('Another Activity', $data[0]['other_text']);
+        $this->assertEquals(10, $data[0]['frequency']);
+        $this->assertEquals('Custom Activity', $data[1]['other_text']);
+        $this->assertEquals(8, $data[1]['frequency']);
+    }
+
+    public function test_non_admin_cannot_list_other_entries(): void
+    {
+        $user = User::factory()->create(['role' => 'member_org']);
+        
+        $response = $this->actingAs($user)->getJson('/api/taxonomy/other-entries');
+        
+        $response->assertStatus(403);
+    }
+
+    public function test_nep_coordinator_cannot_list_other_entries(): void
+    {
+        $user = User::factory()->create(['role' => 'nep_coordinator']);
+        
+        $response = $this->actingAs($user)->getJson('/api/taxonomy/other-entries');
+        
+        $response->assertStatus(403);
+    }
+
+    public function test_unauthenticated_user_cannot_list_other_entries(): void
+    {
+        $response = $this->getJson('/api/taxonomy/other-entries');
+        $response->assertStatus(401);
+    }
+
+    public function test_other_entries_returns_empty_when_no_entries(): void
+    {
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+
+        $response = $this->actingAs($admin)->getJson('/api/taxonomy/other-entries');
+
+        $response->assertStatus(200)
+            ->assertJson([]);
     }
 }

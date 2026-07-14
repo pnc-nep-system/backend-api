@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityCategory;
 use App\Models\ActivityItem;
 use App\Models\ActivitySubcategory;
+use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class TaxonomyController extends Controller
@@ -490,6 +492,76 @@ class TaxonomyController extends Controller
         ]);
 
         return response()->json($item);
+    }
+
+    // ==================== OTHER ENTRIES REVIEW ====================
+
+    #[OA\Schema(
+        schema: "TaxonomyOtherEntry",
+        type: "object",
+        properties: [
+            new OA\Property(property: "other_text", type: "string", example: "Community Health Workers"),
+            new OA\Property(property: "frequency", type: "integer", example: 15),
+            new OA\Property(property: "item", type: "object", ref: "#/components/schemas/TaxonomyItem"),
+            new OA\Property(property: "subcategory", type: "object", ref: "#/components/schemas/TaxonomySubcategory"),
+            new OA\Property(property: "category", type: "object", ref: "#/components/schemas/TaxonomyCategory"),
+        ]
+    )]
+
+    #[OA\Get(
+        path: "/taxonomy/other-entries",
+        summary: "List all 'Other' free-text entries for annual review",
+        description: "Returns all 'Other (please specify)' free-text entries grouped by text with frequency counts. Only accessible by NEP Admin.",
+        security: [["bearerAuth" => []]],
+        tags: ["Taxonomy"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of 'Other' entries with frequency counts",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/TaxonomyOtherEntry")
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden - NEP Admin only"),
+        ]
+    )]
+    public function listOtherEntries(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $otherEntries = TaxonomyOtherQueue::with([
+            'item.subcategory.category'
+        ])
+        ->select('other_text', 'item_id', DB::raw('SUM(frequency) as frequency'))
+        ->groupBy('other_text', 'item_id')
+        ->orderByDesc('frequency')
+        ->get()
+        ->map(function ($entry) {
+            return [
+                'other_text' => $entry->other_text,
+                'frequency' => (int) $entry->frequency,
+                'item' => $entry->item ? [
+                    'id' => $entry->item->id,
+                    'code' => $entry->item->code,
+                    'label' => $entry->item->label,
+                    'is_other' => $entry->item->is_other,
+                ] : null,
+                'subcategory' => $entry->item?->subcategory ? [
+                    'id' => $entry->item->subcategory->id,
+                    'code' => $entry->item->subcategory->code,
+                    'label' => $entry->item->subcategory->label,
+                ] : null,
+                'category' => $entry->item?->subcategory?->category ? [
+                    'id' => $entry->item->subcategory->category->id,
+                    'code' => $entry->item->subcategory->category->code,
+                    'label' => $entry->item->subcategory->category->label,
+                ] : null,
+            ];
+        });
+
+        return response()->json($otherEntries);
     }
 
     /**
