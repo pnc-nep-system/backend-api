@@ -5,10 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
 use App\Models\ActivityItem;
+use App\Models\ProgrammeActivity;
+use App\Models\ProgrammeActivityLevel;
 use App\Models\ProgrammeEntry;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
+
+// Bulk insert data structure
+class ActivityLevelBulkInsert
+{
+    public static function prepare(array $activityData): array
+    {
+        return array_map(
+            fn($levelId) => ['education_level_id' => $levelId],
+            $activityData['education_level_ids']
+        );
+    }
+}
 
 class ProgrammeActivityController extends Controller
 {
@@ -124,40 +138,96 @@ class ProgrammeActivityController extends Controller
 
         $activityItems = ActivityItem::whereIn('id', $itemIds)->get()->keyBy('id');
 
+        // Prepare all activities and taxonomy queues for bulk insert
+        $activitiesToCreate = [];
+        $activityLevelsToCreate = []; // [activity_index => [levels]]
+        $taxonomyQueuesToCreate = [];
+        $activityIndex = 0;
+
         foreach ($request->validated('activities') as $activityData) {
-            $activityItem = ActivityItem::findOrFail($activityData['activity_item_id']);
+            $activityItem = $activityItems->get($activityData['activity_item_id']);
             
-            $activity = $programmeEntry->activities()->create([
+            if (!$activityItem) {
+                continue; // Skip if activity item not found (shouldn't happen due to validation)
+            }
+
+            $activitiesToCreate[] = [
+                'programme_entry_id' => $programmeEntry->id,
                 'activity_item_id' => $activityData['activity_item_id'],
                 'is_primary' => $activityData['is_primary'] ?? false,
                 'inclusion_group' => $activityData['inclusion_group'] ?? null,
                 'inclusion_type' => $activityData['inclusion_type'] ?? null,
                 'source' => $activityData['source'] ?? 'human_entered',
                 'taxonomy_version' => $activityItem->version,
-            ]);
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
 
-            $activity->activityLevels()->createMany(
-                array_map(
-                    fn($levelId) => ['education_level_id' => $levelId],
-                    $activityData['education_level_ids']
-                )
+            // Store activity levels for bulk insert after activities are created
+            $activityLevelsToCreate[$activityIndex] = array_map(
+                fn($levelId) => ['education_level_id' => $levelId],
+                $activityData['education_level_ids']
             );
 
-            $activityItem = $activityItems->get($activityData['activity_item_id']);
-
-            if ($activityItem && $activityItem->is_other) {
-                TaxonomyOtherQueue::create([
+            // Store taxonomy queue data if needed
+            if ($activityItem->is_other) {
+                $taxonomyQueuesToCreate[] = [
                     'programme_entry_id' => $programmeEntry->id,
                     'item_id' => $activityItem->id,
                     'other_text' => $activityData['other_text'] ?? null,
                     'suggested_subcategory_id' => $activityItem->subcategory_id,
                     'frequency' => 1,
                     'status' => 'pending',
-                ]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
 
-            $created[] = $activity->load('activityLevels');
+            $activityIndex++;
         }
+
+        // Bulk insert activities
+        if (!empty($activitiesToCreate)) {
+            ProgrammeActivity::insert($activitiesToCreate);
+            
+            // Now bulk insert activity levels for each activity
+            $createdActivities = ProgrammeActivity::where('programme_entry_id', $programmeEntry->id)
+                ->orderByDesc('id')
+                ->limit(count($activitiesToCreate))
+                ->get();
+            
+            $allActivityLevels = [];
+            foreach ($createdActivities as $index => $activity) {
+                $levels = $activityLevelsToCreate[$index] ?? [];
+                foreach ($levels as $level) {
+                    $allActivityLevels[] = [
+                        'programme_activity_id' => $activity->id,
+                        'education_level_id' => $level['education_level_id'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            
+            if (!empty($allActivityLevels)) {
+                ProgrammeActivityLevel::insert($allActivityLevels);
+            }
+        }
+
+        // Bulk insert taxonomy queues
+        if (!empty($taxonomyQueuesToCreate)) {
+            TaxonomyOtherQueue::insert($taxonomyQueuesToCreate);
+        }
+
+        // Load the created activities with their relationships for response
+        $created = $programmeEntry->activities()
+            ->with('activityLevels')
+            ->orderByDesc('id')
+            ->limit(count($activitiesToCreate))
+            ->get()
+            ->reverse()
+            ->values()
+            ->all();
 
         return response()->json([
             'message' => 'Activities saved.',

@@ -173,14 +173,14 @@ class MapEntryController extends Controller
         if ($request->filled('keyword')) {
             $keyword = $request->input('keyword');
             $query->whereHas('keywords', function ($q) use ($keyword) {
-                $q->whereRaw('LOWER(keyword) LIKE ?', ['%' . strtolower($keyword) . '%']);
+                $q->where('keyword', 'LIKE', '%' . $keyword . '%');
             });
         }
 
         if ($request->filled('organisation_name')) {
             $orgName = $request->input('organisation_name');
             $query->whereHas('organisation', function ($q) use ($orgName) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($orgName) . '%']);
+                $q->where('name', 'LIKE', '%' . $orgName . '%');
             });
         }
 
@@ -208,7 +208,19 @@ class MapEntryController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = $this->buildMapQuery($request, $user);
+        $query = $this->buildMapQuery($request, $user)
+            ->with([
+                'organisation',
+                'budgetBand',
+                'keywords',
+                'locations.province',
+                'locations.district',
+                'activities.activityItem.subcategory.category',
+                'activities.activityItem.subcategory',
+                'activities.activityItem',
+                'activities.activityLevels.educationLevel',
+                'governmentAgreements',
+            ]);
         
         $perPage = $request->integer('per_page', 25);
         $entries = $query->paginate($perPage);
