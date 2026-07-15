@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TaxonomyOtherQueueCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
 use App\Models\ActivityItem;
@@ -126,7 +127,7 @@ class ProgrammeActivityController extends Controller
 
         foreach ($request->validated('activities') as $activityData) {
             $activityItem = ActivityItem::findOrFail($activityData['activity_item_id']);
-            
+
             $activity = $programmeEntry->activities()->create([
                 'activity_item_id' => $activityData['activity_item_id'],
                 'is_primary' => $activityData['is_primary'] ?? false,
@@ -146,14 +147,16 @@ class ProgrammeActivityController extends Controller
             $activityItem = $activityItems->get($activityData['activity_item_id']);
 
             if ($activityItem && $activityItem->is_other) {
-                TaxonomyOtherQueue::create([
+                $queueEntry = TaxonomyOtherQueue::create([
                     'programme_entry_id' => $programmeEntry->id,
                     'item_id' => $activityItem->id,
-                    'other_text' => $activityData['other_text'] ?? null,
+                    'other_text' => $activityData['other_text'],
                     'suggested_subcategory_id' => $activityItem->subcategory_id,
                     'frequency' => 1,
                     'status' => 'pending',
                 ]);
+
+                event(new TaxonomyOtherQueueCreated($queueEntry));
             }
 
             $created[] = $activity->load('activityLevels');
