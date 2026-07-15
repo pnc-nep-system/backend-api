@@ -9,6 +9,7 @@ use App\Models\ActivitySubcategory;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
@@ -81,7 +82,10 @@ class TaxonomyController extends Controller
     )]
     public function listCategories()
     {
-        $categories = ActivityCategory::with(['subcategories.items'])->get();
+        $categories = Cache::remember('taxonomy.categories.all', 3600, function () {
+            return ActivityCategory::with(['subcategories.items'])->get();
+        });
+        
         return response()->json($categories);
     }
 

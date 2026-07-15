@@ -22,8 +22,6 @@ class ProgrammeEntry extends Model
         'direct_beneficiaries',
         'method',
         'verified_date',
-        'last_updated_at',
-        'last_updated_by',
     ];
 
     protected $casts = [
