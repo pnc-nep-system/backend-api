@@ -10,12 +10,12 @@ use App\Models\ProgrammeEntry;
 use App\Models\ProgrammeLocation;
 use App\Models\Province;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MapEntryTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     public function test_province_filter_matches_direct_province(): void
     {

@@ -9,8 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('programme_entries', function (Blueprint $table) {
-            $table->index('organisation_id');
-            $table->index('budget_band_id');
             $table->index('fte_staff');
             $table->index('direct_beneficiaries');
             $table->index('is_unverified');
@@ -32,8 +30,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('programme_entries', function (Blueprint $table) {
-            $table->dropIndex(['organisation_id']);
-            $table->dropIndex(['budget_band_id']);
             $table->dropIndex(['fte_staff']);
             $table->dropIndex(['direct_beneficiaries']);
             $table->dropIndex(['is_unverified']);

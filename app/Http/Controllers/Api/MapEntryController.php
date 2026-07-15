@@ -68,10 +68,17 @@ class MapEntryController extends Controller
             'education_level_id' => 'sometimes|integer',
             'inclusion_group' => 'sometimes|string',
             'inclusion_type' => 'sometimes|string',
-            'province_id' => 'sometimes|integer',
-            'district_id' => 'sometimes|integer',
+            'province_id' => 'sometimes|integer|exists:provinces,id',
+            'district_id' => 'sometimes|integer|exists:districts,id',
             'agreement_counterpart_type' => 'sometimes|string',
             'agreement_status' => 'sometimes|string',
+            'keyword' => 'sometimes|string',
+            'organisation_name' => 'sometimes|string',
+            'budget_band_id' => 'sometimes|integer|exists:budget_bands,id',
+            'min_staff' => 'sometimes|numeric',
+            'max_staff' => 'sometimes|numeric',
+            'min_beneficiaries' => 'sometimes|integer',
+            'max_beneficiaries' => 'sometimes|integer',
         ]);
 
         $query = ProgrammeEntry::query();
