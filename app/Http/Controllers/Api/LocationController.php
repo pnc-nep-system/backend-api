@@ -56,10 +56,9 @@ class LocationController extends Controller
     )]
     public function index()
     {
-        $provinces = Cache::remember('provinces.all', 86400, function () {
+        $provinces = Cache::remember('provinces:all', now()->addHours(24), function () {
             return Province::all();
         });
-        
         return response()->json(['data' => $provinces]);
     }
 
@@ -98,10 +97,9 @@ class LocationController extends Controller
     )]
     public function districts(Province $province)
     {
-        $districts = Cache::remember("provinces.{$province->id}.districts", 86400, function () use ($province) {
+        $districts = Cache::remember("districts:province:{$province->id}", now()->addHours(24), function () use ($province) {
             return $province->districts;
         });
-        
         return response()->json(['data' => $districts]);
     }
 }

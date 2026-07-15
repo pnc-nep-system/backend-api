@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TaxonomyOtherQueueCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
 use App\Models\ActivityItem;
@@ -174,7 +175,7 @@ class ProgrammeActivityController extends Controller
                 $taxonomyQueuesToCreate[] = [
                     'programme_entry_id' => $programmeEntry->id,
                     'item_id' => $activityItem->id,
-                    'other_text' => $activityData['other_text'] ?? null,
+                    'other_text' => $activityData['other_text'],
                     'suggested_subcategory_id' => $activityItem->subcategory_id,
                     'frequency' => 1,
                     'status' => 'pending',
