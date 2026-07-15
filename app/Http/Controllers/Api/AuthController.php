@@ -97,7 +97,7 @@ class AuthController extends Controller
 
         $guard = Auth::guard('web');
 
-        if (! $guard->once($credentials)) {
+        if (! $guard->attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
