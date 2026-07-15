@@ -21,6 +21,7 @@ class ProgrammeEntryFactory extends Factory
             'direct_beneficiaries' => fake()->numberBetween(0, 10000),
             'method' => fake()->optional()->text(),
             'verified_date' => fake()->optional()->date(),
+            'is_submitted' => false,
         ];
     }
 }

@@ -24,6 +24,7 @@ class ProgrammeEntry extends Model
         'verified_date',
         'last_updated_at',
         'last_updated_by',
+        'is_submitted',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class ProgrammeEntry extends Model
         'verified_date' => 'date',
         'last_updated_at' => 'datetime',
         'is_unverified' => 'boolean',
+        'is_submitted' => 'boolean',
     ];
     
     protected static function booted(): void
