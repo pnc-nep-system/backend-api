@@ -263,6 +263,34 @@ class ProgrammeEntryController extends Controller
         return response()->json(['data' => $programmeEntry]);
     }
 
+    public function draft(Request $request)
+    {
+        $user = $request->user();
+
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        return $this->entriesByStatus($request, false);
+    }
+
+    public function submitted(Request $request)
+    {
+        return $this->entriesByStatus($request, true);
+    }
+
+    private function entriesByStatus(Request $request, bool $isSubmitted)
+    {
+        $user = $request->user();
+        $query = ProgrammeEntry::where('is_submitted', $isSubmitted);
+
+        if ($user->role === 'member_org') {
+            $query->where('organisation_id', $user->organisation_id);
+        }
+
+        return response()->json($query->paginate(10));
+    }
+
     #[OA\Patch(
         path: "/programme-entries/{programmeEntry}/verify",
         summary: "Mark a programme entry as verified (NEP Admin only)",
