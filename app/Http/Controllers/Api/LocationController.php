@@ -100,7 +100,6 @@ class LocationController extends Controller
         $districts = Cache::remember("districts:province:{$province->id}", now()->addHours(24), function () use ($province) {
             return $province->districts;
         });
-
         return response()->json(['data' => $districts]);
     }
 }

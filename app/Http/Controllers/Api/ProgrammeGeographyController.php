@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeGeographyRequest;
 use App\Models\ProgrammeEntry;
+use App\Models\ProgrammeLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -151,32 +152,49 @@ class ProgrammeGeographyController extends Controller
         DB::transaction(function () use ($programmeEntry, $request) {
             $programmeEntry->locations()->delete();
 
+            // Prepare all locations for bulk insert
+            $locationsToCreate = [];
+
             foreach ($request->validated('provinces') as $provinceData) {
                 $districtIds = $provinceData['district_ids'] ?? [];
 
                 if (empty($districtIds)) {
-                    $programmeEntry->locations()->create([
+                    $locationsToCreate[] = [
+                        'programme_entry_id' => $programmeEntry->id,
                         'province_id' => $provinceData['province_id'],
                         'district_id' => null,
                         'country' => null,
-                    ]);
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 } else {
                     foreach ($districtIds as $districtId) {
-                        $programmeEntry->locations()->create([
+                        $locationsToCreate[] = [
+                            'programme_entry_id' => $programmeEntry->id,
                             'province_id' => $provinceData['province_id'],
                             'district_id' => $districtId,
                             'country' => null,
-                        ]);
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
                     }
                 }
             }
 
             foreach ($request->validated('other_countries') as $country) {
-                $programmeEntry->locations()->create([
+                $locationsToCreate[] = [
+                    'programme_entry_id' => $programmeEntry->id,
                     'province_id' => null,
                     'district_id' => null,
                     'country' => $country,
-                ]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            // Bulk insert all locations
+            if (!empty($locationsToCreate)) {
+                ProgrammeLocation::insert($locationsToCreate);
             }
         });
 

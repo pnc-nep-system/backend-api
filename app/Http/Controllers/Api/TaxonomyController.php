@@ -13,8 +13,18 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
+// Helper trait for cache management
+trait ClearsTaxonomyCache
+{
+    protected function clearTaxonomyCache(): void
+    {
+        Cache::forget('taxonomy.categories.all');
+    }
+}
+
 class TaxonomyController extends Controller
 {
+    use ClearsTaxonomyCache;
     #[OA\Schema(
         schema: "TaxonomyCategory",
         type: "object",
@@ -85,7 +95,7 @@ class TaxonomyController extends Controller
         $categories = Cache::remember('taxonomy:categories:all', now()->addHours(24), function () {
             return ActivityCategory::with(['subcategories.items'])->get();
         });
-
+        
         return response()->json($categories);
     }
 

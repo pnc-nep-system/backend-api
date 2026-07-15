@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ProgrammeEntry;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
@@ -55,7 +56,10 @@ class MapEntryController extends Controller
         ]
     )]
 
-    public function index(Request $request)
+    /**
+     * Build the base query for map entries with all filters applied.
+     */
+    private function buildMapQuery(Request $request, $user): Builder
     {
         $request->validate([
             'category_id' => 'sometimes|integer',
@@ -64,13 +68,19 @@ class MapEntryController extends Controller
             'education_level_id' => 'sometimes|integer',
             'inclusion_group' => 'sometimes|string',
             'inclusion_type' => 'sometimes|string',
-            'province_id' => 'sometimes|integer',
-            'district_id' => 'sometimes|integer',
+            'province_id' => 'sometimes|integer|exists:provinces,id',
+            'district_id' => 'sometimes|integer|exists:districts,id',
             'agreement_counterpart_type' => 'sometimes|string',
             'agreement_status' => 'sometimes|string',
+            'keyword' => 'sometimes|string',
+            'organisation_name' => 'sometimes|string',
+            'budget_band_id' => 'sometimes|integer|exists:budget_bands,id',
+            'min_staff' => 'sometimes|numeric',
+            'max_staff' => 'sometimes|numeric',
+            'min_beneficiaries' => 'sometimes|integer',
+            'max_beneficiaries' => 'sometimes|integer',
         ]);
 
-        $user = $request->user();
         $query = ProgrammeEntry::query();
 
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
@@ -156,14 +166,14 @@ class MapEntryController extends Controller
         if ($request->filled('keyword')) {
             $keyword = $request->input('keyword');
             $query->whereHas('keywords', function ($q) use ($keyword) {
-                $q->whereRaw('LOWER(keyword) LIKE ?', ['%' . strtolower($keyword) . '%']);
+                $q->where('keyword', 'LIKE', '%' . $keyword . '%');
             });
         }
 
         if ($request->filled('organisation_name')) {
             $orgName = $request->input('organisation_name');
             $query->whereHas('organisation', function ($q) use ($orgName) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($orgName) . '%']);
+                $q->where('name', 'LIKE', '%' . $orgName . '%');
             });
         }
 
@@ -185,7 +195,30 @@ class MapEntryController extends Controller
             $query->where('direct_beneficiaries', '<=', $request->input('max_beneficiaries'));
         }
 
-        return response()->json(['data' => $query->get()]);
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $query = $this->buildMapQuery($request, $user)
+            ->with([
+                'organisation',
+                'budgetBand',
+                'keywords',
+                'locations.province',
+                'locations.district',
+                'activities.activityItem.subcategory.category',
+                'activities.activityItem.subcategory',
+                'activities.activityItem',
+                'activities.activityLevels.educationLevel',
+                'governmentAgreements',
+            ]);
+        
+        $perPage = $request->integer('per_page', 25);
+        $entries = $query->paginate($perPage);
+        
+        return response()->json(['data' => $entries]);
     }
 
     #[OA\Get(
@@ -336,21 +369,8 @@ class MapEntryController extends Controller
 
     public function export(Request $request)
     {
-        $request->validate([
-            'category_id' => 'sometimes|integer',
-            'subcategory_id' => 'sometimes|integer',
-            'item_id' => 'sometimes|integer',
-            'education_level_id' => 'sometimes|integer',
-            'inclusion_group' => 'sometimes|string',
-            'inclusion_type' => 'sometimes|string',
-            'province_id' => 'sometimes|integer',
-            'district_id' => 'sometimes|integer',
-            'agreement_counterpart_type' => 'sometimes|string',
-            'agreement_status' => 'sometimes|string',
-        ]);
-
         $user = $request->user();
-        $query = ProgrammeEntry::query()
+        $query = $this->buildMapQuery($request, $user)
             ->with([
                 'organisation',
                 'budgetBand',
@@ -363,118 +383,6 @@ class MapEntryController extends Controller
                 'activities.activityLevels.educationLevel',
                 'governmentAgreements',
             ]);
-
-        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            $query->where('organisation_id', $user->organisation_id);
-        }
-
-        $query->distinct();
-
-        $hasActivityFilter = collect($request->only([
-            'category_id', 'subcategory_id', 'item_id',
-            'education_level_id', 'inclusion_group', 'inclusion_type',
-        ]))->filter(fn ($v) => filled($v))->isNotEmpty();
-
-        if ($request->filled('province_id') || $request->filled('district_id')) {
-            $query->whereHas('locations', function ($q) use ($request) {
-                if ($request->filled('province_id')) {
-                    $provinceId = $request->input('province_id');
-                    $q->where(function ($subQ) use ($provinceId) {
-                        $subQ->where('province_id', $provinceId)
-                              ->orWhereHas('district', function ($districtQ) use ($provinceId) {
-                                  $districtQ->where('province_id', $provinceId);
-                              });
-                    });
-                }
-                
-                if ($request->filled('district_id')) {
-                    $q->where('district_id', $request->input('district_id'));
-                }
-            });
-        }
-
-        if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
-            $query->whereHas('governmentAgreements', function ($q) use ($request) {
-                if ($request->filled('agreement_counterpart_type')) {
-                    $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
-                }
-                
-                if ($request->filled('agreement_status')) {
-                    $q->where('status', $request->input('agreement_status'));
-                }
-            });
-        }
-
-        // Activity filters
-        if ($hasActivityFilter) {
-            $query->whereHas('activities', function ($q) use ($request) {
-                if ($request->filled('item_id')) {
-                    $q->where('activity_item_id', $request->input('item_id'));
-                }
-                
-                if ($request->filled('subcategory_id') || $request->filled('category_id')) {
-                    $q->whereHas('activityItem.subcategory', function ($subQ) use ($request) {
-                        if ($request->filled('subcategory_id')) {
-                            $subQ->where('subcategory_id', $request->input('subcategory_id'));
-                        }
-                        
-                        if ($request->filled('category_id')) {
-                            $subQ->where('category_id', $request->input('category_id'));
-                        }
-                    });
-                }
-
-                if ($request->filled('education_level_id')) {
-                    $educationLevelId = $request->input('education_level_id');
-                    $q->whereExists(function ($sub) use ($educationLevelId) {
-                        $sub->select(DB::raw(1))
-                            ->from('programme_activity_levels')
-                            ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
-                            ->where('programme_activity_levels.education_level_id', $educationLevelId);
-                    });
-                }
-
-                if ($request->filled('inclusion_group')) {
-                    $q->where('inclusion_group', $request->input('inclusion_group'));
-                }
-
-                if ($request->filled('inclusion_type')) {
-                    $q->where('inclusion_type', $request->input('inclusion_type'));
-                }
-            });
-        }
-
-        if ($request->filled('keyword')) {
-            $keyword = $request->input('keyword');
-            $query->whereHas('keywords', function ($q) use ($keyword) {
-                $q->whereRaw('LOWER(keyword) LIKE ?', ['%' . strtolower($keyword) . '%']);
-            });
-        }
-
-        if ($request->filled('organisation_name')) {
-            $orgName = $request->input('organisation_name');
-            $query->whereHas('organisation', function ($q) use ($orgName) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($orgName) . '%']);
-            });
-        }
-
-        if ($request->filled('budget_band_id')) {
-            $query->where('budget_band_id', $request->input('budget_band_id'));
-        }
-
-        if ($request->filled('min_staff')) {
-            $query->where('fte_staff', '>=', $request->input('min_staff'));
-        }
-        if ($request->filled('max_staff')) {
-            $query->where('fte_staff', '<=', $request->input('max_staff'));
-        }
-
-        if ($request->filled('min_beneficiaries')) {
-            $query->where('direct_beneficiaries', '>=', $request->input('min_beneficiaries'));
-        }
-        if ($request->filled('max_beneficiaries')) {
-            $query->where('direct_beneficiaries', '<=', $request->input('max_beneficiaries'));
-        }
 
         $entries = $query->get()->all();
         $csvContent = $this->generateCsv($entries);
@@ -527,21 +435,8 @@ class MapEntryController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $request->validate([
-            'category_id' => 'sometimes|integer',
-            'subcategory_id' => 'sometimes|integer',
-            'item_id' => 'sometimes|integer',
-            'education_level_id' => 'sometimes|integer',
-            'inclusion_group' => 'sometimes|string',
-            'inclusion_type' => 'sometimes|string',
-            'province_id' => 'sometimes|integer',
-            'district_id' => 'sometimes|integer',
-            'agreement_counterpart_type' => 'sometimes|string',
-            'agreement_status' => 'sometimes|string',
-        ]);
-
         $user = $request->user();
-        $query = ProgrammeEntry::query()
+        $query = $this->buildMapQuery($request, $user)
             ->with([
                 'organisation',
                 'budgetBand',
@@ -555,119 +450,8 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            $query->where('organisation_id', $user->organisation_id);
-        }
-
-        $query->distinct();
-
-        $hasActivityFilter = collect($request->only([
-            'category_id', 'subcategory_id', 'item_id',
-            'education_level_id', 'inclusion_group', 'inclusion_type',
-        ]))->filter(fn ($v) => filled($v))->isNotEmpty();
-
-        if ($request->filled('province_id') || $request->filled('district_id')) {
-            $query->whereHas('locations', function ($q) use ($request) {
-                if ($request->filled('province_id')) {
-                    $provinceId = $request->input('province_id');
-                    $q->where(function ($subQ) use ($provinceId) {
-                        $subQ->where('province_id', $provinceId)
-                              ->orWhereHas('district', function ($districtQ) use ($provinceId) {
-                                  $districtQ->where('province_id', $provinceId);
-                              });
-                    });
-                }
-                
-                if ($request->filled('district_id')) {
-                    $q->where('district_id', $request->input('district_id'));
-                }
-            });
-        }
-
-        // Government agreement filters
-        if ($request->filled('agreement_counterpart_type') || $request->filled('agreement_status')) {
-            $query->whereHas('governmentAgreements', function ($q) use ($request) {
-                if ($request->filled('agreement_counterpart_type')) {
-                    $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
-                }
-                
-                if ($request->filled('agreement_status')) {
-                    $q->where('status', $request->input('agreement_status'));
-                }
-            });
-        }
-
-        // Activity filters
-        if ($hasActivityFilter) {
-            $query->whereHas('activities', function ($q) use ($request) {
-                if ($request->filled('item_id')) {
-                    $q->where('activity_item_id', $request->input('item_id'));
-                }
-                
-                if ($request->filled('subcategory_id') || $request->filled('category_id')) {
-                    $q->whereHas('activityItem.subcategory', function ($subQ) use ($request) {
-                        if ($request->filled('subcategory_id')) {
-                            $subQ->where('subcategory_id', $request->input('subcategory_id'));
-                        }
-                        
-                        if ($request->filled('category_id')) {
-                            $subQ->where('category_id', $request->input('category_id'));
-                        }
-                    });
-                }
-
-                if ($request->filled('education_level_id')) {
-                    $educationLevelId = $request->input('education_level_id');
-                    $q->whereExists(function ($sub) use ($educationLevelId) {
-                        $sub->select(DB::raw(1))
-                            ->from('programme_activity_levels')
-                            ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
-                            ->where('programme_activity_levels.education_level_id', $educationLevelId);
-                    });
-                }
-
-                if ($request->filled('inclusion_group')) {
-                    $q->where('inclusion_group', $request->input('inclusion_group'));
-                }
-
-                if ($request->filled('inclusion_type')) {
-                    $q->where('inclusion_type', $request->input('inclusion_type'));
-                }
-            });
-        }
-
-        if ($request->filled('keyword')) {
-            $keyword = $request->input('keyword');
-            $query->whereHas('keywords', function ($q) use ($keyword) {
-                $q->whereRaw('LOWER(keyword) LIKE ?', ['%' . strtolower($keyword) . '%']);
-            });
-        }
-
-        if ($request->filled('organisation_name')) {
-            $orgName = $request->input('organisation_name');
-            $query->whereHas('organisation', function ($q) use ($orgName) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($orgName) . '%']);
-            });
-        }
-
-        if ($request->filled('budget_band_id')) {
-            $query->where('budget_band_id', $request->input('budget_band_id'));
-        }
-
-        if ($request->filled('min_staff')) {
-            $query->where('fte_staff', '>=', $request->input('min_staff'));
-        }
-        if ($request->filled('max_staff')) {
-            $query->where('fte_staff', '<=', $request->input('max_staff'));
-        }
-
-        if ($request->filled('min_beneficiaries')) {
-            $query->where('direct_beneficiaries', '>=', $request->input('min_beneficiaries'));
-        }
-        if ($request->filled('max_beneficiaries')) {
-            $query->where('direct_beneficiaries', '<=', $request->input('max_beneficiaries'));
-        }
-
+        // BE-032: Handle large result sets with chunking to prevent timeouts
+        // Process entries in chunks of 50 for PDF generation
         $entries = collect();
         $query->chunk(50, function ($chunk) use ($entries) {
             $entries->push(...$chunk);
