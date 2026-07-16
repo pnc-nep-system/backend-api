@@ -263,6 +263,49 @@ class ProgrammeEntryController extends Controller
         return response()->json(['data' => $programmeEntry]);
     }
 
+    #[OA\Get(
+        path: "/programme-entries/draft",
+        summary: "List draft (unsubmitted) programme entries",
+        description: "Returns paginated draft programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept that doesn't apply to review roles. member_org users see only their own organisation's drafts.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                required: false,
+                description: "Page number for pagination",
+                schema: new OA\Schema(type: "integer", default: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Paginated list of draft entries",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
+                        ),
+                        new OA\Property(property: "current_page", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", type: "integer", example: 10),
+                        new OA\Property(property: "total", type: "integer", example: 42),
+                        new OA\Property(property: "last_page", type: "integer", example: 5),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")]
+                )
+            ),
+        ]
+    )]
     public function draft(Request $request)
     {
         $user = $request->user();
@@ -273,6 +316,50 @@ class ProgrammeEntryController extends Controller
 
         return $this->entriesByStatus($request, false);
     }
+
+    #[OA\Get(
+        path: "/programme-entries/submitted",
+        summary: "List submitted programme entries",
+        description: "Returns paginated submitted programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept. member_org users see only their own organisation's submitted entries.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                required: false,
+                description: "Page number for pagination",
+                schema: new OA\Schema(type: "integer", default: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Paginated list of submitted entries",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
+                        ),
+                        new OA\Property(property: "current_page", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", type: "integer", example: 10),
+                        new OA\Property(property: "total", type: "integer", example: 42),
+                        new OA\Property(property: "last_page", type: "integer", example: 5),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")]
+                )
+            ),
+        ]
+    )]
 
     public function submitted(Request $request)
     {
