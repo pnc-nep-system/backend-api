@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
             TaxonomySeeder::class,
             OrganisationSeeder::class,
             OrganisationAccountSeeder::class,
-            ProgrammeSeeder::class,
             UserSeeder::class,
         ]);
     }
