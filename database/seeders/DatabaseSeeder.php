@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             TaxonomySeeder::class,
             OrganisationSeeder::class,
             OrganisationAccountSeeder::class,
+            ProgrammeEntriesSeeder::class,
             UserSeeder::class,
         ]);
     }
