@@ -24,6 +24,7 @@ class UpdateProgrammeEntryRequest extends FormRequest
             'direct_beneficiaries' => ['sometimes', 'integer', 'min:0'],
             'method' => ['nullable', 'string'],
             'verified_date' => ['nullable', 'date'],
+            'is_submitted' => ['sometimes', 'boolean'],
         ];
     }
 }
