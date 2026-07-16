@@ -26,6 +26,10 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "direct_beneficiaries", type: "integer", example: 150),
         new OA\Property(property: "method", type: "string", example: "Workshops and mentoring", nullable: true),
         new OA\Property(property: "verified_date", type: "string", format: "date", example: "2026-03-01", nullable: true),
+        new OA\Property(property: "last_updated_at", type: "string", format: "date-time", nullable: true, description: "Timestamp of last update (automatically set by system)"),
+        new OA\Property(property: "last_updated_by", type: "integer", nullable: true, description: "ID of user who last updated (automatically set by system, read-only)"),
+        new OA\Property(property: "is_submitted", type: "boolean", example: false, description: "Whether the entry has been submitted for review"),
+        new OA\Property(property: "is_unverified", type: "boolean", example: false, description: "Whether the entry is flagged as unverified (stale)"),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
     ]

@@ -23,7 +23,6 @@ class ProgrammeEntry extends Model
         'method',
         'verified_date',
         'last_updated_at',
-        'last_updated_by',
         'is_submitted',
     ];
 
