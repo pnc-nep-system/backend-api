@@ -12,6 +12,8 @@ class DatabaseSeeder extends Seeder
             BudgetBandSeeder::class,
             TaxonomySeeder::class,
             OrganisationSeeder::class,
+            OrganisationAccountSeeder::class,
+            ProgrammeSeeder::class,
             UserSeeder::class,
         ]);
     }
