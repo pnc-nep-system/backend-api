@@ -67,7 +67,13 @@ class ProgrammeGeographyController extends Controller
         }
 
         return response()->json([
-            'data' => $programmeEntry->locations()->get(),
+            'data' => $programmeEntry->locations()->get()->map(fn ($loc) => [
+                'province_id' => $loc->province_id,
+                'district_id' => $loc->district_id,
+                'commune_id' => $loc->commune_id,
+                'village_id' => $loc->village_id,
+                'country' => $loc->country,
+            ]),
         ]);
     }
 

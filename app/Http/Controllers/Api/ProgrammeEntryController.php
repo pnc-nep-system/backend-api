@@ -306,6 +306,7 @@ class ProgrammeEntryController extends Controller
 
         $programmeEntry->load([
             'activities.activityLevels',
+            'keywords',
             'locations',
             'governmentAgreements',
         ]);
