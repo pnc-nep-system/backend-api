@@ -30,6 +30,52 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "last_updated_by", type: "integer", nullable: true, description: "ID of user who last updated (automatically set by system, read-only)"),
         new OA\Property(property: "is_submitted", type: "boolean", example: false, description: "Whether the entry has been submitted for review"),
         new OA\Property(property: "is_unverified", type: "boolean", example: false, description: "Whether the entry is flagged as unverified (stale)"),
+        new OA\Property(
+            property: "locations",
+            type: "array",
+            nullable: true,
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: "id", type: "integer"),
+                    new OA\Property(property: "programme_entry_id", type: "integer"),
+                    new OA\Property(
+                        property: "province",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "name", type: "string"),
+                        ],
+                        type: "object",
+                        nullable: true
+                    ),
+                    new OA\Property(property: "country", type: "string", nullable: true),
+                ],
+                type: "object"
+            )
+        ),
+        new OA\Property(
+            property: "activities",
+            type: "array",
+            nullable: true,
+            description: "Primary activities (is_primary = true)",
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: "id", type: "integer"),
+                    new OA\Property(property: "programme_entry_id", type: "integer"),
+                    new OA\Property(property: "is_primary", type: "boolean", example: true),
+                    new OA\Property(
+                        property: "activity_item",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "label", type: "string"),
+                            new OA\Property(property: "code", type: "string"),
+                        ],
+                        type: "object",
+                        nullable: true
+                    ),
+                ],
+                type: "object"
+            )
+        ),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
     ]
@@ -373,7 +419,11 @@ class ProgrammeEntryController extends Controller
     private function entriesByStatus(Request $request, bool $isSubmitted)
     {
         $user = $request->user();
-        $query = ProgrammeEntry::where('is_submitted', $isSubmitted);
+        $query = ProgrammeEntry::with([
+            'locations.province',
+            'activities' => fn ($q) => $q->where('is_primary', true),
+            'activities.activityItem',
+        ])->where('is_submitted', $isSubmitted)->orderBy('id', 'desc');
 
         if ($user->role === 'member_org') {
             $query->where('organisation_id', $user->organisation_id);
