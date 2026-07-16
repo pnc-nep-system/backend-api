@@ -9,18 +9,12 @@ use App\Models\ActivitySubcategory;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Support\ClearsTaxonomyCache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
-// Helper trait for cache management
-trait ClearsTaxonomyCache
-{
-    protected function clearTaxonomyCache(): void
-    {
-        Cache::forget('taxonomy.categories.all');
-    }
-}
+
 
 class TaxonomyController extends Controller
 {

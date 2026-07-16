@@ -567,6 +567,22 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Account deactivated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account is deactivated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation failed",
                         "content": {
@@ -960,7 +976,7 @@
                 ],
                 "summary": "Query programme entries for map display, filterable by taxonomy, education level, inclusion, location, agreement, keyword, organisation, and scale",
                 "description": "Returns entries matching the given filters. Taxonomy (category/sub-category/item), education level, and inclusion group/type filters match entries with at least one qualifying activity. Location filters match via programme_locations. Agreement filters match via government_agreements. Keyword and organisation name filters use case-insensitive partial matching. Scale filters bucket by budget band, or by numeric staff/beneficiary ranges. All filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
-                "operationId": "07f62762c22c9a433eb51266e58b011d",
+                "operationId": "e0a3612a71f70bae9b2046cff1cf36fc",
                 "parameters": [
                     {
                         "name": "category_id",
@@ -2026,6 +2042,170 @@
                     },
                     "404": {
                         "description": "Organisation not found, or caller not authorized to view it"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/programme-entries/draft": {
+            "get": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "List draft (unsubmitted) programme entries",
+                "description": "Returns paginated draft programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept that doesn't apply to review roles. member_org users see only their own organisation's drafts.",
+                "operationId": "2b8f49d6dd8d9b7b01c3760609514d58",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of draft entries",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeEntry"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 42
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 5
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/programme-entries/submitted": {
+            "get": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "List submitted programme entries",
+                "description": "Returns paginated submitted programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept. member_org users see only their own organisation's submitted entries.",
+                "operationId": "8df63c5b18aa8ba62e49240f97d18827",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of submitted entries",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeEntry"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 42
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 5
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [

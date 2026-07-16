@@ -7,23 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
 use App\Models\ActivityItem;
 use App\Models\ProgrammeActivity;
+use App\Support\ActivityLevelBulkInsert;
 use App\Models\ProgrammeActivityLevel;
 use App\Models\ProgrammeEntry;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
-
-// Bulk insert data structure
-class ActivityLevelBulkInsert
-{
-    public static function prepare(array $activityData): array
-    {
-        return array_map(
-            fn($levelId) => ['education_level_id' => $levelId],
-            $activityData['education_level_ids']
-        );
-    }
-}
 
 class ProgrammeActivityController extends Controller
 {
