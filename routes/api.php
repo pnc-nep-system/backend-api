@@ -58,7 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
-        Route::get('/categories', [TaxonomyController::class, 'listCategories']);
         // Categories
         Route::post('/categories', [TaxonomyController::class, 'createCategory']);
         Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
