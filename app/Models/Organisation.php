@@ -27,4 +27,14 @@ class Organisation extends Model
     {
         return $this->hasMany(ProgrammeEntry::class);
     }
+
+    public function accounts()
+    {
+        return $this->hasMany(OrganisationAccount::class);
+    }
+
+    public function programmes()
+    {
+        return $this->hasMany(Programme::class);
+    }
 }
