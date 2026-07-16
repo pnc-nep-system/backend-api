@@ -12,6 +12,76 @@
         }
     ],
     "paths": {
+        "/admin/organisations": {
+            "get": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "List all organisations",
+                "description": "Only accessible to nep_admin. Supports filtering by status and search.",
+                "operationId": "00915cc2b03f61fe39715c3a76a087c2",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "inactive"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by organisation name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of organisations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Organisation"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/admin/users": {
             "get": {
                 "tags": [
@@ -3056,6 +3126,56 @@
     },
     "components": {
         "schemas": {
+            "Organisation": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Green Earth Nepal"
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "example": "Ram Sharma"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "info@greenearth.org"
+                    },
+                    "member_since": {
+                        "type": "integer",
+                        "example": 2020
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "active",
+                            "inactive"
+                        ]
+                    },
+                    "last_inactive_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "users_count": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "properties": {
                     "id": {
@@ -3293,6 +3413,27 @@
                         "example": "2026-03-01",
                         "nullable": true
                     },
+                    "last_updated_at": {
+                        "description": "Timestamp of last update (automatically set by system)",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "last_updated_by": {
+                        "description": "ID of user who last updated (automatically set by system, read-only)",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "is_submitted": {
+                        "description": "Whether the entry has been submitted for review",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_unverified": {
+                        "description": "Whether the entry is flagged as unverified (stale)",
+                        "type": "boolean",
+                        "example": false
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time"
@@ -3487,6 +3628,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Admin - Organisations",
+            "description": "Admin - Organisations"
+        },
         {
             "name": "Admin - User Management",
             "description": "Admin - User Management"
