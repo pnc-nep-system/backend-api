@@ -20,6 +20,8 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/provinces', [LocationController::class, 'index']);
     Route::get('/provinces/{province}/districts', [LocationController::class, 'districts']);
+    Route::get('/districts/{district}/communes', [LocationController::class, 'communes']);
+    Route::get('/communes/{commune}/villages', [LocationController::class, 'villages']);
 
     Route::get('/user', fn (Request $request) => $request->user());
     Route::get('/session', [AuthController::class, 'session']);

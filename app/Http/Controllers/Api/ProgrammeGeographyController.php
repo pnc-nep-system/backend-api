@@ -18,6 +18,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "programme_entry_id", type: "integer", example: 8),
         new OA\Property(property: "province_id", type: "integer", nullable: true, example: 1),
         new OA\Property(property: "district_id", type: "integer", nullable: true, example: 5),
+        new OA\Property(property: "commune_id", type: "integer", nullable: true, example: 10),
+        new OA\Property(property: "village_id", type: "integer", nullable: true, example: 50),
         new OA\Property(property: "country", type: "string", nullable: true, example: "Thailand"),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
@@ -95,15 +97,29 @@ class ProgrammeGeographyController extends Controller
                         items: new OA\Items(
                             properties: [
                                 new OA\Property(property: "province_id", type: "integer", example: 1),
-                                new OA\Property(
-                                    property: "district_ids",
-                                    type: "array",
-                                    items: new OA\Items(type: "integer"),
-                                    example: [5, 6],
-                                    description: "Can be an empty array — districts are optional"
-                                ),
-                            ]
-                        )
+                            new OA\Property(
+                                property: "district_ids",
+                                type: "array",
+                                items: new OA\Items(type: "integer"),
+                                example: [5, 6],
+                                description: "Can be an empty array — districts are optional"
+                            ),
+                            new OA\Property(
+                                property: "commune_ids",
+                                type: "array",
+                                items: new OA\Items(type: "integer"),
+                                example: [10, 11],
+                                description: "Optional commune IDs"
+                            ),
+                            new OA\Property(
+                                property: "village_ids",
+                                type: "array",
+                                items: new OA\Items(type: "integer"),
+                                example: [50, 51],
+                                description: "Optional village IDs"
+                            ),
+                        ]
+                    )
                     ),
                     new OA\Property(
                         property: "other_countries",
@@ -163,20 +179,57 @@ class ProgrammeGeographyController extends Controller
                         'programme_entry_id' => $programmeEntry->id,
                         'province_id' => $provinceData['province_id'],
                         'district_id' => null,
+                        'commune_id' => null,
+                        'village_id' => null,
                         'country' => null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
                 } else {
+                    $communeIds = $provinceData['commune_ids'] ?? [];
+
                     foreach ($districtIds as $districtId) {
-                        $locationsToCreate[] = [
-                            'programme_entry_id' => $programmeEntry->id,
-                            'province_id' => $provinceData['province_id'],
-                            'district_id' => $districtId,
-                            'country' => null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
+                        if (!empty($communeIds)) {
+                            foreach ($communeIds as $communeId) {
+                                $villageIds = $provinceData['village_ids'] ?? [];
+                                if (!empty($villageIds)) {
+                                    foreach ($villageIds as $villageId) {
+                                        $locationsToCreate[] = [
+                                            'programme_entry_id' => $programmeEntry->id,
+                                            'province_id' => $provinceData['province_id'],
+                                            'district_id' => $districtId,
+                                            'commune_id' => $communeId,
+                                            'village_id' => $villageId,
+                                            'country' => null,
+                                            'created_at' => now(),
+                                            'updated_at' => now(),
+                                        ];
+                                    }
+                                } else {
+                                    $locationsToCreate[] = [
+                                        'programme_entry_id' => $programmeEntry->id,
+                                        'province_id' => $provinceData['province_id'],
+                                        'district_id' => $districtId,
+                                        'commune_id' => $communeId,
+                                        'village_id' => null,
+                                        'country' => null,
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ];
+                                }
+                            }
+                        } else {
+                            $locationsToCreate[] = [
+                                'programme_entry_id' => $programmeEntry->id,
+                                'province_id' => $provinceData['province_id'],
+                                'district_id' => $districtId,
+                                'commune_id' => null,
+                                'village_id' => null,
+                                'country' => null,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
                     }
                 }
             }
@@ -186,6 +239,8 @@ class ProgrammeGeographyController extends Controller
                     'programme_entry_id' => $programmeEntry->id,
                     'province_id' => null,
                     'district_id' => null,
+                    'commune_id' => null,
+                    'village_id' => null,
                     'country' => $country,
                     'created_at' => now(),
                     'updated_at' => now(),

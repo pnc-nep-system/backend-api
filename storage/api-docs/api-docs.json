@@ -1039,6 +1039,110 @@
                 ]
             }
         },
+        "/districts/{district}/communes": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get communes by district",
+                "description": "Returns communes belonging to the specified district.",
+                "operationId": "57e40f73f534d402a05f04327d5328c9",
+                "parameters": [
+                    {
+                        "name": "district",
+                        "in": "path",
+                        "description": "District ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of communes for the district",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Commune"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "District not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/communes/{commune}/villages": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get villages by commune",
+                "description": "Returns villages belonging to the specified commune.",
+                "operationId": "7e4d1d2509824926c6afca2b31bdbcb7",
+                "parameters": [
+                    {
+                        "name": "commune",
+                        "in": "path",
+                        "description": "Commune ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of villages for the commune",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Village"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Commune not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/map/entries": {
             "get": {
                 "tags": [
@@ -1178,6 +1282,15 @@
                         "name": "district_id",
                         "in": "query",
                         "description": "Filter by district ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "commune_id",
+                        "in": "query",
+                        "description": "Filter by commune ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2438,6 +2551,28 @@
                                                         5,
                                                         6
                                                     ]
+                                                },
+                                                "commune_ids": {
+                                                    "description": "Optional commune IDs",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        10,
+                                                        11
+                                                    ]
+                                                },
+                                                "village_ids": {
+                                                    "description": "Optional village IDs",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        50,
+                                                        51
+                                                    ]
                                                 }
                                             },
                                             "type": "object"
@@ -3296,6 +3431,50 @@
                 },
                 "type": "object"
             },
+            "Commune": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "district_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Village": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "commune_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeActivity": {
                 "properties": {
                     "id": {
@@ -3463,6 +3642,16 @@
                     "district_id": {
                         "type": "integer",
                         "example": 5,
+                        "nullable": true
+                    },
+                    "commune_id": {
+                        "type": "integer",
+                        "example": 10,
+                        "nullable": true
+                    },
+                    "village_id": {
+                        "type": "integer",
+                        "example": 50,
                         "nullable": true
                     },
                     "country": {

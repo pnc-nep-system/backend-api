@@ -12,6 +12,8 @@ class ProgrammeGeography extends Model
         'programme_entry_id',
         'province_id',
         'district_id',
+        'commune_id',
+        'village_id',
         'country',
     ];
 
@@ -28,5 +30,15 @@ class ProgrammeGeography extends Model
     public function district()
     {
         return $this->belongsTo(District::class);
+    }
+
+    public function commune()
+    {
+        return $this->belongsTo(Commune::class);
+    }
+
+    public function village()
+    {
+        return $this->belongsTo(Village::class);
     }
 }

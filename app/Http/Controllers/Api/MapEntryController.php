@@ -35,6 +35,7 @@ class MapEntryController extends Controller
             new OA\Parameter(name: "max_beneficiaries", in: "query", required: false, description: "Maximum direct beneficiaries", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "province_id", in: "query", required: false, description: "Filter by province ID (matches entries with locations in this province or its districts)", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "district_id", in: "query", required: false, description: "Filter by district ID", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "commune_id", in: "query", required: false, description: "Filter by commune ID", schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "agreement_counterpart_type", in: "query", required: false, description: "Filter by government agreement counterpart agency type", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "agreement_status", in: "query", required: false, description: "Filter by government agreement status", schema: new OA\Schema(type: "string")),
         ],
@@ -70,6 +71,7 @@ class MapEntryController extends Controller
             'inclusion_type' => 'sometimes|string',
             'province_id' => 'sometimes|integer|exists:provinces,id',
             'district_id' => 'sometimes|integer|exists:districts,id',
+            'commune_id' => 'sometimes|integer|exists:communes,id',
             'agreement_counterpart_type' => 'sometimes|string',
             'agreement_status' => 'sometimes|string',
             'keyword' => 'sometimes|string',
@@ -109,6 +111,10 @@ class MapEntryController extends Controller
                 
                 if ($request->filled('district_id')) {
                     $q->where('district_id', $request->input('district_id'));
+                }
+
+                if ($request->filled('commune_id')) {
+                    $q->where('commune_id', $request->input('commune_id'));
                 }
             });
         }
@@ -208,13 +214,15 @@ class MapEntryController extends Controller
                 'keywords',
                 'locations.province',
                 'locations.district',
+                'locations.commune',
+                'locations.village',
                 'activities.activityItem.subcategory.category',
                 'activities.activityItem.subcategory',
                 'activities.activityItem',
                 'activities.activityLevels.educationLevel',
                 'governmentAgreements',
             ]);
-        
+
         $perPage = $request->integer('per_page', 25);
         $entries = $query->paginate($perPage);
         
@@ -299,6 +307,12 @@ class MapEntryController extends Controller
                 if ($loc->district) {
                     $parts[] = $loc->district->name;
                 }
+                if ($loc->commune) {
+                    $parts[] = $loc->commune->name;
+                }
+                if ($loc->village) {
+                    $parts[] = $loc->village->name;
+                }
                 return implode('/', $parts);
             })->filter()->unique()->implode('; ');
 
@@ -377,6 +391,8 @@ class MapEntryController extends Controller
                 'keywords',
                 'locations.province',
                 'locations.district',
+                'locations.commune',
+                'locations.village',
                 'activities.activityItem.subcategory.category',
                 'activities.activityItem.subcategory',
                 'activities.activityItem',
@@ -443,6 +459,8 @@ class MapEntryController extends Controller
                 'keywords',
                 'locations.province',
                 'locations.district',
+                'locations.commune',
+                'locations.village',
                 'activities.activityItem.subcategory.category',
                 'activities.activityItem.subcategory',
                 'activities.activityItem',

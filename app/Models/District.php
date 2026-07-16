@@ -29,6 +29,11 @@ class District extends Model
         return $this->belongsTo(Province::class);
     }
 
+    public function communes()
+    {
+        return $this->hasMany(Commune::class);
+    }
+
     public function locations()
     {
         return $this->hasMany(ProgrammeLocation::class);
