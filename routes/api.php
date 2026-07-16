@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\OrganisationProfileController;
 use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
@@ -34,6 +35,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
+
+    Route::get('/organisations/me', [OrganisationProfileController::class, 'show']);
+    Route::patch('/organisations/me', [OrganisationProfileController::class, 'update']);
 
     Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify'])
         ->middleware('role:nep_admin');
