@@ -59,7 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
-        Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store']);
+        Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
+            ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
