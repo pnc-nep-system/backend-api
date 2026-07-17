@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
-use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -95,34 +95,12 @@ class AdviserSubmissionController extends Controller
             ),
         ]
     )]
-    public function store(Request $request)
+    public function store(StoreAdviserSubmissionRequest $request)
     {
-        $user = $request->user();
-
-        // Only NEP Coordinator and Admin can submit documents
-        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            return response()->json(['message' => 'Forbidden.'], 403);
-        }
-
-        $validated = $request->validate([
-            'submitting_party' => 'required|string|max:255',
-            'document_name' => 'required|string|max:255',
-            'analysis_scope' => 'nullable|string|in:full map,geographic subset,thematic subset',
-            'analysis_scope_detail' => 'nullable|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         // Default to "full map" if not specified
         $validated['analysis_scope'] = $validated['analysis_scope'] ?? 'full map';
-
-        // If analysis scope is geographic or thematic subset, detail is required
-        if (in_array($validated['analysis_scope'], ['geographic subset', 'thematic subset']) && empty($validated['analysis_scope_detail'])) {
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => [
-                    'analysis_scope_detail' => ['Analysis scope detail is required for geographic or thematic subsets.'],
-                ],
-            ], 422);
-        }
 
         // If analysis scope is full map, clear the detail field
         if ($validated['analysis_scope'] === 'full map') {

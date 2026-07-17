@@ -26,6 +26,12 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
+            
+            // Performance indexes for common queries
+            $table->index('status');
+            $table->index('submitted_at');
+            $table->index('analysis_scope');
+            $table->index(['status', 'submitted_at']);
         });
     }
 

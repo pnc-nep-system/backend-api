@@ -60,8 +60,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+<<<<<<< HEAD
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store']);
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
+=======
+        Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
+            ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
+>>>>>>> 44def962a7da82b93adf4b0e4802129f78038f90
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
