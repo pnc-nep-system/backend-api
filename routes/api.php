@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Admin\OrganisationController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
+use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
 use Illuminate\Http\Request;
@@ -60,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store']);
+        Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
