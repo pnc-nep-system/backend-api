@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Adviser\AdviserMapEntryResource;
 use App\Services\Adviser\MapOverlapMatcher;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -91,7 +92,8 @@ class AdviserMapOverlapController extends Controller
             ])
             ->get();
 
-        return response()->json(['data' => $entries]);
+        return response()->json([
+            'data' => AdviserMapEntryResource::collection($entries),
+        ]);
     }
 }
-

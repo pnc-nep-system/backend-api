@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityCategory;
 use App\Models\ActivityItem;
-use App\Models\Category;
+use App\Models\ActivitySubcategory;
 use App\Models\District;
 use App\Models\EducationLevel;
 use App\Models\Organisation;
@@ -12,7 +13,6 @@ use App\Models\ProgrammeActivityLevel;
 use App\Models\ProgrammeEntry;
 use App\Models\ProgrammeLocation;
 use App\Models\Province;
-use App\Models\Subcategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -153,14 +153,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_full_map_returns_entries_overlapping_on_activity()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Basic Education',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Primary School Support',
         ]);
 
         $matchingEntry = ProgrammeEntry::factory()->create([
@@ -263,14 +261,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_full_map_returns_entries_overlapping_on_at_least_one_dimension()
     {
-        $category = Category::create(['category_name' => 'Health']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Nutrition',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'School Feeding',
         ]);
 
         // Overlaps on activity only
@@ -352,14 +348,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_full_map_excludes_entries_with_no_overlap()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Basic Education',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Primary School Support',
         ]);
 
         $entry = ProgrammeEntry::factory()->create([
@@ -398,14 +392,12 @@ class AdviserMapOverlapTest extends TestCase
     {
         $provinceA = Province::create(['province_name' => 'Province A']);
         $provinceB = Province::create(['province_name' => 'Province B']);
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Basic Education',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Primary School Support',
         ]);
 
         // Entry in Province A with matching activity (should match via activity OR geography)
@@ -466,14 +458,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_geographic_subset_with_no_geo_signals_falls_back_to_or_across_all()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Training',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Teacher Training',
         ]);
 
         $entry = ProgrammeEntry::factory()->create([
@@ -507,23 +497,19 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_thematic_subset_returns_entries_overlapping_within_thematic_universe()
     {
-        $categoryA = Category::create(['category_name' => 'Health']);
-        $categoryB = Category::create(['category_name' => 'Agriculture']);
-        $subcategoryA = Subcategory::create([
+        $categoryA = ActivityCategory::factory()->create();
+        $categoryB = ActivityCategory::factory()->create();
+        $subcategoryA = ActivitySubcategory::factory()->create([
             'category_id' => $categoryA->id,
-            'subcategory_name' => 'Nutrition',
         ]);
-        $subcategoryB = Subcategory::create([
+        $subcategoryB = ActivitySubcategory::factory()->create([
             'category_id' => $categoryB->id,
-            'subcategory_name' => 'Farming',
         ]);
-        $itemA = ActivityItem::create([
+        $itemA = ActivityItem::factory()->create([
             'subcategory_id' => $subcategoryA->id,
-            'item_name' => 'School Feeding',
         ]);
-        $itemB = ActivityItem::create([
+        $itemB = ActivityItem::factory()->create([
             'subcategory_id' => $subcategoryB->id,
-            'item_name' => 'Crop Training',
         ]);
 
         $province = Province::create(['province_name' => 'Test Province']);
@@ -633,7 +619,7 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_overlap_by_education_level()
     {
-        $educationLevel = EducationLevel::create(['level_name' => 'Grade 1-3']);
+        $educationLevel = EducationLevel::factory()->create();
         $item = ActivityItem::factory()->create();
 
         $matchingEntry = ProgrammeEntry::factory()->create([
@@ -667,14 +653,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_overlap_by_subcategory()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Early Childhood',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Kindergarten',
         ]);
 
         $matchingEntry = ProgrammeEntry::factory()->create([
@@ -771,14 +755,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_no_duplicates_when_entry_overlaps_on_multiple_dimensions()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Basic Education',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Primary School Support',
         ]);
         $province = Province::create(['province_name' => 'Test Province']);
 
@@ -821,14 +803,12 @@ class AdviserMapOverlapTest extends TestCase
 
     public function test_response_includes_relations()
     {
-        $category = Category::create(['category_name' => 'Education']);
-        $subcategory = Subcategory::create([
+        $category = ActivityCategory::factory()->create();
+        $subcategory = ActivitySubcategory::factory()->create([
             'category_id' => $category->id,
-            'subcategory_name' => 'Basic Education',
         ]);
-        $item = ActivityItem::create([
+        $item = ActivityItem::factory()->create([
             'subcategory_id' => $subcategory->id,
-            'item_name' => 'Primary School Support',
         ]);
 
         $entry = ProgrammeEntry::factory()->create([
@@ -861,13 +841,29 @@ class AdviserMapOverlapTest extends TestCase
                     'organisation',
                     'activities' => [
                         '*' => [
-                            'activity_item' => [
-                                'subcategory' => [
-                                    'category',
-                                ],
+                            'id',
+                            'is_primary',
+                            'inclusion_group',
+                            'inclusion_type',
+                            'taxonomy' => [
+                                'category',
+                                'subcategory',
+                                'item',
                             ],
+                            'education_levels',
                         ],
                     ],
+                    'budget_band',
+                    'start_year',
+                    'end_year',
+                    'ongoing',
+                    'fte_staff',
+                    'direct_beneficiaries',
+                    'indirect_beneficiaries',
+                    'method',
+                    'verified_date',
+                    'keywords',
+                    'locations',
                 ],
             ],
         ]);
