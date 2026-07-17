@@ -9,7 +9,6 @@ use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
-
 #[OA\Schema(
     schema: "ProgrammeEntry",
     type: "object",
@@ -422,7 +421,7 @@ class ProgrammeEntryController extends Controller
         $user = $request->user();
         $query = ProgrammeEntry::with([
             'locations.province',
-            'activities' => fn ($q) => $q->where('is_primary', true),
+            'activities' => fn($q) => $q->where('is_primary', true),
             'activities.activityItem',
         ])->where('is_submitted', $isSubmitted)->orderBy('id', 'desc');
 
@@ -485,4 +484,5 @@ class ProgrammeEntryController extends Controller
         return $user->role === 'nep_admin'
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
-}
+    }
+
