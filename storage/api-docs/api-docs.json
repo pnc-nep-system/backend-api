@@ -522,6 +522,122 @@
                 ]
             }
         },
+        "/adviser/submissions": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Submit a document for Adviser analysis",
+                "description": "Allows NEP Coordinators and Admins to submit a document for analysis. The submitting party is captured as free text (not linked to the member database). Analysis scope defaults to 'full map' when not specified.",
+                "operationId": "0328944081adbb17f52fb4711322a826",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "submitting_party",
+                                    "document_name"
+                                ],
+                                "properties": {
+                                    "submitting_party": {
+                                        "description": "Name of the submitting party (free text, not linked to member database)",
+                                        "type": "string",
+                                        "example": "Ministry of Education"
+                                    },
+                                    "document_name": {
+                                        "description": "Name or title of the document being submitted",
+                                        "type": "string",
+                                        "example": "Education Sector Review 2026"
+                                    },
+                                    "analysis_scope": {
+                                        "description": "Scope of analysis: 'full map', 'geographic subset', or 'thematic subset'",
+                                        "type": "string",
+                                        "example": "full map",
+                                        "enum": [
+                                            "full map",
+                                            "geographic subset",
+                                            "thematic subset"
+                                        ]
+                                    },
+                                    "analysis_scope_detail": {
+                                        "description": "Additional details about the analysis scope (required for geographic or thematic subsets)",
+                                        "type": "string",
+                                        "example": "Focus on Phnom Penh and Siem Reap provinces",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Document submitted successfully for analysis",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Document submitted for analysis."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only NEP Coordinators and Admins can submit documents",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/login": {
             "post": {
                 "tags": [
@@ -798,6 +914,106 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/programme-entries/{programmeEntry}/keywords": {
+            "put": {
+                "tags": [
+                    "Programme Entries"
+                ],
+                "summary": "Save keywords for a programme entry",
+                "description": "Accepts an array of keyword strings. Replaces all existing keywords for the entry.",
+                "operationId": "529ed97e406cf464d6f846b7dda5bf64",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "keywords"
+                                ],
+                                "properties": {
+                                    "keywords": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "education",
+                                            "youth",
+                                            "rural"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Keywords saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Keywords saved."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EntryKeyword"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -1708,6 +1924,146 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/organisations/me": {
+            "get": {
+                "tags": [
+                    "Organisation Profile"
+                ],
+                "summary": "Get the current user's organisation profile",
+                "operationId": "9592e72385b829d4dcbc1c19d36f593f",
+                "responses": {
+                    "200": {
+                        "description": "Organisation profile retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Green Earth Nepal"
+                                                },
+                                                "contact_name": {
+                                                    "type": "string",
+                                                    "example": "Ram Sharma"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "info@greenearth.org"
+                                                },
+                                                "member_since": {
+                                                    "type": "integer",
+                                                    "example": 2020
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "User has no organisation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Organisation Profile"
+                ],
+                "summary": "Update the current user's organisation profile",
+                "operationId": "0565a9ece2657fcc40be9cdc2f9eae95",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "contact_name": {
+                                        "type": "string",
+                                        "example": "New Contact Name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "new@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Organisation profile updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Green Earth Nepal"
+                                                },
+                                                "contact_name": {
+                                                    "type": "string",
+                                                    "example": "New Contact Name"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "new@example.com"
+                                                },
+                                                "member_since": {
+                                                    "type": "integer",
+                                                    "example": 2020
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "User has no organisation"
+                    },
+                    "422": {
+                        "description": "Validation failed"
                     }
                 },
                 "security": [
@@ -3357,6 +3713,79 @@
                 },
                 "type": "object"
             },
+            "AdviserSubmission": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "submitting_party": {
+                        "type": "string",
+                        "example": "Ministry of Education"
+                    },
+                    "document_name": {
+                        "type": "string",
+                        "example": "Education Sector Review 2026"
+                    },
+                    "analysis_scope": {
+                        "type": "string",
+                        "example": "full map",
+                        "enum": [
+                            "full map",
+                            "geographic subset",
+                            "thematic subset"
+                        ]
+                    },
+                    "analysis_scope_detail": {
+                        "type": "string",
+                        "example": "Focus on Phnom Penh and Siem Reap provinces",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "pending"
+                    },
+                    "submitted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "EntryKeyword": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "programme_entry_id": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "keyword": {
+                        "type": "string",
+                        "example": "education"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "GovernmentAgreement": {
                 "properties": {
                     "id": {
@@ -3892,8 +4321,16 @@
             "description": "Admin - User Management"
         },
         {
+            "name": "Adviser",
+            "description": "Adviser"
+        },
+        {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Programme Entries",
+            "description": "Programme Entries"
         },
         {
             "name": "Government Agreements",
@@ -3908,12 +4345,12 @@
             "description": "Map Query & Export"
         },
         {
-            "name": "Programme Activities",
-            "description": "Programme Activities"
+            "name": "Organisation Profile",
+            "description": "Organisation Profile"
         },
         {
-            "name": "Programme Entries",
-            "description": "Programme Entries"
+            "name": "Programme Activities",
+            "description": "Programme Activities"
         },
         {
             "name": "Programme Geography",

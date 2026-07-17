@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\TaxonomyController;
+use App\Http\Controllers\Api\AdviserSubmissionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export', [MapEntryController::class, 'export']);
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
+    });
+
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store']);
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
