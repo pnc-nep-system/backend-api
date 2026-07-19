@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
+use App\Http\Controllers\Api\RefdataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,10 +28,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/districts/{district}/communes', [LocationController::class, 'communes']);
     Route::get('/communes/{commune}/villages', [LocationController::class, 'villages']);
 
-    Route::get('/user', fn (Request $request) => $request->user());
+    Route::get('/refdata/education-levels', [RefdataController::class, 'educationLevels']);
+    Route::get('/refdata/budget-bands', [RefdataController::class, 'budgetBands']);
+    Route::get('/refdata/counterpart-agencies', [RefdataController::class, 'counterpartAgencies']);
+
+    Route::get('/user', fn(Request $request) => $request->user());
     Route::get('/session', [AuthController::class, 'session']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/programme-entries', [ProgrammeEntryController::class, 'getAll']);
     Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
     Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
     Route::get('/programme-entries/draft', [ProgrammeEntryController::class, 'draft']);

@@ -82,6 +82,11 @@ use OpenApi\Attributes as OA;
 )]
 class ProgrammeEntryController extends Controller
 {
+    public function getAll(Request $request)
+    {
+        return ProgrammeEntry::query()->paginate(10);
+    }
+
     #[OA\Post(
         path: "/programme-entries",
         summary: "Create a new programme entry",
@@ -305,9 +310,17 @@ class ProgrammeEntryController extends Controller
         }
 
         $programmeEntry->load([
-            'activities.activityLevels',
+            'organisation',
+            'budgetBand',
             'keywords',
-            'locations',
+            'locations.province',
+            'locations.district',
+            'locations.commune',
+            'locations.village',
+            'activities.activityItem.subcategory.category',
+            'activities.activityItem.subcategory',
+            'activities.activityItem',
+            'activities.activityLevels.educationLevel',
             'governmentAgreements',
         ]);
 
@@ -422,7 +435,7 @@ class ProgrammeEntryController extends Controller
         $user = $request->user();
         $query = ProgrammeEntry::with([
             'locations.province',
-            'activities' => fn ($q) => $q->where('is_primary', true),
+            'activities' => fn($q) => $q->where('is_primary', true),
             'activities.activityItem',
         ])->where('is_submitted', $isSubmitted)->orderBy('id', 'desc');
 
