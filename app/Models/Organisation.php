@@ -9,6 +9,8 @@ class Organisation extends Model
 {
     use HasFactory;
 
+    protected $appends = ['logo_url'];
+
     protected $fillable = [
         'name',
         'contact_name',
@@ -16,6 +18,7 @@ class Organisation extends Model
         'member_since',
         'status',
         'last_inactive_at',
+        'logo_path',
     ];
 
     public function users()
@@ -36,5 +39,10 @@ class Organisation extends Model
     public function programmes()
     {
         return $this->hasMany(Programme::class);
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo_path ? \Storage::disk('public')->url($this->logo_path) : null;
     }
 }
