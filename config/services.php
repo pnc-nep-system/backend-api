@@ -23,4 +23,12 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+        'timeout' => env('GEMINI_TIMEOUT', 30),
+        'retry_attempts' => env('GEMINI_RETRY_ATTEMPTS', 2),
+        'retry_delay' => env('GEMINI_RETRY_DELAY', 500),
+    ],
+
 ];

@@ -18,7 +18,12 @@ class AdvisoryNoteFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'submitting_party' => fake()->company(),
+            'document_name' => fake()->sentence(4),
+            'analysis_scope' => 'full map',
+            'analysis_scope_detail' => null,
+            'status' => 'pending',
+            'submitted_at' => now(),
         ];
     }
 }
