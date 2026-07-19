@@ -82,6 +82,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
         Route::get('/', [OrganisationController::class, 'index'])->name('index');
+        Route::post('/', [OrganisationController::class, 'store'])->name('store');
+        Route::post('/{organisation}/logo', [OrganisationController::class, 'uploadLogo'])->name('logo');
+        Route::get('/{organisation}', [OrganisationController::class, 'show'])->name('show');
+        Route::put('/{organisation}', [OrganisationController::class, 'update'])->name('update');
+        Route::patch('/{organisation}/deactivate', [OrganisationController::class, 'deactivate'])->name('deactivate');
+        Route::patch('/{organisation}/activate', [OrganisationController::class, 'activate'])->name('activate');
     });
 
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {

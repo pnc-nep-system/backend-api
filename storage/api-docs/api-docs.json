@@ -80,6 +80,377 @@
                         "bearerAuth": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Create a new organisation",
+                "description": "Creates a new organisation. Optionally accepts a logo file (jpg, png, or webp, max 2MB) in the same request. Only accessible to nep_admin.",
+                "operationId": "83655b086065787086578c0bae4d9e2d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "contact_name",
+                                    "email",
+                                    "member_since"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Green Earth Nepal"
+                                    },
+                                    "contact_name": {
+                                        "type": "string",
+                                        "example": "Ram Sharma"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "info@greenearth.org"
+                                    },
+                                    "member_since": {
+                                        "type": "integer",
+                                        "example": 2020
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    },
+                                    "logo": {
+                                        "description": "Optional logo image (jpg, png, webp, max 2MB)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Organisation created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/logo": {
+            "post": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Upload or replace an organisation's logo",
+                "description": "Accepts an image file (jpg, png, or webp, max 2MB). Replaces any existing logo. Only accessible to nep_admin.",
+                "operationId": "2f5357a1db6e041254e60d911b9d7dc2",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "logo"
+                                ],
+                                "properties": {
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logo uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    },
+                    "422": {
+                        "description": "Validation failed — invalid file type or size"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}": {
+            "get": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Get a single organisation",
+                "description": "Only accessible to nep_admin.",
+                "operationId": "cb7c6451dfec3756db11245b181ec14f",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Update an organisation",
+                "description": "Only accessible to nep_admin.",
+                "operationId": "2768fe8092209fd84ff12f36ad0d6f08",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Green Earth Nepal"
+                                    },
+                                    "contact_name": {
+                                        "type": "string",
+                                        "example": "Ram Sharma"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "info@greenearth.org"
+                                    },
+                                    "member_since": {
+                                        "type": "integer",
+                                        "example": 2026
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Organisation updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/deactivate": {
+            "patch": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Deactivate an organisation",
+                "description": "Soft-deactivates an organisation (sets status to inactive and records the timestamp). Does not delete data — preserves history for existing programme entries and users. Only accessible to nep_admin.",
+                "operationId": "04167ced65f56d1a8dbb13b580df7396",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation deactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/activate": {
+            "patch": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Reactivate an organisation",
+                "description": "Sets status back to active and clears the last_inactive_at timestamp. Only accessible to nep_admin.",
+                "operationId": "681e27cf579a27671bb4b3b924380190",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation reactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/admin/users": {
@@ -3094,6 +3465,120 @@
                 ]
             }
         },
+        "/refdata/education-levels": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all education levels",
+                "description": "Returns a list of education levels for populating frontend dropdowns.",
+                "operationId": "1e8ed9567f3e18cfaa6e0e237b1bcc97",
+                "responses": {
+                    "200": {
+                        "description": "List of education levels",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EducationLevel"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/budget-bands": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all budget bands",
+                "description": "Returns a list of budget bands for populating frontend dropdowns.",
+                "operationId": "0f3e69dacbf8727aba457d2b971f0fc2",
+                "responses": {
+                    "200": {
+                        "description": "List of budget bands",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BudgetBand"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/counterpart-agencies": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all counterpart agency types",
+                "description": "Returns the list of valid counterpart agency types for government agreements.",
+                "operationId": "563c53158cf23f195cf01947ba749437",
+                "responses": {
+                    "200": {
+                        "description": "List of counterpart agency types",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/taxonomy/categories": {
             "get": {
                 "tags": [
@@ -3752,6 +4237,16 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "logo_path": {
+                        "type": "string",
+                        "example": "organisation-logos/abc123.png",
+                        "nullable": true
+                    },
+                    "logo_url": {
+                        "type": "string",
+                        "example": "http://localhost:8000/storage/organisation-logos/abc123.png",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -4254,6 +4749,36 @@
                 },
                 "type": "object"
             },
+            "EducationLevel": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "level_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "BudgetBand": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "min_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "max_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "TaxonomyCategory": {
                 "properties": {
                     "id": {
@@ -4443,6 +4968,10 @@
         {
             "name": "Programme Geography",
             "description": "Programme Geography"
+        },
+        {
+            "name": "Reference Data",
+            "description": "Reference Data"
         },
         {
             "name": "Taxonomy",
