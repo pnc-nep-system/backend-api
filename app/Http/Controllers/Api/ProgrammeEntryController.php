@@ -90,10 +90,18 @@ class ProgrammeEntryController extends Controller
             'locations.province',
             'activities' => fn($q) => $q->where('is_primary', true),
             'activities.activityItem',
+            'organisation',
         ])->orderBy('id', 'desc');
 
         if ($user->role === 'member_org') {
             $query->where('organisation_id', $user->organisation_id);
+        } elseif (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            // Admins/coordinators only see submitted entries — drafts belong to member orgs
+            $query->where('is_submitted', true);
+
+            if ($request->filled('organisation_id')) {
+                $query->where('organisation_id', (int) $request->organisation_id);
+            }
         }
 
         return response()->json($query->paginate(10));
