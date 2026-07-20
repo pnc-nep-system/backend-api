@@ -108,7 +108,7 @@ class EntryKeywordController extends Controller
     {
         $user = $request->user();
 
-        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+        if ($user->role === 'nep_admin') {
             return true;
         }
 

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
-use App\Models\User;
 use App\Services\Adviser\MapOverlapMatcher;
 use App\Services\AI\MistralService;
 use App\Services\AI\PromptBuilder;
@@ -166,7 +165,7 @@ class AdviserSubmissionController extends Controller
             ),
         ]
     )]
-    public function index(ListAdviserSubmissionRequest $request): JsonResponse
+    public function index(ListAdviserSubmissionRequest $request)
     {
         $query = AdvisoryNote::query();
 
@@ -186,7 +185,7 @@ class AdviserSubmissionController extends Controller
         return response()->json($submissions);
     }
 
-    public function store(StoreAdviserSubmissionRequest $request): JsonResponse
+    public function store(StoreAdviserSubmissionRequest $request)
     {
         $validated = $request->validated();
 
@@ -196,12 +195,6 @@ class AdviserSubmissionController extends Controller
         // If analysis scope is full map, clear the detail field
         if ($validated['analysis_scope'] === 'full map') {
             $validated['analysis_scope_detail'] = null;
-        }
-
-        // Map assigned_to to assign_to_staff_user_id if present
-        if (array_key_exists('assigned_to', $validated)) {
-            $validated['assign_to_staff_user_id'] = $validated['assigned_to'];
-            unset($validated['assigned_to']);
         }
 
         $submission = AdvisoryNote::create([
@@ -216,29 +209,6 @@ class AdviserSubmissionController extends Controller
         ], 201);
     }
 
-    public function show($id): JsonResponse
-    {
-        $submission = AdvisoryNote::findOrFail($id);
-        return response()->json([
-            'data' => $submission,
-        ]);
-    }
-
-    /**
-     * Get list of NEP coordinators for dropdown assignment
-     */
-    public function getCoordinators(): JsonResponse
-    {
-        $coordinators = User::where('role', 'nep_coordinator')
-            ->where('is_active', true)
-            ->select('id', 'name', 'email', 'role')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json([
-            'data' => $coordinators,
-        ]);
-    }
     #[OA\Post(
         path: "/adviser/submissions/{id}/generate-advisory-note",
         summary: "Generate an AI-powered advisory note using Mistral",

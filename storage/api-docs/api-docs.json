@@ -1337,6 +1337,22 @@
                                 }
                             }
                         }
+                    },
+                    "500": {
+                        "description": "AI service error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An unexpected error occurred while generating advisory content."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -1628,6 +1644,39 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard statistics",
+                "description": "Returns aggregate counts for the dashboard. Accessible to NEP Admins and Coordinators. For admins, coordinator_advisory_notes is null.",
+                "operationId": "06b55ec316b401263ae54a499fc977ad",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DashboardStats"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin or nep_coordinator"
                     }
                 },
                 "security": [
@@ -2058,6 +2107,56 @@
                     },
                     "404": {
                         "description": "Commune not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/provinces/counts": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get programme counts per province",
+                "description": "Returns each province with the count of distinct programme entries linked to it. Ordered by count descending.",
+                "operationId": "45b232d2c76a356182d061c0de5242d7",
+                "responses": {
+                    "200": {
+                        "description": "List of provinces with programme counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "province_name": {
+                                                "type": "string",
+                                                "example": "Phnom Penh"
+                                            },
+                                            "programme_count": {
+                                                "type": "integer",
+                                                "example": 42
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 },
                 "security": [
@@ -4441,6 +4540,60 @@
                     }
                 ]
             }
+        },
+        "/taxonomy/categories/counts": {
+            "get": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Get programme counts per taxonomy category",
+                "description": "Returns each taxonomy category with the count of distinct programme entries linked to it. Ordered by count descending.",
+                "operationId": "297a0387ea54fef86634b22691c477d4",
+                "responses": {
+                    "200": {
+                        "description": "List of categories with programme counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "code": {
+                                                "type": "string",
+                                                "example": "education"
+                                            },
+                                            "label": {
+                                                "type": "string",
+                                                "example": "Education"
+                                            },
+                                            "programme_count": {
+                                                "type": "integer",
+                                                "example": 42
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -4494,12 +4647,12 @@
                     },
                     "logo_path": {
                         "type": "string",
-                        "example": "organisation-logos/abc123.png",
+                        "example": "6789abc123def456",
                         "nullable": true
                     },
                     "logo_url": {
                         "type": "string",
-                        "example": "http://localhost:8000/storage/organisation-logos/abc123.png",
+                        "example": "https://ik.imagekit.io/rn6hppesw/organisation-logos/6789abc123def456",
                         "nullable": true
                     }
                 },
@@ -4647,6 +4800,32 @@
                         "type": "string",
                         "example": "Analysis based on full map scope with 3 overlapping programmes identified.",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardStats": {
+                "properties": {
+                    "total_organizations": {
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "total_program_entries": {
+                        "type": "integer",
+                        "example": 156
+                    },
+                    "unverified_program_entries": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "coordinator_advisory_notes": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "total_advisory_notes": {
+                        "type": "integer",
+                        "example": 28
                     }
                 },
                 "type": "object"
@@ -5246,6 +5425,10 @@
         {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Programme Entries",
