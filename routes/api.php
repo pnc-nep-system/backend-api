@@ -60,17 +60,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
-        Route::get('/map/entries', [MapEntryController::class, 'index']);
-        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
-        Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
-    });
-
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
         Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
+
+        Route::get('/map/entries', [MapEntryController::class, 'index']);
+        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
+        Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
+        Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
