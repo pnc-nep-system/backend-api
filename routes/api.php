@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
         Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+        Route::get('/dashboard/recent-activity', [DashboardController::class, 'recentActivity']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
 
         Route::get('/map/entries', [MapEntryController::class, 'index']);
