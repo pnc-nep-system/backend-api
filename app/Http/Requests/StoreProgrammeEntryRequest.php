@@ -8,12 +8,19 @@ class StoreProgrammeEntryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; 
+        return true;
     }
 
     public function rules(): array
     {
+        $user = $this->user();
+        $isNepStaff = in_array($user->role, ['nep_admin', 'nep_coordinator']);
+
         return [
+            'organisation_id' => [
+                $isNepStaff ? 'required' : 'prohibited',
+                'exists:organisations,id',
+            ],
             'budget_band_id' => ['nullable', 'exists:budget_bands,id'],
             'programme_name' => ['required', 'string', 'max:255'],
             'start_year' => ['required', 'integer', 'min:1900', 'max:2100'],
@@ -25,6 +32,14 @@ class StoreProgrammeEntryRequest extends FormRequest
             'method' => ['nullable', 'string'],
             'verified_date' => ['nullable', 'date'],
             'is_submitted' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'organisation_id.required' => 'organisation_id is required when creating an entry as NEP Admin or NEP Coordinator.',
+            'organisation_id.prohibited' => 'organisation_id cannot be set manually — entries are automatically assigned to your own organisation.',
         ];
     }
 }

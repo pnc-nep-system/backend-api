@@ -19,10 +19,10 @@ class AdvisoryNoteFactory extends Factory
     {
         return [
             'submitting_party' => fake()->company(),
-            'document_name' => fake()->sentence(4),
-            'analysis_scope' => 'full map',
+            'document_name' => fake()->sentence(3),
+            'analysis_scope' => fake()->randomElement(['full map', 'geographic subset', 'thematic subset']),
             'analysis_scope_detail' => null,
-            'status' => 'pending',
+            'status' => fake()->randomElement(['pending', 'in_review', 'completed']),
             'submitted_at' => now(),
         ];
     }

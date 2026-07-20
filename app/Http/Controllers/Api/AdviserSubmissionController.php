@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
 use App\Services\Adviser\MapOverlapMatcher;
@@ -124,6 +125,65 @@ class AdviserSubmissionController extends Controller
             ),
         ]
     )]
+    #[OA\Get(
+        path: "/adviser/submissions",
+        summary: "List Adviser document submissions",
+        description: "Returns a paginated list of Adviser document submission records. Only NEP Coordinators and Admins can retrieve submission records. Supports filtering by analysis scope and status.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(name: "analysis_scope", in: "query", required: false, description: "Filter by analysis scope", schema: new OA\Schema(type: "string", enum: ["full map", "geographic subset", "thematic subset"])),
+            new OA\Parameter(name: "status", in: "query", required: false, description: "Filter by submission status", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", required: false, description: "Number of records per page (default: 25, max: 100)", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Submission records retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/AdviserSubmission")
+                        ),
+                        new OA\Property(property: "current_page", type: "integer", example: 1),
+                        new OA\Property(property: "last_page", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", type: "integer", example: 25),
+                        new OA\Property(property: "total", type: "integer", example: 10),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden - Only NEP Coordinators and Admins can retrieve submission records",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")]
+                )
+            ),
+        ]
+    )]
+    public function index(ListAdviserSubmissionRequest $request)
+    {
+        $query = AdvisoryNote::query();
+
+        if ($request->filled('analysis_scope')) {
+            $query->where('analysis_scope', $request->input('analysis_scope'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $query->orderBy('submitted_at', 'desc');
+
+        $perPage = $request->integer('per_page', 25);
+        $submissions = $query->paginate($perPage);
+
+        return response()->json($submissions);
+    }
+
     public function store(StoreAdviserSubmissionRequest $request)
     {
         $validated = $request->validated();
