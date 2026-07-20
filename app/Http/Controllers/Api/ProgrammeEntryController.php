@@ -89,7 +89,7 @@ class ProgrammeEntryController extends Controller
     #[OA\Post(
         path: "/programme-entries",
         summary: "Create a new programme entry",
-        description: "Creates a Section 1 programme entry, automatically scoped to the authenticated user's organisation.",
+        description: "Creates a Section 1 programme entry. member_org users create entries for their own organisation as usual (organisation_id is automatically assigned). NEP Admin and NEP Coordinator can additionally create an entry on behalf of a member organisation — for example, to assist an organisation that needs help using the system — by specifying organisation_id explicitly.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Entries"],
         requestBody: new OA\RequestBody(
@@ -97,6 +97,13 @@ class ProgrammeEntryController extends Controller
             content: new OA\JsonContent(
                 required: ["programme_name", "start_year"],
                 properties: [
+                    new OA\Property(
+                        property: "organisation_id",
+                        type: "integer",
+                        example: 1,
+                        nullable: true,
+                        description: "Only used by NEP Admin/Coordinator when creating an entry on behalf of a member organisation. member_org users should omit this field — it is auto-assigned to their own organisation and will be rejected if sent."
+                    ),
                     new OA\Property(property: "programme_name", type: "string", example: "Youth Skills Initiative"),
                     new OA\Property(property: "start_year", type: "integer", example: 2026),
                     new OA\Property(property: "end_year", type: "integer", example: 2027, nullable: true),
@@ -124,7 +131,7 @@ class ProgrammeEntryController extends Controller
             new OA\Response(response: 401, description: "Unauthenticated"),
             new OA\Response(
                 response: 422,
-                description: "Validation failed",
+                description: "Validation failed — organisation_id is required for NEP Admin/Coordinator, and prohibited for member_org",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string", example: "The given data was invalid."),
@@ -136,10 +143,15 @@ class ProgrammeEntryController extends Controller
     )]
     public function store(StoreProgrammeEntryRequest $request)
     {
-        $entry = ProgrammeEntry::create([
-            ...$request->validated(),
-            'organisation_id' => $request->user()->organisation_id,
-        ]);
+        $user = $request->user();
+        $validated = $request->validated();
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['organisation_id'] = $user->organisation_id;
+        }
+
+        $entry = ProgrammeEntry::create($validated);
+
         return response()->json([
             'message' => 'Programme entry created.',
             'data' => $entry,

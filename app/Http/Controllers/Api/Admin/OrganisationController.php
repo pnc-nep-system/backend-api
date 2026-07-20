@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganisationRequest;
 use App\Http\Requests\UpdateOrganisationRequest;
 use App\Models\Organisation;
+use App\Services\ImageKitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -25,8 +26,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "users_count", type: "integer", example: 5),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
-        new OA\Property(property: "logo_path", type: "string", nullable: true, example: "organisation-logos/abc123.png"),
-        new OA\Property(property: "logo_url", type: "string", nullable: true, example: "http://localhost:8000/storage/organisation-logos/abc123.png"),
+        new OA\Property(property: "logo_path", type: "string", nullable: true, example: "6789abc123def456"),
+        new OA\Property(property: "logo_url", type: "string", nullable: true, example: "https://ik.imagekit.io/rn6hppesw/organisation-logos/6789abc123def456"),
     ]
 )]
 class OrganisationController extends Controller
@@ -114,20 +115,20 @@ class OrganisationController extends Controller
         ]
     )]
 
-    public function uploadLogo(Request $request, Organisation $organisation): JsonResponse
+    public function uploadLogo(Request $request, Organisation $organisation, ImageKitService $imageKit): JsonResponse
     {
         $request->validate([
             'logo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
-        // Delete old logo file if one exists, to avoid orphaned files accumulating in storage
         if ($organisation->logo_path) {
-            \Storage::disk('public')->delete($organisation->logo_path);
+            $imageKit->delete($organisation->logo_path);
         }
 
-        $path = $request->file('logo')->store('organisation-logos', 'public');
+        $file   = $request->file('logo');
+        $fileId = $imageKit->upload($file->getRealPath(), $file->getClientOriginalName(), 'organisation-logos');
 
-        $organisation->update(['logo_path' => $path]);
+        $organisation->update(['logo_path' => $fileId]);
 
         Cache::forget("organisation:{$organisation->id}");
 
@@ -170,7 +171,9 @@ class OrganisationController extends Controller
         $validated['status'] = $validated['status'] ?? 'active';
 
         if ($request->hasFile('logo')) {
-            $validated['logo_path'] = $request->file('logo')->store('organisation-logos', 'public');
+            $imageKit = app(ImageKitService::class);
+            $file = $request->file('logo');
+            $validated['logo_path'] = $imageKit->upload($file->getRealPath(), $file->getClientOriginalName(), 'organisation-logos');
         }
 
         $organisation = Organisation::create($validated);

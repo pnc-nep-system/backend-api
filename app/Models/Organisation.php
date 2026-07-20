@@ -43,6 +43,21 @@ class Organisation extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? \Storage::disk('public')->url($this->logo_path) : null;
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        // New format: "fileId|/folder/filename.jpg"
+        if (str_contains($this->logo_path, '|')) {
+            $filePath = explode('|', $this->logo_path)[1];
+            return rtrim(config('services.imagekit.url_endpoint'), '/') . $filePath;
+        }
+
+        // Old format: full URL stored directly
+        if (str_starts_with($this->logo_path, 'http')) {
+            return $this->logo_path;
+        }
+
+        return null;
     }
 }

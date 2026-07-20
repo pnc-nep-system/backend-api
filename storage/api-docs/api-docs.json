@@ -126,7 +126,7 @@
                                         ]
                                     },
                                     "logo": {
-                                        "description": "Optional logo image (jpg, png, webp, max 2MB)",
+                                        "description": "Optional logo image (jpg, png, webp, max 10MB)",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -170,7 +170,7 @@
                     "Admin - Organisations"
                 ],
                 "summary": "Upload or replace an organisation's logo",
-                "description": "Accepts an image file (jpg, png, or webp, max 2MB). Replaces any existing logo. Only accessible to nep_admin.",
+                "description": "Accepts an image file (jpg, png, or webp, max 10MB). Replaces any existing logo. Only accessible to nep_admin.",
                 "operationId": "2f5357a1db6e041254e60d911b9d7dc2",
                 "parameters": [
                     {
@@ -2680,7 +2680,7 @@
                     "Programme Entries"
                 ],
                 "summary": "Create a new programme entry",
-                "description": "Creates a Section 1 programme entry, automatically scoped to the authenticated user's organisation.",
+                "description": "Creates a Section 1 programme entry. member_org users create entries for their own organisation as usual (organisation_id is automatically assigned). NEP Admin and NEP Coordinator can additionally create an entry on behalf of a member organisation — for example, to assist an organisation that needs help using the system — by specifying organisation_id explicitly.",
                 "operationId": "a73ca51d62e59cc204ac25ab800d03f4",
                 "requestBody": {
                     "required": true,
@@ -2692,6 +2692,12 @@
                                     "start_year"
                                 ],
                                 "properties": {
+                                    "organisation_id": {
+                                        "description": "Only used by NEP Admin/Coordinator when creating an entry on behalf of a member organisation. member_org users should omit this field — it is auto-assigned to their own organisation and will be rejected if sent.",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "programme_name": {
                                         "type": "string",
                                         "example": "Youth Skills Initiative"
@@ -2766,7 +2772,7 @@
                         "description": "Unauthenticated"
                     },
                     "422": {
-                        "description": "Validation failed",
+                        "description": "Validation failed — organisation_id is required for NEP Admin/Coordinator, and prohibited for member_org",
                         "content": {
                             "application/json": {
                                 "schema": {
