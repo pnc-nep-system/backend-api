@@ -229,7 +229,7 @@ class MapEntryController extends Controller
         $perPage = $request->integer('per_page', 25);
         $entries = $query->paginate($perPage);
 
-        return response()->json(['data' => $entries]);
+        return response()->json($entries);
     }
 
     #[OA\Get(
