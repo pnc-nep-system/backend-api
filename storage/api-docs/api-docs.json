@@ -1200,6 +1200,152 @@
                 ]
             }
         },
+        "/adviser/submissions/{id}/generate-advisory-note": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The advisory note submission ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "programme_profile": {
+                                        "description": "The extracted programme profile for analysis",
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Advisory note generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Advisory note generated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "AI service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "AI service is temporarily unavailable. Please try again later."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/login": {
             "post": {
                 "tags": [
@@ -4449,6 +4595,58 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AdvisoryNoteResponse": {
+                "properties": {
+                    "executive_summary": {
+                        "type": "string",
+                        "example": "The submitted programme shows significant overlap with existing programmes in the education sector..."
+                    },
+                    "similar_or_overlapping_programmes": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "programme_name": {
+                                    "type": "string"
+                                },
+                                "organisation": {
+                                    "type": "string"
+                                },
+                                "overlap_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "activity",
+                                        "geography",
+                                        "audience",
+                                        "multiple"
+                                    ]
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "potential_duplication": {
+                        "type": "string",
+                        "example": "There is potential duplication with Programme X in the area of..."
+                    },
+                    "coverage_gaps": {
+                        "type": "string",
+                        "example": "The programme could address gaps in..."
+                    },
+                    "recommendations": {
+                        "type": "string",
+                        "example": "It is recommended to..."
+                    },
+                    "confidence_notes": {
+                        "type": "string",
+                        "example": "Analysis based on full map scope with 3 overlapping programmes identified.",
+                        "nullable": true
                     }
                 },
                 "type": "object"

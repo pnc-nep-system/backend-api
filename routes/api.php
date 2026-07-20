@@ -71,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/adviser/submissions/{id}', [AdviserSubmissionController::class, 'show']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
+        Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
+            ->middleware('throttle:5,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 
