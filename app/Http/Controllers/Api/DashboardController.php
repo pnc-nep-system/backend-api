@@ -44,7 +44,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $totalOrganizations = Organisation::count();
-        $totalProgramEntries = ProgrammeEntry::count();
+        $totalProgramEntries = ProgrammeEntry::where('is_submitted', true)->count();
         $unverifiedProgramEntries = ProgrammeEntry::where('is_unverified', true)->count();
         $totalAdvisoryNotes = AdvisoryNote::count();
 

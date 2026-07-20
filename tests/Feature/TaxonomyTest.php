@@ -473,4 +473,99 @@ class TaxonomyTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([]);
     }
+
+    // ==================== CATEGORY PROGRAMME COUNTS TESTS ====================
+
+    public function test_category_programme_counts_returns_zero_for_unused_categories(): void
+    {
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+        ActivityCategory::factory()->create(['code' => 'unused', 'label' => 'Unused Category']);
+
+        $response = $this->actingAs($admin)->getJson('/api/taxonomy/categories/counts');
+
+        $response->assertStatus(200);
+        $response->assertJsonFragment([
+            'code' => 'unused',
+            'programme_count' => 0,
+        ]);
+    }
+
+    public function test_category_programme_counts_counts_programmes_correctly(): void
+    {
+        $admin = User::factory()->create(['role' => 'nep_admin']);
+
+        $categoryA = ActivityCategory::factory()->create(['code' => 'education', 'label' => 'Education']);
+        $subA = ActivitySubcategory::factory()->create(['category_id' => $categoryA->id]);
+        $itemA = ActivityItem::factory()->create(['subcategory_id' => $subA->id]);
+
+        $categoryB = ActivityCategory::factory()->create(['code' => 'health', 'label' => 'Health']);
+        $subB = ActivitySubcategory::factory()->create(['category_id' => $categoryB->id]);
+        $itemB = ActivityItem::factory()->create(['subcategory_id' => $subB->id]);
+
+        $org = \App\Models\Organisation::factory()->create();
+
+        // Entry 1: activity in categoryA
+        $entry1 = ProgrammeEntry::factory()->create(['organisation_id' => $org->id]);
+        ProgrammeActivity::create([
+            'programme_entry_id' => $entry1->id,
+            'activity_item_id' => $itemA->id,
+            'source' => 'human_entered',
+        ]);
+
+        // Entry 2: activity in categoryB
+        $entry2 = ProgrammeEntry::factory()->create(['organisation_id' => $org->id]);
+        ProgrammeActivity::create([
+            'programme_entry_id' => $entry2->id,
+            'activity_item_id' => $itemB->id,
+            'source' => 'human_entered',
+        ]);
+
+        // Entry 3: two activities, one in categoryA and one in categoryB
+        $entry3 = ProgrammeEntry::factory()->create(['organisation_id' => $org->id]);
+        ProgrammeActivity::create([
+            'programme_entry_id' => $entry3->id,
+            'activity_item_id' => $itemA->id,
+            'is_primary' => true,
+            'source' => 'human_entered',
+        ]);
+        ProgrammeActivity::create([
+            'programme_entry_id' => $entry3->id,
+            'activity_item_id' => $itemB->id,
+            'is_primary' => false,
+            'source' => 'human_entered',
+        ]);
+
+        // Entry 4: no activities (should not appear in any count)
+        ProgrammeEntry::factory()->create(['organisation_id' => $org->id]);
+
+        $response = $this->actingAs($admin)->getJson('/api/taxonomy/categories/counts');
+
+        $response->assertStatus(200);
+
+        $response->assertJsonFragment([
+            'code' => 'education',
+            'programme_count' => 2, // entry1 + entry3
+        ]);
+
+        $response->assertJsonFragment([
+            'code' => 'health',
+            'programme_count' => 2, // entry2 + entry3
+        ]);
+    }
+
+    public function test_non_admin_cannot_access_category_counts(): void
+    {
+        $member = User::factory()->create(['role' => 'member_org']);
+
+        $response = $this->actingAs($member)->getJson('/api/taxonomy/categories/counts');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_unauthenticated_user_cannot_access_category_counts(): void
+    {
+        $response = $this->getJson('/api/taxonomy/categories/counts');
+
+        $response->assertStatus(401);
+    }
 }
