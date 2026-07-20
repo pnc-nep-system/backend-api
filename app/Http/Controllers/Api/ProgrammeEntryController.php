@@ -259,18 +259,35 @@ class ProgrammeEntryController extends Controller
         }
 
         $data = $request->validated();
-
         // Coordinators cannot submit on behalf of member org — only member_org users can submit
         if (in_array($request->user()->role, ['nep_admin', 'nep_coordinator'])) {
             unset($data['is_submitted']);
         }
 
+        $wasSubmitted = $programmeEntry->is_submitted;
+
         $programmeEntry->update($data);
+
+        // Notify admin/coordinator reviewers only on the actual draft -> submitted transition
+        if (! $wasSubmitted && $programmeEntry->fresh()->is_submitted) {
+            $this->notifyReviewers($programmeEntry);
+        }
 
         return response()->json([
             'message' => 'Programme entry updated.',
             'data' => $programmeEntry->fresh(),
         ]);
+    }
+
+    private function notifyReviewers(ProgrammeEntry $entry): void
+    {
+        $reviewers = \App\Models\User::whereIn('role', ['nep_admin', 'nep_coordinator'])
+            ->where('status', 'active')
+            ->get();
+
+        foreach ($reviewers as $reviewer) {
+            $reviewer->notify(new \App\Notifications\ProgrammeEntrySubmittedForReview($entry));
+        }
     }
     #[OA\Get(
         path: "/organisations/{organisation}/programme-entries",
