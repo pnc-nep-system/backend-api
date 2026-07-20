@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RefdataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
