@@ -12,6 +12,7 @@ use App\Services\AI\PromptBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -307,8 +308,17 @@ class AdviserSubmissionController extends Controller
     ): JsonResponse {
         $submission = AdvisoryNote::findOrFail($id);
 
+        // Validate user permissions
+        $user = $request->user();
+        if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
         $request->validate([
             'programme_profile' => 'required|array',
+            'programme_profile.activities' => 'sometimes|array',
+            'programme_profile.geography' => 'sometimes|array',
+            'programme_profile.audiences' => 'sometimes|array',
         ]);
 
         $programmeProfile = $request->input('programme_profile');
@@ -369,6 +379,13 @@ class AdviserSubmissionController extends Controller
             if ($httpStatus < 100 || $httpStatus > 599) {
                 $httpStatus = 503;
             }
+
+            // Log the error for debugging (without exposing sensitive details)
+            Log::warning('Advisory note generation failed', [
+                'submission_id' => $submission->id,
+                'status_code' => $statusCode,
+                'user_id' => $user->id,
+            ]);
 
             return response()->json([
                 'message' => $e->getMessage(),

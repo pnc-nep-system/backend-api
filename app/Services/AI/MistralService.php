@@ -24,6 +24,11 @@ class MistralService
         $this->retryAttempts = config('services.mistral.retry_attempts', 2);
         $this->retryDelay = config('services.mistral.retry_delay', 500);
         $this->endpoint = "https://api.mistral.ai/v1/chat/completions";
+
+        // Validate API key is configured
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('Mistral API key is not configured. Please set MISTRAL_API_KEY in your environment variables.', 500);
+        }
     }
 
     /**
@@ -78,7 +83,7 @@ class MistralService
                 Log::error('Mistral API request failed', [
                     'status_code' => $statusCode,
                     'attempt' => $attempt + 1,
-                    'error_preview' => mb_substr($errorBody, 0, 500),
+                    'error_message' => $this->getErrorMessage($response->json() ?? [], $statusCode),
                 ]);
 
                 // Non-retryable errors
@@ -118,8 +123,8 @@ class MistralService
                 throw $e;
             } catch (\Exception $e) {
                 Log::error('Unexpected error in Mistral service', [
+                    'error_type' => get_class($e),
                     'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
                 ]);
                 throw new \RuntimeException(
                     'An unexpected error occurred while generating advisory content.',
