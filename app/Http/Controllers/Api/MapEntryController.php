@@ -108,7 +108,7 @@ class MapEntryController extends Controller
                               });
                     });
                 }
-                
+
                 if ($request->filled('district_id')) {
                     $q->where('district_id', $request->input('district_id'));
                 }
@@ -124,7 +124,7 @@ class MapEntryController extends Controller
                 if ($request->filled('agreement_counterpart_type')) {
                     $q->where('counterpart_agency', $request->input('agreement_counterpart_type'));
                 }
-                
+
                 if ($request->filled('agreement_status')) {
                     $q->where('status', $request->input('agreement_status'));
                 }
@@ -136,13 +136,13 @@ class MapEntryController extends Controller
                 if ($request->filled('item_id')) {
                     $q->where('activity_item_id', $request->input('item_id'));
                 }
-                
+
                 if ($request->filled('subcategory_id') || $request->filled('category_id')) {
                     $q->whereHas('activityItem.subcategory', function ($subQ) use ($request) {
                         if ($request->filled('subcategory_id')) {
                             $subQ->where('subcategory_id', $request->input('subcategory_id'));
                         }
-                        
+
                         if ($request->filled('category_id')) {
                             $subQ->where('category_id', $request->input('category_id'));
                         }
@@ -208,6 +208,7 @@ class MapEntryController extends Controller
     {
         $user = $request->user();
         $query = $this->buildMapQuery($request, $user)
+        ->where('is_submitted', true)
             ->with([
                 'organisation',
                 'budgetBand',
@@ -223,9 +224,7 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        $perPage = $request->integer('per_page', 25);
-        $entries = $query->paginate($perPage);
-        
+        $entries = $query->get();
         return response()->json(['data' => $entries]);
     }
 
@@ -559,12 +558,12 @@ class MapEntryController extends Controller
     public function geojson(Request $request)
     {
         $user = $request->user();
-        
+
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $query = $this->buildMapQuery($request, $user);
+      $query = $this->buildMapQuery($request, $user)->where('is_submitted', true);
         $entryIds = $query->pluck('id');
 
         $counts = DB::table('programme_geography')
