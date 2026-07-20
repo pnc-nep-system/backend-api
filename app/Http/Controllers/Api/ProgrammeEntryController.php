@@ -495,7 +495,7 @@ class ProgrammeEntryController extends Controller
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-        return $user->role === 'nep_admin'
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }

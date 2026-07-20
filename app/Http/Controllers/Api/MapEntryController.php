@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MapEntryFlatResource;
 use App\Models\ProgrammeEntry;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -84,6 +85,7 @@ class MapEntryController extends Controller
         ]);
 
         $query = ProgrammeEntry::query();
+        $query->where('is_submitted', true);
 
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
@@ -224,7 +226,9 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        $entries = $query->get();
+        $perPage = $request->integer('per_page', 25);
+        $entries = $query->paginate($perPage);
+
         return response()->json(['data' => $entries]);
     }
 
