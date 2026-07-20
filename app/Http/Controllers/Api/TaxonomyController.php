@@ -585,6 +585,47 @@ class TaxonomyController extends Controller
         return response()->json($otherEntries);
     }
 
+    #[OA\Get(
+        path: "/taxonomy/categories/counts",
+        summary: "Get programme counts per taxonomy category",
+        description: "Returns each taxonomy category with the count of distinct programme entries linked to it. Ordered by count descending.",
+        security: [["bearerAuth" => []]],
+        tags: ["Taxonomy"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of categories with programme counts",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: "id", type: "integer", example: 1),
+                            new OA\Property(property: "code", type: "string", example: "education"),
+                            new OA\Property(property: "label", type: "string", example: "Education"),
+                            new OA\Property(property: "programme_count", type: "integer", example: 42),
+                        ]
+                    )
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+        ]
+    )]
+    public function categoryProgrammeCounts()
+    {
+        $counts = DB::table('taxonomy_categories as tc')
+            ->leftJoin('taxonomy_subcategories as ts', 'ts.category_id', '=', 'tc.id')
+            ->leftJoin('taxonomy_items as ti', 'ti.subcategory_id', '=', 'ts.id')
+            ->leftJoin('programme_activities as pa', 'pa.activity_item_id', '=', 'ti.id')
+            ->select('tc.id', 'tc.code', 'tc.label',
+                DB::raw('COUNT(DISTINCT pa.programme_entry_id) as programme_count'))
+            ->groupBy('tc.id', 'tc.code', 'tc.label')
+            ->orderByDesc('programme_count')
+            ->get();
+
+        return response()->json($counts);
+    }
+
     protected function authorizeAdmin(Request $request): void
     {
         $user = $request->user();
