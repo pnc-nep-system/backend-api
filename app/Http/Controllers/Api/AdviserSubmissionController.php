@@ -166,7 +166,7 @@ class AdviserSubmissionController extends Controller
             ),
         ]
     )]
-    public function index(ListAdviserSubmissionRequest $request)
+    public function index(ListAdviserSubmissionRequest $request): JsonResponse
     {
         $query = AdvisoryNote::query();
 
@@ -186,7 +186,7 @@ class AdviserSubmissionController extends Controller
         return response()->json($submissions);
     }
 
-    public function store(StoreAdviserSubmissionRequest $request)
+    public function store(StoreAdviserSubmissionRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
@@ -216,7 +216,7 @@ class AdviserSubmissionController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show($id): JsonResponse
     {
         $submission = AdvisoryNote::findOrFail($id);
         return response()->json([
@@ -227,27 +227,13 @@ class AdviserSubmissionController extends Controller
     /**
      * Get list of NEP coordinators for dropdown assignment
      */
-    public function getCoordinators()
-    {
-        $coordinators = User::where('role', 'nep_coordinator')
-            ->select('id', 'name', 'email', 'role')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json($coordinators);
-    }
-
-    /**
-     * Return all active users with the nep_coordinator role.
-     * Accessible to both nep_admin and nep_coordinator so the assignment
-     * dropdown can be populated without going through the admin-only /admin/users endpoint.
-     */
-    public function coordinators()
+    public function getCoordinators(): JsonResponse
     {
         $coordinators = User::where('role', 'nep_coordinator')
             ->where('is_active', true)
+            ->select('id', 'name', 'email', 'role')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role']);
+            ->get();
 
         return response()->json([
             'data' => $coordinators,
