@@ -36,6 +36,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/session', [AuthController::class, 'session']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::get('/notifications', fn(Request $request) => response()->json([
+        'data' => $request->user()->notifications()->latest()->take(20)->get()->map(fn($n) => [
+            'id'                 => $n->id,
+            'type'               => 'programme_sent',
+            'title'              => 'New programme: ' . ($n->data['programme_name'] ?? ''),
+            'message'            => $n->data['message'] ?? '',
+            'programme_entry_id' => $n->data['programme_entry_id'] ?? null,
+            'read_at'            => $n->read_at,
+            'created_at'         => $n->created_at,
+        ]),
+    ]));
+    Route::patch('/notifications/read-all', function (Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return response()->json(['message' => 'All notifications marked as read.']);
+    });
+    Route::patch('/notifications/{id}/read', function (Request $request, string $id) {
+        $notification = $request->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return response()->json(['message' => 'Notification marked as read.']);
+    });
+
     Route::get('/programme-entries', [ProgrammeEntryController::class, 'getAll']);
     Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
     Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
@@ -50,7 +71,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify'])
         ->middleware('role:nep_admin');
 
-    Route::middleware('role:nep_admin,member_org')->group(function () {
+    Route::post('/programme-entries/{programmeEntry}/send-to-member', [ProgrammeEntryController::class, 'sendToMember'])
+        ->middleware('role:nep_admin,nep_coordinator');
+
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
         Route::put('/programme-entries/{programmeEntry}/keywords', [EntryKeywordController::class, 'store']);
         Route::put('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
@@ -85,8 +109,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
     });
 
-    Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
         Route::get('/', [OrganisationController::class, 'index'])->name('index');
+    });
+
+    Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
         Route::post('/', [OrganisationController::class, 'store'])->name('store');
         Route::post('/{organisation}/logo', [OrganisationController::class, 'uploadLogo'])->name('logo');
         Route::get('/{organisation}', [OrganisationController::class, 'show'])->name('show');

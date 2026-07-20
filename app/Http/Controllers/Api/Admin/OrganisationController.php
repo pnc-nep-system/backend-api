@@ -36,7 +36,7 @@ class OrganisationController extends Controller
         path: "/admin/organisations",
         tags: ["Admin - Organisations"],
         summary: "List all organisations",
-        description: "Only accessible to nep_admin. Supports filtering by status and search.",
+        description: "Accessible to nep_admin and nep_coordinator. Supports filtering by status and search.",
         security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(

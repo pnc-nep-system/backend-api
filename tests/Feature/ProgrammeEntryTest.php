@@ -147,6 +147,42 @@ class ProgrammeEntryTest extends TestCase
         $response->assertNotFound();
     }
 
+    public function test_nep_admin_created_entries_for_org_remain_draft()
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/programme-entries', [
+                'organisation_id' => $this->orgB->id,
+                'programme_name' => 'Admin assisted programme',
+                'start_year' => 2026,
+                'is_submitted' => true,
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.organisation_id', $this->orgB->id);
+        $response->assertJsonPath('data.is_submitted', false);
+
+        $entry = ProgrammeEntry::findOrFail($response->json('data.id'));
+        $this->assertFalse($entry->is_submitted);
+    }
+
+    public function test_nep_coordinator_created_entries_for_org_remain_draft()
+    {
+        $response = $this->actingAs($this->coordinatorUser)
+            ->postJson('/api/programme-entries', [
+                'organisation_id' => $this->orgB->id,
+                'programme_name' => 'Coordinator assisted programme',
+                'start_year' => 2026,
+                'is_submitted' => true,
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.organisation_id', $this->orgB->id);
+        $response->assertJsonPath('data.is_submitted', false);
+
+        $entry = ProgrammeEntry::findOrFail($response->json('data.id'));
+        $this->assertFalse($entry->is_submitted);
+    }
+
     public function test_unauthenticated_cannot_access_index()
     {
         $response = $this->getJson("/api/organisations/{$this->orgA->id}/programme-entries");

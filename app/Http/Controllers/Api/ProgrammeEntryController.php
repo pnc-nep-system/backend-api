@@ -84,7 +84,27 @@ class ProgrammeEntryController extends Controller
 {
     public function getAll(Request $request)
     {
-        return ProgrammeEntry::query()->paginate(10);
+        $user = $request->user();
+
+        $query = ProgrammeEntry::with([
+            'locations.province',
+            'activities' => fn($q) => $q->where('is_primary', true),
+            'activities.activityItem',
+            'organisation',
+        ])->orderBy('id', 'desc');
+
+        if ($user->role === 'member_org') {
+            $query->where('organisation_id', $user->organisation_id);
+        } elseif (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            // Admins/coordinators only see submitted entries — drafts belong to member orgs
+            $query->where('is_submitted', true);
+
+            if ($request->filled('organisation_id')) {
+                $query->where('organisation_id', (int) $request->organisation_id);
+            }
+        }
+
+        return response()->json($query->paginate(10));
     }
 
     #[OA\Post(
@@ -149,9 +169,16 @@ class ProgrammeEntryController extends Controller
 
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $validated['organisation_id'] = $user->organisation_id;
+        } else {
+            $validated['is_submitted'] = false;
         }
 
         $entry = ProgrammeEntry::create($validated);
+
+        // Auto-notify member_org users when staff creates on behalf of their org
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $this->notifyMemberUsers($entry);
+        }
 
         return response()->json([
             'message' => 'Programme entry created.',
@@ -230,7 +257,15 @@ class ProgrammeEntryController extends Controller
                 'message' => 'You are not authorized to update this entry.',
             ], 403);
         }
-        $programmeEntry->update($request->validated());
+
+        $data = $request->validated();
+
+        // Coordinators cannot submit on behalf of member org — only member_org users can submit
+        if (in_array($request->user()->role, ['nep_admin', 'nep_coordinator'])) {
+            unset($data['is_submitted']);
+        }
+
+        $programmeEntry->update($data);
 
         return response()->json([
             'message' => 'Programme entry updated.',
@@ -504,10 +539,50 @@ class ProgrammeEntryController extends Controller
         ]);
     }
 
+    public function sendToMember(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if ($programmeEntry->is_submitted) {
+            return response()->json(['message' => 'Entry is already submitted.'], 422);
+        }
+
+        $sent = $this->notifyMemberUsers($programmeEntry);
+
+        if (! $sent) {
+            return response()->json(['message' => 'No active member users found for this organisation.'], 422);
+        }
+
+        return response()->json(['message' => 'Entry sent to member organisation for review.']);
+    }
+
+    private function notifyMemberUsers(ProgrammeEntry $entry): bool
+    {
+        $members = \App\Models\User::where('organisation_id', $entry->organisation_id)
+            ->where('role', 'member_org')
+            ->where('status', 'active')
+            ->get();
+
+        if ($members->isEmpty()) {
+            return false;
+        }
+
+        foreach ($members as $member) {
+            // Remove existing unread notification for same entry to avoid duplicates
+            $member->notifications()
+                ->where('type', \App\Notifications\ProgrammeEntryDraftedByCoordinator::class)
+                ->whereNull('read_at')
+                ->whereJsonContains('data->programme_entry_id', $entry->id)
+                ->delete();
+
+            $member->notify(new \App\Notifications\ProgrammeEntryDraftedByCoordinator($entry));
+        }
+
+        return true;
+    }
+
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-        return $user->role === 'nep_admin'
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }
