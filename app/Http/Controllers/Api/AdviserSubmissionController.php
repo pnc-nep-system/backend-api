@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
-<<<<<<< HEAD
 use App\Models\User;
-=======
 use App\Services\Adviser\MapOverlapMatcher;
 use App\Services\AI\MistralService;
 use App\Services\AI\PromptBuilder;
@@ -16,7 +14,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
->>>>>>> b50daa16f3359bac4d6b43daf8ce2cdd81ea2666
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -219,7 +216,6 @@ class AdviserSubmissionController extends Controller
         ], 201);
     }
 
-<<<<<<< HEAD
     public function show($id)
     {
         $submission = AdvisoryNote::findOrFail($id);
@@ -257,8 +253,6 @@ class AdviserSubmissionController extends Controller
             'data' => $coordinators,
         ]);
     }
-}
-=======
     #[OA\Post(
         path: "/adviser/submissions/{id}/generate-advisory-note",
         summary: "Generate an AI-powered advisory note using Mistral",
@@ -443,4 +437,3 @@ class AdviserSubmissionController extends Controller
         }
     }
 }
->>>>>>> b50daa16f3359bac4d6b43daf8ce2cdd81ea2666
