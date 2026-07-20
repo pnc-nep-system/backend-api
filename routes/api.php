@@ -66,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);

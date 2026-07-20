@@ -612,13 +612,115 @@
             }
         },
         "/adviser/submissions": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "List Adviser document submissions",
+                "description": "Returns a paginated list of Adviser document submission records. Only NEP Coordinators and Admins can retrieve submission records. Supports filtering by analysis scope and status.",
+                "operationId": "ffb9213c9e475ed04ecd525509b632c9",
+                "parameters": [
+                    {
+                        "name": "analysis_scope",
+                        "in": "query",
+                        "description": "Filter by analysis scope",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "full map",
+                                "geographic subset",
+                                "thematic subset"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by submission status",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of records per page (default: 25, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission records retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AdviserSubmission"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only NEP Coordinators and Admins can retrieve submission records",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "Adviser"
                 ],
                 "summary": "Submit a document for Adviser analysis",
                 "description": "Allows NEP Coordinators and Admins to submit a document for analysis. The submitting party is captured as free text (not linked to the member database). Analysis scope defaults to 'full map' when not specified.",
-                "operationId": "0328944081adbb17f52fb4711322a826",
+                "operationId": "ae3a9493f22b6d825aad616acd6f497b",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -3094,6 +3196,120 @@
                 ]
             }
         },
+        "/refdata/education-levels": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all education levels",
+                "description": "Returns a list of education levels for populating frontend dropdowns.",
+                "operationId": "1e8ed9567f3e18cfaa6e0e237b1bcc97",
+                "responses": {
+                    "200": {
+                        "description": "List of education levels",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EducationLevel"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/budget-bands": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all budget bands",
+                "description": "Returns a list of budget bands for populating frontend dropdowns.",
+                "operationId": "0f3e69dacbf8727aba457d2b971f0fc2",
+                "responses": {
+                    "200": {
+                        "description": "List of budget bands",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BudgetBand"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/counterpart-agencies": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all counterpart agency types",
+                "description": "Returns the list of valid counterpart agency types for government agreements.",
+                "operationId": "563c53158cf23f195cf01947ba749437",
+                "responses": {
+                    "200": {
+                        "description": "List of counterpart agency types",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/taxonomy/categories": {
             "get": {
                 "tags": [
@@ -4254,6 +4470,36 @@
                 },
                 "type": "object"
             },
+            "EducationLevel": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "level_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "BudgetBand": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "min_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "max_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "TaxonomyCategory": {
                 "properties": {
                     "id": {
@@ -4443,6 +4689,10 @@
         {
             "name": "Programme Geography",
             "description": "Programme Geography"
+        },
+        {
+            "name": "Reference Data",
+            "description": "Reference Data"
         },
         {
             "name": "Taxonomy",
