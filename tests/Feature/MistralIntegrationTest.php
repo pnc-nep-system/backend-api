@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-class GeminiIntegrationTest extends TestCase
+class MistralIntegrationTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -44,24 +44,22 @@ class GeminiIntegrationTest extends TestCase
             'analysis_scope' => 'full map',
         ]);
 
-        // Mock the Gemini API response
+        // Mock the Mistral API response
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => json_encode([
-                                    'executive_summary' => 'Test executive summary.',
-                                    'similar_or_overlapping_programmes' => [],
-                                    'potential_duplication' => 'No duplication detected.',
-                                    'coverage_gaps' => 'No gaps identified.',
-                                    'recommendations' => 'Proceed with submission.',
-                                    'confidence_notes' => 'Test confidence note.',
-                                ])],
-                            ],
+                        'message' => [
+                            'content' => json_encode([
+                                'executive_summary' => 'Test executive summary.',
+                                'similar_or_overlapping_programmes' => [],
+                                'potential_duplication' => 'No duplication detected.',
+                                'coverage_gaps' => 'No gaps identified.',
+                                'recommendations' => 'Proceed with submission.',
+                                'confidence_notes' => 'Test confidence note.',
+                            ]),
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),
@@ -102,21 +100,19 @@ class GeminiIntegrationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => json_encode([
-                                    'executive_summary' => 'Test summary.',
-                                    'similar_or_overlapping_programmes' => [],
-                                    'potential_duplication' => 'None.',
-                                    'coverage_gaps' => 'None.',
-                                    'recommendations' => 'Proceed.',
-                                ])],
-                            ],
+                        'message' => [
+                            'content' => json_encode([
+                                'executive_summary' => 'Test summary.',
+                                'similar_or_overlapping_programmes' => [],
+                                'potential_duplication' => 'None.',
+                                'coverage_gaps' => 'None.',
+                                'recommendations' => 'Proceed.',
+                            ]),
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),
@@ -199,7 +195,7 @@ class GeminiIntegrationTest extends TestCase
     //  AI Response Parsing
     // ----------------------------------------------------------------
 
-    public function test_parses_valid_json_response_from_gemini()
+    public function test_parses_valid_json_response_from_mistral()
     {
         $submission = AdvisoryNote::factory()->create([
             'analysis_scope' => 'full map',
@@ -222,15 +218,13 @@ class GeminiIntegrationTest extends TestCase
         ];
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => json_encode($expectedResponse)],
-                            ],
+                        'message' => [
+                            'content' => json_encode($expectedResponse),
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),
@@ -261,19 +255,17 @@ class GeminiIntegrationTest extends TestCase
             'analysis_scope' => 'full map',
         ]);
 
-        // Simulate Gemini returning JSON inside a markdown code block
+        // Simulate Mistral returning JSON inside a markdown code block
         $markdownResponse = "Here is the analysis:\n\n```json\n{\n  \"executive_summary\": \"Summary from markdown.\",\n  \"similar_or_overlapping_programmes\": [],\n  \"potential_duplication\": \"None.\",\n  \"coverage_gaps\": \"None.\",\n  \"recommendations\": \"Proceed.\",\n  \"confidence_notes\": \"From markdown.\"\n}\n```";
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => $markdownResponse],
-                            ],
+                        'message' => [
+                            'content' => $markdownResponse,
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),
@@ -298,17 +290,15 @@ class GeminiIntegrationTest extends TestCase
             'analysis_scope' => 'full map',
         ]);
 
-        // Simulate Gemini returning plain text instead of JSON
+        // Simulate Mistral returning plain text instead of JSON
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => 'This is a plain text response without any JSON structure.'],
-                            ],
+                        'message' => [
+                            'content' => 'This is a plain text response without any JSON structure.',
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),
@@ -341,7 +331,7 @@ class GeminiIntegrationTest extends TestCase
     //  Error Handling
     // ----------------------------------------------------------------
 
-    public function test_handles_gemini_api_failure()
+    public function test_handles_mistral_api_failure()
     {
         $submission = AdvisoryNote::factory()->create([
             'analysis_scope' => 'full map',
@@ -349,11 +339,9 @@ class GeminiIntegrationTest extends TestCase
 
         // Simulate a 500 error from Gemini
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
+            'api.mistral.ai/v1/chat/completions' => Http::response([
                 'error' => [
-                    'code' => 500,
                     'message' => 'Internal server error',
-                    'status' => 'INTERNAL',
                 ],
             ], 500),
         ]);
@@ -369,22 +357,20 @@ class GeminiIntegrationTest extends TestCase
 
         $response->assertStatus(500);
         $response->assertJson([
-            'message' => 'Gemini API returned error status 500: AI service is temporarily unavailable. Please try again later.',
+            'message' => 'Mistral API returned error status 500: AI service is temporarily unavailable. Please try again later.',
         ]);
     }
 
-    public function test_handles_gemini_api_authentication_failure()
+    public function test_handles_mistral_api_authentication_failure()
     {
         $submission = AdvisoryNote::factory()->create([
             'analysis_scope' => 'full map',
         ]);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
+            'api.mistral.ai/v1/chat/completions' => Http::response([
                 'error' => [
-                    'code' => 403,
                     'message' => 'Permission denied.',
-                    'status' => 'PERMISSION_DENIED',
                 ],
             ], 403),
         ]);
@@ -400,22 +386,20 @@ class GeminiIntegrationTest extends TestCase
 
         $response->assertStatus(403);
         $response->assertJson([
-            'message' => 'Gemini API returned error status 403: Authentication failed. Check API key configuration.',
+            'message' => 'Mistral API returned error status 403: Authentication failed. Check API key configuration.',
         ]);
     }
 
-    public function test_handles_gemini_api_rate_limit()
+    public function test_handles_mistral_api_rate_limit()
     {
         $submission = AdvisoryNote::factory()->create([
             'analysis_scope' => 'full map',
         ]);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
+            'api.mistral.ai/v1/chat/completions' => Http::response([
                 'error' => [
-                    'code' => 429,
                     'message' => 'Rate limit exceeded.',
-                    'status' => 'RESOURCE_EXHAUSTED',
                 ],
             ], 429),
         ]);
@@ -431,7 +415,7 @@ class GeminiIntegrationTest extends TestCase
 
         $response->assertStatus(429);
         $response->assertJson([
-            'message' => 'Gemini API returned error status 429: Rate limit exceeded. Please wait and try again.',
+            'message' => 'Mistral API returned error status 429: Rate limit exceeded. Please wait and try again.',
         ]);
     }
 
@@ -443,7 +427,7 @@ class GeminiIntegrationTest extends TestCase
 
         // Simulate a connection error
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => function () {
+            'api.mistral.ai/v1/chat/completions' => function () {
                 throw new \Illuminate\Http\Client\ConnectionException('Connection refused');
             },
         ]);
@@ -459,19 +443,19 @@ class GeminiIntegrationTest extends TestCase
 
         $response->assertStatus(503);
         $response->assertJson([
-            'message' => 'Unable to connect to Gemini AI service. Please try again later.',
+            'message' => 'Unable to connect to Mistral AI service. Please try again later.',
         ]);
     }
 
-    public function test_handles_empty_gemini_response()
+    public function test_handles_empty_mistral_response()
     {
         $submission = AdvisoryNote::factory()->create([
             'analysis_scope' => 'full map',
         ]);
 
-        // Simulate an empty response from Gemini
+        // Simulate an empty response from Mistral
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([], 200),
+            'api.mistral.ai/v1/chat/completions' => Http::response([], 200),
         ]);
 
         $response = $this->actingAs($this->adminUser)
@@ -485,7 +469,7 @@ class GeminiIntegrationTest extends TestCase
 
         $response->assertStatus(503);
         $response->assertJson([
-            'message' => 'Gemini API returned an empty response.',
+            'message' => 'Mistral API returned an empty response.',
         ]);
     }
 
@@ -495,14 +479,11 @@ class GeminiIntegrationTest extends TestCase
             'analysis_scope' => 'full map',
         ]);
 
-        // Simulate Gemini blocking the content
+        // Simulate Mistral blocking the content
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'promptFeedback' => [
-                    'blockReason' => 'SAFETY',
-                ],
-                'candidates' => [],
-            ], 200),
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'message' => 'Content blocked due to safety concerns',
+            ], 400),
         ]);
 
         $response = $this->actingAs($this->adminUser)
@@ -514,9 +495,9 @@ class GeminiIntegrationTest extends TestCase
                 ],
             ]);
 
-        $response->assertStatus(503);
+        $response->assertStatus(400);
         $response->assertJson([
-            'message' => 'AI content generation was blocked: SAFETY',
+            'message' => 'Mistral API returned error status 400: Invalid request: Content blocked due to safety concerns',
         ]);
     }
 
@@ -539,7 +520,7 @@ class GeminiIntegrationTest extends TestCase
         ];
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => function ($request) use ($expectedResponse) {
+            'api.mistral.ai/v1/chat/completions' => function ($request) use ($expectedResponse) {
                 // Verify the request contains expected prompt sections
                 $body = $request->body();
                 $this->assertStringContainsString('SUBMITTED PROGRAMME PROFILE', $body);
@@ -548,14 +529,12 @@ class GeminiIntegrationTest extends TestCase
                 $this->assertStringContainsString('executive_summary', $body);
 
                 return Http::response([
-                    'candidates' => [
+                    'choices' => [
                         [
-                            'content' => [
-                                'parts' => [
-                                    ['text' => json_encode($expectedResponse)],
-                                ],
+                            'message' => [
+                                'content' => json_encode($expectedResponse),
                             ],
-                            'finishReason' => 'STOP',
+                            'finish_reason' => 'stop',
                         ],
                     ],
                 ], 200);
@@ -590,26 +569,24 @@ class GeminiIntegrationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => function ($request) {
+            'api.mistral.ai/v1/chat/completions' => function ($request) {
                 $body = $request->body();
                 $this->assertStringContainsString('geographic subset', $body);
                 $this->assertStringContainsString('Focus on Phnom Penh province', $body);
 
                 return Http::response([
-                    'candidates' => [
+                    'choices' => [
                         [
-                            'content' => [
-                                'parts' => [
-                                    ['text' => json_encode([
-                                        'executive_summary' => 'Test.',
-                                        'similar_or_overlapping_programmes' => [],
-                                        'potential_duplication' => 'None.',
-                                        'coverage_gaps' => 'None.',
-                                        'recommendations' => 'Proceed.',
-                                    ])],
-                                ],
+                            'message' => [
+                                'content' => json_encode([
+                                    'executive_summary' => 'Test.',
+                                    'similar_or_overlapping_programmes' => [],
+                                    'potential_duplication' => 'None.',
+                                    'coverage_gaps' => 'None.',
+                                    'recommendations' => 'Proceed.',
+                                ]),
                             ],
-                            'finishReason' => 'STOP',
+                            'finish_reason' => 'stop',
                         ],
                     ],
                 ], 200);
@@ -636,21 +613,19 @@ class GeminiIntegrationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://generativelanguage.googleapis.com/v1beta/models/*:generateContent' => Http::response([
-                'candidates' => [
+            'api.mistral.ai/v1/chat/completions' => Http::response([
+                'choices' => [
                     [
-                        'content' => [
-                            'parts' => [
-                                ['text' => json_encode([
-                                    'executive_summary' => 'Test.',
-                                    'similar_or_overlapping_programmes' => [],
-                                    'potential_duplication' => 'None.',
-                                    'coverage_gaps' => 'None.',
-                                    'recommendations' => 'Proceed.',
-                                ])],
-                            ],
+                        'message' => [
+                            'content' => json_encode([
+                                'executive_summary' => 'Test.',
+                                'similar_or_overlapping_programmes' => [],
+                                'potential_duplication' => 'None.',
+                                'coverage_gaps' => 'None.',
+                                'recommendations' => 'Proceed.',
+                            ]),
                         ],
-                        'finishReason' => 'STOP',
+                        'finish_reason' => 'stop',
                     ],
                 ],
             ], 200),

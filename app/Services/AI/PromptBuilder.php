@@ -4,16 +4,6 @@ namespace App\Services\AI;
 
 class PromptBuilder
 {
-    /**
-     * Build a structured prompt for Gemini AI based on the submitted programme profile
-     * and overlapping programme entries.
-     *
-     * @param array $programmeProfile The submitted programme profile
-     * @param array $overlappingEntries Collection of overlapping programme entries (as arrays)
-     * @param string $analysisScope The analysis scope (full map, geographic subset, thematic subset)
-     * @param string|null $analysisScopeDetail Additional scope details
-     * @return string The constructed prompt
-     */
     public function build(
         array $programmeProfile,
         array $overlappingEntries,
@@ -38,8 +28,15 @@ class PromptBuilder
         return <<<SYSTEM
 You are an expert education sector advisor for the National Education Policy (NEP) in Cambodia.
 Your role is to analyse programme submissions against the existing education programme map
-and provide structured advisory notes. You must base your analysis strictly on the data provided.
+and provide comprehensive, detailed advisory notes. You must base your analysis strictly on the data provided.
 Do not invent facts or make assumptions beyond the supplied information.
+
+When providing your analysis:
+- Be specific and detailed in your descriptions
+- Use the actual names of provinces, districts, and locations (not IDs)
+- Explain the significance of overlaps and gaps
+- Provide actionable, context-aware recommendations
+- Consider the geographic and thematic scope of programmes
 SYSTEM;
     }
 
@@ -55,7 +52,15 @@ SYSTEM;
         $context .= <<<CONTEXT
 
 Analyse the submitted programme profile against the overlapping programmes listed below.
-Identify areas of similarity, potential duplication, coverage gaps, and provide actionable recommendations.
+Your analysis should:
+1. Provide a comprehensive executive summary (2-3 paragraphs) highlighting key findings
+2. Identify and describe similar or overlapping programmes with specific details about HOW they overlap
+3. Assess potential duplication, considering geographic coverage, target audiences, and activities
+4. Identify coverage gaps that the submitted programme could address
+5. Provide specific, actionable recommendations grounded in the actual data
+6. Include confidence notes about the analysis quality and any data limitations
+
+Be thorough and detailed. Use actual location names (provinces, districts) and activity names in your analysis.
 CONTEXT;
 
         return $context;
@@ -72,12 +77,12 @@ CONTEXT;
         }
 
         if (!empty($profile['geography'])) {
-            $section .= "Geography:\n";
+            $section .= "Geographic Coverage:\n";
             $section .= $this->formatGeography($profile['geography']);
         }
 
         if (!empty($profile['audiences'])) {
-            $section .= "Audiences:\n";
+            $section .= "Target Audiences:\n";
             $section .= $this->formatAudiences($profile['audiences']);
         }
 
@@ -174,20 +179,27 @@ OUTPUT FORMAT
 You MUST respond with a valid JSON object containing the following keys. Do not include any text outside the JSON object.
 
 {
-  "executive_summary": "A concise summary of the analysis findings (2-3 paragraphs).",
+  "executive_summary": "A comprehensive 2-3 paragraph summary of the analysis. Include specific details about the programme profile, key overlaps identified, and overall assessment. Mention specific provinces, activities, and organisations where relevant.",
+  
   "similar_or_overlapping_programmes": [
     {
       "programme_name": "Name of the overlapping programme",
       "organisation": "Organisation name",
       "overlap_type": "activity / geography / audience / multiple",
-      "description": "Description of how this programme overlaps with the submitted profile"
+      "description": "Detailed description of HOW this programme overlaps with the submitted profile. Be specific about shared geographic areas, target audiences, or activities. Use actual location names and activity names."
     }
   ],
-  "potential_duplication": "Assessment of whether the submitted programme may duplicate existing efforts. Include specific references to overlapping programmes.",
-  "coverage_gaps": "Identification of any gaps in coverage that the submitted programme could address, based on the existing map data.",
-  "recommendations": "Actionable recommendations for the programme submission, grounded in the data provided.",
-  "confidence_notes": "Any notes on confidence level, data limitations, or additional context (optional)."
+  
+  "potential_duplication": "Detailed assessment of whether the submitted programme may duplicate existing efforts. Explain WHERE and HOW duplication might occur. Reference specific overlapping programmes by name and describe the specific areas of concern (e.g., 'Both programmes target primary education in Phnom Penh province').",
+  
+  "coverage_gaps": "Detailed identification of any gaps in coverage that the submitted programme could address. Be specific about which geographic areas, beneficiary groups, or activity areas are underserved based on the existing map data. Use actual province/district names.",
+  
+  "recommendations": "Comprehensive, actionable recommendations for the programme submission. Provide 3-5 specific recommendations grounded in the data. Each recommendation should explain WHY it matters and HOW it addresses a specific finding from the analysis.",
+  
+  "confidence_notes": "Notes on confidence level, data quality, limitations, or additional context. For example: 'Analysis based on full map scope with 3 overlapping programmes identified. High confidence due to detailed activity and geographic data available.'"
 }
+
+IMPORTANT: In your analysis, always use actual names (province names, district names, activity names) instead of IDs. Make your response detailed, specific, and actionable.
 FORMAT;
     }
 
@@ -220,6 +232,8 @@ FORMAT;
             $text .= "  Inclusion Types: " . implode(', ', $inclusionTypes) . "\n";
         }
 
+        $text .= "\n  Note: These IDs correspond to the taxonomy categories, subcategories, and items shown in the OVERLAPPING PROGRAMMES section below.\n";
+
         return $text;
     }
 
@@ -243,6 +257,8 @@ FORMAT;
         if (!empty($villageIds)) {
             $text .= "  Village IDs: " . implode(', ', $villageIds) . "\n";
         }
+
+        $text .= "\n  Note: These location IDs correspond to the actual location names shown in the OVERLAPPING PROGRAMMES section below.\n";
 
         return $text;
     }

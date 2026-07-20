@@ -1205,8 +1205,8 @@
                 "tags": [
                     "Adviser"
                 ],
-                "summary": "Generate an AI-powered advisory note using Gemini",
-                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Google Gemini AI.",
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
                 "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
                 "parameters": [
                     {

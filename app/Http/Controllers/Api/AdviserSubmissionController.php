@@ -7,7 +7,7 @@ use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
 use App\Services\Adviser\MapOverlapMatcher;
-use App\Services\AI\GeminiService;
+use App\Services\AI\MistralService;
 use App\Services\AI\PromptBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -210,8 +210,8 @@ class AdviserSubmissionController extends Controller
 
     #[OA\Post(
         path: "/adviser/submissions/{id}/generate-advisory-note",
-        summary: "Generate an AI-powered advisory note using Gemini",
-        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Google Gemini AI.",
+        summary: "Generate an AI-powered advisory note using Mistral",
+        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
         security: [["bearerAuth" => []]],
         tags: ["Adviser"],
         parameters: [
@@ -288,6 +288,15 @@ class AdviserSubmissionController extends Controller
                     ]
                 )
             ),
+            new OA\Response(
+                response: 500,
+                description: "AI service error",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "An unexpected error occurred while generating advisory content."),
+                    ]
+                )
+            ),
         ]
     )]
     public function generateAdvisoryNote(
@@ -336,10 +345,10 @@ class AdviserSubmissionController extends Controller
         );
 
         try {
-            // Resolve GeminiService lazily to avoid instantiation errors when API key is not set
-            $gemini = App::make(GeminiService::class);
-            // Send to Gemini and get structured response
-            $aiResponse = $gemini->generateContent($prompt);
+            // Resolve MistralService lazily to avoid instantiation errors when API key is not set
+            $mistral = App::make(MistralService::class);
+            // Send to Mistral and get structured response
+            $aiResponse = $mistral->generateContent($prompt);
 
             // Update the submission status
             $submission->update(['status' => 'analysed']);
