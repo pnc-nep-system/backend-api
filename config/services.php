@@ -23,6 +23,14 @@ return [
         ],
     ],
 
+    'mistral' => [
+        'api_key' => env('MISTRAL_API_KEY'),
+        'model' => env('MISTRAL_MODEL', 'mistral-small-latest'),
+        'timeout' => env('MISTRAL_TIMEOUT', 30),
+        'retry_attempts' => env('MISTRAL_RETRY_ATTEMPTS', 2),
+        'retry_delay' => env('MISTRAL_RETRY_DELAY', 500),
+    ],
+
     'imagekit' => [
         'public_key'   => env('IMAGEKIT_PUBLIC_KEY'),
         'private_key'  => env('IMAGEKIT_PRIVATE_KEY'),

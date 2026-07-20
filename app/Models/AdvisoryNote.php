@@ -11,6 +11,7 @@ class AdvisoryNote extends Model
 
     protected $fillable = [
         'assign_to_staff_user_id',
+        'coordinator_id',
         'submitting_party',
         'document_name',
         'analysis_scope',
@@ -32,6 +33,11 @@ class AdvisoryNote extends Model
     public function staffUser()
     {
         return $this->belongsTo(StaffUser::class, 'assign_to_staff_user_id');
+    }
+
+    public function coordinator()
+    {
+        return $this->belongsTo(User::class, 'coordinator_id');
     }
 
     public function recommendations()

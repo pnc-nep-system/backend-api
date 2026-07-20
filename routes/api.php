@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RefdataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -66,8 +67,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
+        Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
+        Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+        Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
+        Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
+            ->middleware('throttle:5,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 
