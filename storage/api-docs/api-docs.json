@@ -2116,6 +2116,56 @@
                 ]
             }
         },
+        "/provinces/counts": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get programme counts per province",
+                "description": "Returns each province with the count of distinct programme entries linked to it. Ordered by count descending.",
+                "operationId": "45b232d2c76a356182d061c0de5242d7",
+                "responses": {
+                    "200": {
+                        "description": "List of provinces with programme counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "province_name": {
+                                                "type": "string",
+                                                "example": "Phnom Penh"
+                                            },
+                                            "programme_count": {
+                                                "type": "integer",
+                                                "example": 42
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/map/entries": {
             "get": {
                 "tags": [

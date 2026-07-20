@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
         Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
