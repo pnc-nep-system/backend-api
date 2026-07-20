@@ -9,7 +9,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
     public function authorize(): bool
     {
         $user = $this->user();
-        
+
         // Only NEP Coordinator and Admin can submit documents
         return $user && in_array($user->role, ['nep_admin', 'nep_coordinator']);
     }
@@ -21,6 +21,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
             'document_name' => ['required', 'string', 'max:255'],
             'analysis_scope' => ['nullable', 'string', 'in:full map,geographic subset,thematic subset'],
             'analysis_scope_detail' => ['nullable', 'string', 'max:1000'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 
@@ -64,7 +65,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
         $validator->after(function ($validator) {
             // If analysis scope is geographic or thematic subset, detail is required
             $analysisScope = $this->input('analysis_scope', 'full map');
-            
+
             if (in_array($analysisScope, ['geographic subset', 'thematic subset'])) {
                 if (empty($this->input('analysis_scope_detail'))) {
                     $validator->errors()->add(

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
+use App\Models\User;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -167,6 +168,12 @@ class AdviserSubmissionController extends Controller
             $validated['analysis_scope_detail'] = null;
         }
 
+        // Map assigned_to to assign_to_staff_user_id if present
+        if (array_key_exists('assigned_to', $validated)) {
+            $validated['assign_to_staff_user_id'] = $validated['assigned_to'];
+            unset($validated['assigned_to']);
+        }
+
         $submission = AdvisoryNote::create([
             ...$validated,
             'status' => 'pending',
@@ -177,5 +184,43 @@ class AdviserSubmissionController extends Controller
             'message' => 'Document submitted for analysis.',
             'data' => $submission,
         ], 201);
+    }
+
+    public function show($id)
+    {
+        $submission = AdvisoryNote::findOrFail($id);
+        return response()->json([
+            'data' => $submission,
+        ]);
+    }
+
+    /**
+     * Get list of NEP coordinators for dropdown assignment
+     */
+    public function getCoordinators()
+    {
+        $coordinators = User::where('role', 'nep_coordinator')
+            ->select('id', 'name', 'email', 'role')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($coordinators);
+    }
+
+    /**
+     * Return all active users with the nep_coordinator role.
+     * Accessible to both nep_admin and nep_coordinator so the assignment
+     * dropdown can be populated without going through the admin-only /admin/users endpoint.
+     */
+    public function coordinators()
+    {
+        $coordinators = User::where('role', 'nep_coordinator')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role']);
+
+        return response()->json([
+            'data' => $coordinators,
+        ]);
     }
 }
