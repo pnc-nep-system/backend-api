@@ -1445,7 +1445,6 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The advisory note submission ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1595,14 +1594,14 @@
                 ]
             }
         },
-        "/adviser/submissions/{id}/deliver": {
-            "patch": {
+        "/adviser/submissions/{id}/mark-delivered": {
+            "post": {
                 "tags": [
                     "Adviser"
                 ],
                 "summary": "Mark an adviser submission as delivered",
-                "description": "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
-                "operationId": "ce60b44b53b806cccdfd025ac8deec34",
+                "description": "Marks an adviser submission's advice as delivered and records the delivery timestamp.",
+                "operationId": "2f120aea865d69f7819444499d7ccbab",
                 "parameters": [
                     {
                         "name": "id",
@@ -3405,6 +3404,140 @@
                         "bearerAuth": []
                     }
                 ]
+            }
+        },
+        "/forgot-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request a password reset link",
+                "description": "Sends a password reset link to the given email if an account with that email exists. Always returns 200 regardless of whether the email exists, to avoid leaking which emails are registered.",
+                "operationId": "acda779aa92ecfcafdf471d6b18d54aa",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reset link sent if the account exists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "If an account exists for that email, a reset link has been sent."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                }
+            }
+        },
+        "/reset-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password using a token from the reset link",
+                "description": "Validates the reset token and sets a new password. Revokes all existing API tokens for the account once the password is reset.",
+                "operationId": "79e83437ac7e4fbef2724b36e6ba4ec7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "9d8f2a3b1c..."
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password reset successfully. Please log in with your new password."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid or expired token, or validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/programme-entries/{programmeEntry}/activities": {

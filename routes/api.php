@@ -18,6 +18,10 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RefdataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PasswordResetController;
+
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1')
