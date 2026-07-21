@@ -19,11 +19,11 @@
         "Preah Vihear",
         "Prey Veng",
         "Pursat",
-        "Ratanakiri",
+        "Rattanakkiri",
         "Siem Reap",
         "Stung Treng",
         "Svay Rieng",
-        "Takéo",
+        "Ta Keo",
         "Tboung Khmum"
     ],
     "districts": {
@@ -216,7 +216,7 @@
             "Talou Sen Chey",
             "Veal Veng"
         ],
-        "Ratanakiri": [
+        "Rattanakkiri": [
             "Andoung Meas",
             "Banlung",
             "Bar Kaev",
@@ -2093,7 +2093,7 @@
                 "Srae Krasang"
             ]
         },
-        "Takeo": {
+        "Ta Keo": {
             "Borei Cholsar": [
                 "Borei Cholsar",
                 "Chey Chouk",

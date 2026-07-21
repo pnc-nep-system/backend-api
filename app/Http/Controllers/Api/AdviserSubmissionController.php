@@ -24,7 +24,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "document_name", type: "string", example: "Education Sector Review 2026"),
         new OA\Property(property: "analysis_scope", type: "string", example: "full map", enum: ["full map", "geographic subset", "thematic subset"]),
         new OA\Property(property: "analysis_scope_detail", type: "string", example: "Focus on Phnom Penh and Siem Reap provinces", nullable: true),
-        new OA\Property(property: "status", type: "string", example: "pending"),
+        new OA\Property(property: "status", type: "string", example: "Submitted for review", description: "Current status of the submission (e.g. Submitted for review, Adviser Delivered)"),
         new OA\Property(property: "submitted_at", type: "string", format: "date-time", nullable: true),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
@@ -90,6 +90,13 @@ class AdviserSubmissionController extends Controller
                         type: "string",
                         example: "Focus on Phnom Penh and Siem Reap provinces",
                         description: "Additional details about the analysis scope (required for geographic or thematic subsets)",
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: "status",
+                        type: "string",
+                        example: "Submitted for review",
+                        description: "Status of the submission (e.g. Submitted for review, Adviser Delivered). Defaults to 'Submitted for review' if not provided.",
                         nullable: true
                     ),
                 ]
@@ -197,9 +204,11 @@ class AdviserSubmissionController extends Controller
             $validated['analysis_scope_detail'] = null;
         }
 
+        // Default status to "Submitted for review" if not specified
+        $validated['status'] = $validated['status'] ?? 'Submitted for review';
+
         $submission = AdvisoryNote::create([
             ...$validated,
-            'status' => 'pending',
             'submitted_at' => now(),
         ]);
 

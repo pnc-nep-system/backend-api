@@ -84,7 +84,7 @@ class ProgrammeEntryController extends Controller
 {
     public function getAll(Request $request)
     {
-        return ProgrammeEntry::query()->paginate(10);
+        return $this->entriesByStatus($request, null);
     }
 
     #[OA\Post(
@@ -458,20 +458,28 @@ class ProgrammeEntryController extends Controller
         return $this->entriesByStatus($request, true);
     }
 
-    private function entriesByStatus(Request $request, bool $isSubmitted)
+    private function entriesByStatus(Request $request, ?bool $isSubmitted)
     {
         $user = $request->user();
         $query = ProgrammeEntry::with([
+            'organisation:id,name',
             'locations.province',
             'activities' => fn($q) => $q->where('is_primary', true),
             'activities.activityItem',
-        ])->where('is_submitted', $isSubmitted)->orderBy('id', 'desc');
+        ])->orderBy('id', 'desc');
+
+        if ($isSubmitted !== null) {
+            $query->where('is_submitted', $isSubmitted);
+        }
 
         if ($user->role === 'member_org') {
             $query->where('organisation_id', $user->organisation_id);
         }
 
-        return response()->json($query->paginate(10));
+        return response()->json($query->paginate(10)->through(fn ($entry) => [
+            ...$entry->toArray(),
+            'organisation_name' => $entry->organisation?->name,
+        ]));
     }
 
     #[OA\Patch(
