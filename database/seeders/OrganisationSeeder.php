@@ -12,7 +12,17 @@ class OrganisationSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('organisations')->insert([
+        $organisations = [
+            [
+                'name' => 'Disability Development Services Program (DDSP)',
+                'contact_name' => 'DDSP Director',
+                'email' => 'contact@ddsp.org',
+                'member_since' => 2018,
+                'status' => 'active',
+                'last_inactive_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'name' => 'ABC Organisation',
                 'contact_name' => 'John Doe',
@@ -43,6 +53,13 @@ class OrganisationSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($organisations as $org) {
+            DB::table('organisations')->updateOrInsert(
+                ['name' => $org['name']],
+                $org
+            );
+        }
     }
 }
