@@ -42,16 +42,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/session', [AuthController::class, 'session']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/programme-entries', [ProgrammeEntryController::class, 'getAll']);
-    Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
-    Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
-    Route::get('/programme-entries/draft', [ProgrammeEntryController::class, 'draft']);
-    Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted']);
-    Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
-    Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
+    Route::get('/programme-entries', [ProgrammeEntryController::class, 'getAll'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::post('/programme-entries', [ProgrammeEntryController::class, 'store'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::get('/programme-entries/draft', [ProgrammeEntryController::class, 'draft'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
 
-    Route::get('/organisations/me', [OrganisationProfileController::class, 'show']);
-    Route::patch('/organisations/me', [OrganisationProfileController::class, 'update']);
+    Route::get('/organisations/me', [OrganisationProfileController::class, 'show'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+    Route::patch('/organisations/me', [OrganisationProfileController::class, 'update'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
 
     Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify'])
         ->middleware('role:nep_admin');
@@ -82,11 +91,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard/recent-activity', [DashboardController::class, 'recentActivity']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
 
-        Route::get('/map/entries', [MapEntryController::class, 'index']);
-        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
-        Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
-        Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
-
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
 
@@ -98,6 +102,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
+    });
+
+    // Map routes allow all authenticated roles - controller handles scoping
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
+        Route::get('/map/entries', [MapEntryController::class, 'index']);
+        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
+        Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
+        Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {

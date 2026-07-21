@@ -123,12 +123,13 @@ class ProgrammeEntryTest extends TestCase
         $response->assertJsonPath('data.id', $this->entryInOrgB->id);
     }
 
-    public function test_coordinator_gets_404_for_show_when_not_in_org()
+    public function test_coordinator_can_view_any_entry()
     {
         $response = $this->actingAs($this->coordinatorUser)
             ->getJson("/api/programme-entries/{$this->entryInOrgA->id}");
 
-        $response->assertNotFound();
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $this->entryInOrgA->id);
     }
 
     public function test_show_404_for_nonexistent_entry()
