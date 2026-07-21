@@ -60,7 +60,7 @@ class AdviserSubmissionTest extends TestCase
             'submitting_party' => 'Ministry of Education',
             'document_name' => 'Education Sector Review 2026',
             'analysis_scope' => 'full map',
-            'status' => 'pending',
+            'status' => 'Submitted for review',
         ]);
     }
 
@@ -84,7 +84,7 @@ class AdviserSubmissionTest extends TestCase
             'document_name' => 'Child Protection Policy Review',
             'analysis_scope' => 'geographic subset',
             'analysis_scope_detail' => 'Focus on rural provinces in the northwest',
-            'status' => 'pending',
+            'status' => 'Submitted for review',
         ]);
     }
 
@@ -213,5 +213,44 @@ class AdviserSubmissionTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('analysis_scope');
+    }
+
+    public function test_can_submit_with_custom_status()
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/adviser/submissions', [
+                'submitting_party' => 'Ministry of Education',
+                'document_name' => 'Education Sector Review 2026',
+                'analysis_scope' => 'full map',
+                'status' => 'Adviser Delivered',
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.status', 'Adviser Delivered');
+
+        $this->assertDatabaseHas('advisory_notes', [
+            'submitting_party' => 'Ministry of Education',
+            'document_name' => 'Education Sector Review 2026',
+            'status' => 'Adviser Delivered',
+        ]);
+    }
+
+    public function test_status_defaults_to_submitted_for_review()
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->postJson('/api/adviser/submissions', [
+                'submitting_party' => 'Ministry of Education',
+                'document_name' => 'Education Sector Review 2026',
+                'analysis_scope' => 'full map',
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.status', 'Submitted for review');
+
+        $this->assertDatabaseHas('advisory_notes', [
+            'submitting_party' => 'Ministry of Education',
+            'document_name' => 'Education Sector Review 2026',
+            'status' => 'Submitted for review',
+        ]);
     }
 }

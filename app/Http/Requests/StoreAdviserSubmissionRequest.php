@@ -21,6 +21,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
             'document_name' => ['required', 'string', 'max:255'],
             'analysis_scope' => ['nullable', 'string', 'in:full map,geographic subset,thematic subset'],
             'analysis_scope_detail' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -52,6 +53,12 @@ class StoreAdviserSubmissionRequest extends FormRequest
         if ($this->has('analysis_scope_detail')) {
             $this->merge([
                 'analysis_scope_detail' => trim($this->analysis_scope_detail),
+            ]);
+        }
+
+        if ($this->has('status')) {
+            $this->merge([
+                'status' => trim($this->status),
             ]);
         }
     }
