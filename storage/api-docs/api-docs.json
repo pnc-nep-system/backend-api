@@ -1433,6 +1433,61 @@
                 ]
             }
         },
+        "/adviser/submissions/{id}/deliver": {
+            "patch": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Mark an adviser submission as delivered",
+                "description": "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
+                "operationId": "ce60b44b53b806cccdfd025ac8deec34",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission marked as delivered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/adviser/submissions/{id}/generate-advisory-note": {
             "post": {
                 "tags": [
@@ -1445,6 +1500,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "The advisory note submission ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1585,61 +1641,6 @@
                                 }
                             }
                         }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/adviser/submissions/{id}/mark-delivered": {
-            "post": {
-                "tags": [
-                    "Adviser"
-                ],
-                "summary": "Mark an adviser submission as delivered",
-                "description": "Marks an adviser submission's advice as delivered and records the delivery timestamp.",
-                "operationId": "2f120aea865d69f7819444499d7ccbab",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Submission marked as delivered",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Submission marked as delivered."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdviserSubmission"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "404": {
-                        "description": "Not Found"
                     }
                 },
                 "security": [
@@ -3538,6 +3539,333 @@
                         }
                     }
                 }
+            }
+        },
+        "/policy-documents": {
+            "get": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "List all policy documents",
+                "description": "Returns all policy documents. Accessible by all authenticated users.",
+                "operationId": "92837f64a8f816d8f142a41dd1c6b482",
+                "responses": {
+                    "200": {
+                        "description": "List of policy documents",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PolicyDocument"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Create a new policy document",
+                "description": "Creates a new policy document. Only NEP Admins and Coordinators can create documents.",
+                "operationId": "00e72127233864dd0e2f7600d90327a4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "authority",
+                                    "version",
+                                    "date"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "National Education Policy 2026"
+                                    },
+                                    "authority": {
+                                        "type": "string",
+                                        "example": "Ministry of Education"
+                                    },
+                                    "version": {
+                                        "type": "string",
+                                        "example": "1.0"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-01-15"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive",
+                                            "superseded"
+                                        ]
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/policy.pdf",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Policy document created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document created successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/policy-documents/{id}": {
+            "get": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Get a single policy document",
+                "description": "Returns the details of a specific policy document.",
+                "operationId": "8bc6e54d943f3d599b08da88d550206e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy document details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Delete a policy document",
+                "description": "Deletes a policy document. Only NEP Admins and Coordinators can delete documents.",
+                "operationId": "b9b14b826e2a73e9d1835d6dff3bfd85",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy document deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document deleted successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Update a policy document",
+                "description": "Updates an existing policy document. Only NEP Admins and Coordinators can update documents.",
+                "operationId": "5e3e3df78f3af4d629a06574824c103f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "National Education Policy 2026"
+                                    },
+                                    "authority": {
+                                        "type": "string",
+                                        "example": "Ministry of Education"
+                                    },
+                                    "version": {
+                                        "type": "string",
+                                        "example": "2.0"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-06-01"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive",
+                                            "superseded"
+                                        ]
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/policy-v2.pdf",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Policy document updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document updated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/programme-entries/{programmeEntry}/activities": {
@@ -5634,6 +5962,58 @@
                 },
                 "type": "object"
             },
+            "PolicyDocument": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "National Education Policy 2026"
+                    },
+                    "authority": {
+                        "type": "string",
+                        "example": "Ministry of Education"
+                    },
+                    "version": {
+                        "type": "string",
+                        "example": "1.0"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-01-15"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "active",
+                        "enum": [
+                            "active",
+                            "inactive",
+                            "superseded"
+                        ]
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "example": "https://example.com/policy.pdf",
+                        "nullable": true
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeActivity": {
                 "properties": {
                     "id": {
@@ -6110,6 +6490,10 @@
         {
             "name": "Organisation Profile",
             "description": "Organisation Profile"
+        },
+        {
+            "name": "Policy Documents",
+            "description": "Policy Documents"
         },
         {
             "name": "Programme Activities",
