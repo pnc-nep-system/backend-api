@@ -18,6 +18,10 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\RefdataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PasswordResetController;
+
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1')
@@ -75,18 +79,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
         Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
-<<<<<<< HEAD
-            ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
-
-        Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
-        Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
-        Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered']);
-=======
             ->middleware('throttle:10,1');
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
     });
 
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
