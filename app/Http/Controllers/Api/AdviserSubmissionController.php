@@ -197,7 +197,22 @@ class AdviserSubmissionController extends Controller
     )]
     public function update(UpdateAdviserSubmissionRequest $request, AdvisoryNote $advisoryNote)
     {
-        $advisoryNote->update($request->validated());
+        $validated = $request->validated();
+
+        // Handle file upload for final_note_file
+        if ($request->hasFile('file')) {
+            // Delete old file if it exists and is stored locally
+            if ($advisoryNote->final_note_file && !str_starts_with($advisoryNote->final_note_file, 'http')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($advisoryNote->final_note_file);
+            }
+            $path = $request->file('file')->store('adviser-notes', 'public');
+            $validated['final_note_file'] = $path;
+        }
+
+        // Remove the 'file' key since it's not a model attribute
+        unset($validated['file']);
+
+        $advisoryNote->update($validated);
 
         return response()->json([
             'message' => 'Submission updated successfully.',
