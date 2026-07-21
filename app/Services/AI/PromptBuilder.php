@@ -112,7 +112,17 @@ CONTEXT;
             $section .= "Method: " . ($entry['method'] ?? 'N/A') . "\n";
 
             if (!empty($entry['keywords'])) {
-                $section .= "Keywords: " . implode(', ', $entry['keywords']) . "\n";
+                $keywordNames = [];
+                foreach ($entry['keywords'] as $keyword) {
+                    if (is_string($keyword)) {
+                        $keywordNames[] = $keyword;
+                    } elseif (is_array($keyword)) {
+                        $keywordNames[] = $keyword['name'] ?? $keyword['keyword'] ?? json_encode($keyword);
+                    } elseif (is_object($keyword)) {
+                        $keywordNames[] = $keyword->name ?? $keyword->keyword ?? (string)$keyword;
+                    }
+                }
+                $section .= "Keywords: " . implode(', ', array_filter($keywordNames)) . "\n";
             }
 
             if (!empty($entry['locations'])) {
