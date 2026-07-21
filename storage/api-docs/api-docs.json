@@ -565,6 +565,12 @@
                                         "type": "string",
                                         "example": "Focus on Phnom Penh and Siem Reap provinces",
                                         "nullable": true
+                                    },
+                                    "status": {
+                                        "description": "Status of the submission (e.g. Submitted for review, Adviser Delivered). Defaults to 'Submitted for review' if not provided.",
+                                        "type": "string",
+                                        "example": "Submitted for review",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -3742,8 +3748,9 @@
                         "nullable": true
                     },
                     "status": {
+                        "description": "Current status of the submission (e.g. Submitted for review, Adviser Delivered)",
                         "type": "string",
-                        "example": "pending"
+                        "example": "Submitted for review"
                     },
                     "submitted_at": {
                         "type": "string",
