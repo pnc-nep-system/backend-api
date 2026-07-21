@@ -106,10 +106,17 @@ class PolicyDocumentController extends Controller
             'date'      => ['required', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
+            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
         ]);
 
         try {
             $validated['created_by'] = $request->user()->id;
+
+            // Handle file upload
+            if ($request->hasFile('file')) {
+                $path = $request->file('file')->store('policy-documents', 'public');
+                $validated['file_url'] = $path;
+            }
 
             $document = PolicyDocument::create($validated);
 
@@ -219,9 +226,20 @@ class PolicyDocumentController extends Controller
             'date'      => ['sometimes', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
+            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
         ]);
 
         try {
+            // Handle file upload
+            if ($request->hasFile('file')) {
+                // Delete old file if it exists and stored locally
+                if ($policyDocument->file_url && !str_starts_with($policyDocument->file_url, 'http')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($policyDocument->file_url);
+                }
+                $path = $request->file('file')->store('policy-documents', 'public');
+                $validated['file_url'] = $path;
+            }
+
             $policyDocument->update($validated);
 
             return response()->json([
