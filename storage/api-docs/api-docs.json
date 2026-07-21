@@ -1206,7 +1206,6 @@
                 ]
             }
         },
-<<<<<<< HEAD
         "/adviser/submissions/{id}": {
             "get": {
                 "tags": [
@@ -1264,24 +1263,10 @@
                 "summary": "Update an adviser submission",
                 "description": "Update the coordinator assignment and/or sections for an adviser submission.",
                 "operationId": "2be18ef98b17043c1cba6f9dfdff1d33",
-=======
-        "/adviser/submissions/{id}/generate-advisory-note": {
-            "post": {
-                "tags": [
-                    "Adviser"
-                ],
-                "summary": "Generate an AI-powered advisory note using Mistral",
-                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
-                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-<<<<<<< HEAD
-=======
-                        "description": "The advisory note submission ID",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1289,7 +1274,6 @@
                     }
                 ],
                 "requestBody": {
-<<<<<<< HEAD
                     "description": "Fields to update",
                     "required": false,
                     "content": {
@@ -1321,42 +1305,6 @@
                                         "type": "string",
                                         "example": "final-report.pdf",
                                         "nullable": true
-=======
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "programme_profile"
-                                ],
-                                "properties": {
-                                    "programme_profile": {
-                                        "description": "The extracted programme profile for analysis",
-                                        "type": "object",
-                                        "example": {
-                                            "activities": {
-                                                "category_ids": [
-                                                    1
-                                                ],
-                                                "education_level_ids": [
-                                                    2
-                                                ],
-                                                "inclusion_groups": [
-                                                    "boys"
-                                                ]
-                                            },
-                                            "audiences": {
-                                                "inclusion_types": [
-                                                    "target"
-                                                ]
-                                            },
-                                            "geography": {
-                                                "province_ids": [
-                                                    3
-                                                ]
-                                            }
-                                        }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                     }
                                 },
                                 "type": "object"
@@ -1366,28 +1314,17 @@
                 },
                 "responses": {
                     "200": {
-<<<<<<< HEAD
                         "description": "Submission updated successfully",
-=======
-                        "description": "Advisory note generated successfully",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-<<<<<<< HEAD
                                             "example": "Submission updated successfully."
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/AdviserSubmission"
-=======
-                                            "example": "Advisory note generated successfully."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                         }
                                     },
                                     "type": "object"
@@ -1399,7 +1336,6 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
-<<<<<<< HEAD
                         "description": "Forbidden"
                     },
                     "404": {
@@ -1437,7 +1373,125 @@
                 "responses": {
                     "200": {
                         "description": "Submission marked as delivered",
-=======
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/generate-advisory-note": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The advisory note submission ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "programme_profile": {
+                                        "description": "The extracted programme profile for analysis",
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Advisory note generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Advisory note generated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
                         "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
                         "content": {
                             "application/json": {
@@ -1458,24 +1512,16 @@
                     },
                     "422": {
                         "description": "Validation failed",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-<<<<<<< HEAD
-                                            "example": "Submission marked as delivered."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdviserSubmission"
-=======
                                             "example": "The given data was invalid."
                                         },
                                         "errors": {
                                             "type": "object"
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                         }
                                     },
                                     "type": "object"
@@ -1483,16 +1529,6 @@
                             }
                         }
                     },
-<<<<<<< HEAD
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "404": {
-                        "description": "Not Found"
-=======
                     "503": {
                         "description": "AI service unavailable",
                         "content": {
@@ -1524,7 +1560,6 @@
                                 }
                             }
                         }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     }
                 },
                 "security": [
@@ -3289,6 +3324,140 @@
                         "bearerAuth": []
                     }
                 ]
+            }
+        },
+        "/forgot-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request a password reset link",
+                "description": "Sends a password reset link to the given email if an account with that email exists. Always returns 200 regardless of whether the email exists, to avoid leaking which emails are registered.",
+                "operationId": "acda779aa92ecfcafdf471d6b18d54aa",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reset link sent if the account exists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "If an account exists for that email, a reset link has been sent."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                }
+            }
+        },
+        "/reset-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password using a token from the reset link",
+                "description": "Validates the reset token and sets a new password. Revokes all existing API tokens for the account once the password is reset.",
+                "operationId": "79e83437ac7e4fbef2724b36e6ba4ec7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "9d8f2a3b1c..."
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password reset successfully. Please log in with your new password."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid or expired token, or validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/programme-entries/{programmeEntry}/activities": {

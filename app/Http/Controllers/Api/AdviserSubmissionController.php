@@ -219,7 +219,6 @@ class AdviserSubmissionController extends Controller
         ], 201);
     }
 
-<<<<<<< HEAD
     #[OA\Get(
         path: "/adviser/submissions/{id}",
         summary: "Get a single adviser submission",
@@ -227,21 +226,14 @@ class AdviserSubmissionController extends Controller
         security: [["bearerAuth" => []]],
         tags: ["Adviser"],
         parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                schema: new OA\Schema(type: "integer")
-            ),
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer")),
         ],
         responses: [
             new OA\Response(
                 response: 200,
                 description: "Submission details",
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
-                    ]
+                    properties: [new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission")]
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
@@ -253,119 +245,43 @@ class AdviserSubmissionController extends Controller
     {
         $advisoryNote->load(['staffUser', 'recommendations']);
 
-        return response()->json([
-            'data' => $advisoryNote,
-        ]);
+        return response()->json(['data' => $advisoryNote]);
     }
 
     #[OA\Patch(
         path: "/adviser/submissions/{id}",
         summary: "Update an adviser submission",
         description: "Update the coordinator assignment and/or sections for an adviser submission.",
-=======
-    #[OA\Post(
-        path: "/adviser/submissions/{id}/generate-advisory-note",
-        summary: "Generate an AI-powered advisory note using Mistral",
-        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
         security: [["bearerAuth" => []]],
         tags: ["Adviser"],
         parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-<<<<<<< HEAD
-=======
-                description: "The advisory note submission ID",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
-                schema: new OA\Schema(type: "integer")
-            ),
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer")),
         ],
         requestBody: new OA\RequestBody(
-<<<<<<< HEAD
             description: "Fields to update",
             required: false,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(
-                        property: "assign_to_staff_user_id",
-                        type: "integer",
-                        nullable: true,
-                        example: 1,
-                        description: "Staff user ID to assign the submission to"
-                    ),
-                    new OA\Property(
-                        property: "section_profile",
-                        type: "string",
-                        nullable: true,
-                        example: "Profile section content"
-                    ),
-                    new OA\Property(
-                        property: "section_gaps",
-                        type: "string",
-                        nullable: true,
-                        example: "Gaps section content"
-                    ),
-                    new OA\Property(
-                        property: "section_coordinators_notes",
-                        type: "string",
-                        nullable: true,
-                        example: "Coordinator notes"
-                    ),
-                    new OA\Property(
-                        property: "final_note_file",
-                        type: "string",
-                        nullable: true,
-                        example: "final-report.pdf"
-=======
-            required: true,
-            content: new OA\JsonContent(
-                required: ["programme_profile"],
-                properties: [
-                    new OA\Property(
-                        property: "programme_profile",
-                        type: "object",
-                        description: "The extracted programme profile for analysis",
-                        example: [
-                            "activities" => [
-                                "category_ids" => [1],
-                                "education_level_ids" => [2],
-                                "inclusion_groups" => ["boys"],
-                            ],
-                            "audiences" => [
-                                "inclusion_types" => ["target"],
-                            ],
-                            "geography" => [
-                                "province_ids" => [3],
-                            ],
-                        ]
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
-                    ),
+                    new OA\Property(property: "assign_to_staff_user_id", type: "integer", nullable: true, example: 1, description: "Staff user ID to assign the submission to"),
+                    new OA\Property(property: "section_profile", type: "string", nullable: true, example: "Profile section content"),
+                    new OA\Property(property: "section_gaps", type: "string", nullable: true, example: "Gaps section content"),
+                    new OA\Property(property: "section_coordinators_notes", type: "string", nullable: true, example: "Coordinator notes"),
+                    new OA\Property(property: "final_note_file", type: "string", nullable: true, example: "final-report.pdf"),
                 ]
             )
         ),
         responses: [
             new OA\Response(
                 response: 200,
-<<<<<<< HEAD
                 description: "Submission updated successfully",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string", example: "Submission updated successfully."),
                         new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
-=======
-                description: "Advisory note generated successfully",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "Advisory note generated successfully."),
-                        new OA\Property(property: "data", ref: "#/components/schemas/AdvisoryNoteResponse"),
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     ]
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
-<<<<<<< HEAD
             new OA\Response(response: 403, description: "Forbidden"),
             new OA\Response(response: 404, description: "Not Found"),
             new OA\Response(response: 422, description: "Validation failed"),
@@ -373,9 +289,7 @@ class AdviserSubmissionController extends Controller
     )]
     public function update(UpdateAdviserSubmissionRequest $request, AdvisoryNote $advisoryNote)
     {
-        $validated = $request->validated();
-
-        $advisoryNote->update($validated);
+        $advisoryNote->update($request->validated());
 
         return response()->json([
             'message' => 'Submission updated successfully.',
@@ -390,12 +304,7 @@ class AdviserSubmissionController extends Controller
         security: [["bearerAuth" => []]],
         tags: ["Adviser"],
         parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                schema: new OA\Schema(type: "integer")
-            ),
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer")),
         ],
         responses: [
             new OA\Response(
@@ -422,18 +331,53 @@ class AdviserSubmissionController extends Controller
             ]);
         }
 
-        $advisoryNote->update([
-            'status' => 'advice_delivered',
-            'delivered_at' => now(),
-        ]);
+        $advisoryNote->update(['status' => 'advice_delivered', 'delivered_at' => now()]);
 
         return response()->json([
             'message' => 'Submission marked as delivered.',
             'data' => $advisoryNote->fresh(),
         ]);
     }
-}
-=======
+
+    #[OA\Post(
+        path: "/adviser/submissions/{id}/generate-advisory-note",
+        summary: "Generate an AI-powered advisory note using Mistral",
+        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, description: "The advisory note submission ID", schema: new OA\Schema(type: "integer")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["programme_profile"],
+                properties: [
+                    new OA\Property(
+                        property: "programme_profile",
+                        type: "object",
+                        description: "The extracted programme profile for analysis",
+                        example: [
+                            "activities" => ["category_ids" => [1], "education_level_ids" => [2], "inclusion_groups" => ["boys"]],
+                            "audiences" => ["inclusion_types" => ["target"]],
+                            "geography" => ["province_ids" => [3]],
+                        ]
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Advisory note generated successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Advisory note generated successfully."),
+                        new OA\Property(property: "data", ref: "#/components/schemas/AdvisoryNoteResponse"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
             new OA\Response(
                 response: 403,
                 description: "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
@@ -456,18 +400,14 @@ class AdviserSubmissionController extends Controller
                 response: 503,
                 description: "AI service unavailable",
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "AI service is temporarily unavailable. Please try again later."),
-                    ]
+                    properties: [new OA\Property(property: "message", type: "string", example: "AI service is temporarily unavailable. Please try again later.")]
                 )
             ),
             new OA\Response(
                 response: 500,
                 description: "AI service error",
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "An unexpected error occurred while generating advisory content."),
-                    ]
+                    properties: [new OA\Property(property: "message", type: "string", example: "An unexpected error occurred while generating advisory content.")]
                 )
             ),
         ]
@@ -480,7 +420,6 @@ class AdviserSubmissionController extends Controller
     ): JsonResponse {
         $submission = AdvisoryNote::findOrFail($id);
 
-        // Validate user permissions
         $user = $request->user();
         if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
             return response()->json(['message' => 'Forbidden.'], 403);
@@ -497,17 +436,11 @@ class AdviserSubmissionController extends Controller
         $analysisScope = $submission->analysis_scope ?? 'full map';
         $analysisScopeDetail = $submission->analysis_scope_detail;
 
-        // Query overlapping entries using the MapOverlapMatcher
         $overlappingEntries = $matcher
             ->match($programmeProfile, $analysisScope)
             ->with([
-                'organisation',
-                'budgetBand',
-                'keywords',
-                'locations.province',
-                'locations.district',
-                'locations.commune',
-                'locations.village',
+                'organisation', 'budgetBand', 'keywords',
+                'locations.province', 'locations.district', 'locations.commune', 'locations.village',
                 'activities.activityItem.subcategory.category',
                 'activities.activityItem.subcategory',
                 'activities.activityItem',
@@ -515,24 +448,11 @@ class AdviserSubmissionController extends Controller
             ])
             ->get();
 
-        // Convert entries to array format for the prompt builder
-        $entriesArray = $overlappingEntries->toArray();
-
-        // Build the prompt
-        $prompt = $promptBuilder->build(
-            $programmeProfile,
-            $entriesArray,
-            $analysisScope,
-            $analysisScopeDetail
-        );
+        $prompt = $promptBuilder->build($programmeProfile, $overlappingEntries->toArray(), $analysisScope, $analysisScopeDetail);
 
         try {
-            // Resolve MistralService lazily to avoid instantiation errors when API key is not set
             $mistral = App::make(MistralService::class);
-            // Send to Mistral and get structured response
             $aiResponse = $mistral->generateContent($prompt);
-
-            // Update the submission status
             $submission->update(['status' => 'analysed']);
 
             return response()->json([
@@ -541,28 +461,16 @@ class AdviserSubmissionController extends Controller
             ]);
         } catch (\RuntimeException $e) {
             $statusCode = $e->getCode();
+            $httpStatus = in_array($statusCode, [400, 401, 403, 404, 429, 500, 502, 503]) ? $statusCode : 503;
+            if ($httpStatus < 100 || $httpStatus > 599) $httpStatus = 503;
 
-            // Map common HTTP status codes, default to 503
-            $httpStatus = in_array($statusCode, [400, 401, 403, 404, 429, 500, 502, 503])
-                ? $statusCode
-                : 503;
-
-            // Ensure we return a valid HTTP status code
-            if ($httpStatus < 100 || $httpStatus > 599) {
-                $httpStatus = 503;
-            }
-
-            // Log the error for debugging (without exposing sensitive details)
             Log::warning('Advisory note generation failed', [
                 'submission_id' => $submission->id,
                 'status_code' => $statusCode,
                 'user_id' => $user->id,
             ]);
 
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], $httpStatus);
+            return response()->json(['message' => $e->getMessage()], $httpStatus);
         }
     }
 }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4

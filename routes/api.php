@@ -79,6 +79,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
         Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
+            ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
+
+        Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
+        Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
+        Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
