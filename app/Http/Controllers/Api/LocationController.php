@@ -8,6 +8,7 @@ use App\Models\District;
 use App\Models\Province;
 use App\Models\Village;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -207,5 +208,43 @@ class LocationController extends Controller
             return $commune->villages;
         });
         return response()->json(['data' => $villages]);
+    }
+
+    #[OA\Get(
+        path: "/provinces/counts",
+        summary: "Get programme counts per province",
+        description: "Returns each province with the count of distinct programme entries linked to it. Ordered by count descending.",
+        security: [["bearerAuth" => []]],
+        tags: ["Locations"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of provinces with programme counts",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: "id", type: "integer", example: 1),
+                            new OA\Property(property: "province_name", type: "string", example: "Phnom Penh"),
+                            new OA\Property(property: "programme_count", type: "integer", example: 42),
+                        ]
+                    )
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+        ]
+    )]
+    public function provinceProgrammeCounts()
+    {
+        $counts = DB::table('provinces as p')
+            ->leftJoin('programme_geography as pg', 'pg.province_id', '=', 'p.id')
+            ->select('p.id', 'p.province_name',
+                DB::raw('COUNT(DISTINCT pg.programme_entry_id) as programme_count'))
+            ->groupBy('p.id', 'p.province_name')
+            ->orderByDesc('programme_count')
+            ->get();
+
+        return response()->json($counts);
     }
 }

@@ -17,7 +17,7 @@ class StoreProgrammeActivityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activities' => ['required', 'array', 'min:1'],
+            'activities' => ['present', 'array'],
             'activities.*.activity_item_id' => [
                 'required',
                 'integer',

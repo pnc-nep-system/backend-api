@@ -9,6 +9,8 @@ class Organisation extends Model
 {
     use HasFactory;
 
+    protected $appends = ['logo_url'];
+
     protected $fillable = [
         'name',
         'contact_name',
@@ -16,6 +18,7 @@ class Organisation extends Model
         'member_since',
         'status',
         'last_inactive_at',
+        'logo_path',
     ];
 
     public function users()
@@ -36,5 +39,25 @@ class Organisation extends Model
     public function programmes()
     {
         return $this->hasMany(Programme::class);
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        // New format: "fileId|/folder/filename.jpg"
+        if (str_contains($this->logo_path, '|')) {
+            $filePath = explode('|', $this->logo_path)[1];
+            return rtrim(config('services.imagekit.url_endpoint'), '/') . $filePath;
+        }
+
+        // Old format: full URL stored directly
+        if (str_starts_with($this->logo_path, 'http')) {
+            return $this->logo_path;
+        }
+
+        return null;
     }
 }

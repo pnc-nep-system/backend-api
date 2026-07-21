@@ -80,6 +80,377 @@
                         "bearerAuth": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Create a new organisation",
+                "description": "Creates a new organisation. Optionally accepts a logo file (jpg, png, or webp, max 2MB) in the same request. Only accessible to nep_admin.",
+                "operationId": "83655b086065787086578c0bae4d9e2d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "contact_name",
+                                    "email",
+                                    "member_since"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Green Earth Nepal"
+                                    },
+                                    "contact_name": {
+                                        "type": "string",
+                                        "example": "Ram Sharma"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "info@greenearth.org"
+                                    },
+                                    "member_since": {
+                                        "type": "integer",
+                                        "example": 2020
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    },
+                                    "logo": {
+                                        "description": "Optional logo image (jpg, png, webp, max 10MB)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Organisation created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/logo": {
+            "post": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Upload or replace an organisation's logo",
+                "description": "Accepts an image file (jpg, png, or webp, max 10MB). Replaces any existing logo. Only accessible to nep_admin.",
+                "operationId": "2f5357a1db6e041254e60d911b9d7dc2",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "logo"
+                                ],
+                                "properties": {
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logo uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    },
+                    "422": {
+                        "description": "Validation failed — invalid file type or size"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}": {
+            "get": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Get a single organisation",
+                "description": "Only accessible to nep_admin.",
+                "operationId": "cb7c6451dfec3756db11245b181ec14f",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Update an organisation",
+                "description": "Only accessible to nep_admin.",
+                "operationId": "2768fe8092209fd84ff12f36ad0d6f08",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Green Earth Nepal"
+                                    },
+                                    "contact_name": {
+                                        "type": "string",
+                                        "example": "Ram Sharma"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "info@greenearth.org"
+                                    },
+                                    "member_since": {
+                                        "type": "integer",
+                                        "example": 2026
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Organisation updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/deactivate": {
+            "patch": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Deactivate an organisation",
+                "description": "Soft-deactivates an organisation (sets status to inactive and records the timestamp). Does not delete data — preserves history for existing programme entries and users. Only accessible to nep_admin.",
+                "operationId": "04167ced65f56d1a8dbb13b580df7396",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation deactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/organisations/{organisation}/activate": {
+            "patch": {
+                "tags": [
+                    "Admin - Organisations"
+                ],
+                "summary": "Reactivate an organisation",
+                "description": "Sets status back to active and clears the last_inactive_at timestamp. Only accessible to nep_admin.",
+                "operationId": "681e27cf579a27671bb4b3b924380190",
+                "parameters": [
+                    {
+                        "name": "organisation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organisation reactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Organisation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Organisation not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/admin/users": {
@@ -522,14 +893,205 @@
                 ]
             }
         },
+        "/adviser/map/overlap-query": {
+            "post": {
+                "summary": "Query map entries by overlap with an extracted programme profile",
+                "description": "Returns ProgrammeEntry records that overlap with the provided programme profile on at least one of: activity, geography, audience. Respects analysis_scope (full map / geographic subset / thematic subset).",
+                "operationId": "2bac9f20bdfc817c85c5c2a22d8612f8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "analysis_scope",
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "analysis_scope": {
+                                        "type": "string",
+                                        "example": "full map",
+                                        "enum": [
+                                            "full map",
+                                            "geographic subset",
+                                            "thematic subset"
+                                        ]
+                                    },
+                                    "programme_profile": {
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Matching entries retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeEntry"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/adviser/submissions": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "List Adviser document submissions",
+                "description": "Returns a paginated list of Adviser document submission records. Only NEP Coordinators and Admins can retrieve submission records. Supports filtering by analysis scope and status.",
+                "operationId": "ffb9213c9e475ed04ecd525509b632c9",
+                "parameters": [
+                    {
+                        "name": "analysis_scope",
+                        "in": "query",
+                        "description": "Filter by analysis scope",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "full map",
+                                "geographic subset",
+                                "thematic subset"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by submission status",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of records per page (default: 25, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission records retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AdviserSubmission"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Only NEP Coordinators and Admins can retrieve submission records",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Forbidden."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "Adviser"
                 ],
                 "summary": "Submit a document for Adviser analysis",
                 "description": "Allows NEP Coordinators and Admins to submit a document for analysis. The submitting party is captured as free text (not linked to the member database). Analysis scope defaults to 'full map' when not specified.",
-                "operationId": "0328944081adbb17f52fb4711322a826",
+                "operationId": "ae3a9493f22b6d825aad616acd6f497b",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -644,6 +1206,7 @@
                 ]
             }
         },
+<<<<<<< HEAD
         "/adviser/submissions/{id}": {
             "get": {
                 "tags": [
@@ -701,10 +1264,24 @@
                 "summary": "Update an adviser submission",
                 "description": "Update the coordinator assignment and/or sections for an adviser submission.",
                 "operationId": "2be18ef98b17043c1cba6f9dfdff1d33",
+=======
+        "/adviser/submissions/{id}/generate-advisory-note": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
+<<<<<<< HEAD
+=======
+                        "description": "The advisory note submission ID",
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -712,6 +1289,7 @@
                     }
                 ],
                 "requestBody": {
+<<<<<<< HEAD
                     "description": "Fields to update",
                     "required": false,
                     "content": {
@@ -743,6 +1321,42 @@
                                         "type": "string",
                                         "example": "final-report.pdf",
                                         "nullable": true
+=======
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "programme_profile": {
+                                        "description": "The extracted programme profile for analysis",
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                     }
                                 },
                                 "type": "object"
@@ -752,17 +1366,28 @@
                 },
                 "responses": {
                     "200": {
+<<<<<<< HEAD
                         "description": "Submission updated successfully",
+=======
+                        "description": "Advisory note generated successfully",
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
+<<<<<<< HEAD
                                             "example": "Submission updated successfully."
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/AdviserSubmission"
+=======
+                                            "example": "Advisory note generated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                         }
                                     },
                                     "type": "object"
@@ -774,6 +1399,7 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
+<<<<<<< HEAD
                         "description": "Forbidden"
                     },
                     "404": {
@@ -811,16 +1437,15 @@
                 "responses": {
                     "200": {
                         "description": "Submission marked as delivered",
+=======
+                        "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Submission marked as delivered."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                            "example": "Forbidden."
                                         }
                                     },
                                     "type": "object"
@@ -828,6 +1453,37 @@
                             }
                         }
                     },
+                    "404": {
+                        "description": "Submission not found"
+                    },
+                    "422": {
+                        "description": "Validation failed",
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+<<<<<<< HEAD
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+=======
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+<<<<<<< HEAD
                     "401": {
                         "description": "Unauthenticated"
                     },
@@ -836,6 +1492,39 @@
                     },
                     "404": {
                         "description": "Not Found"
+=======
+                    "503": {
+                        "description": "AI service unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "AI service is temporarily unavailable. Please try again later."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "AI service error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An unexpected error occurred while generating advisory content."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+>>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     }
                 },
                 "security": [
@@ -1127,6 +1816,39 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/dashboard/stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard statistics",
+                "description": "Returns aggregate counts for the dashboard. Accessible to NEP Admins and Coordinators. For admins, coordinator_advisory_notes is null.",
+                "operationId": "06b55ec316b401263ae54a499fc977ad",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DashboardStats"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin or nep_coordinator"
                     }
                 },
                 "security": [
@@ -1557,6 +2279,56 @@
                     },
                     "404": {
                         "description": "Commune not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/provinces/counts": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get programme counts per province",
+                "description": "Returns each province with the count of distinct programme entries linked to it. Ordered by count descending.",
+                "operationId": "45b232d2c76a356182d061c0de5242d7",
+                "responses": {
+                    "200": {
+                        "description": "List of provinces with programme counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "province_name": {
+                                                "type": "string",
+                                                "example": "Phnom Penh"
+                                            },
+                                            "programme_count": {
+                                                "type": "integer",
+                                                "example": 42
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 },
                 "security": [
@@ -2140,6 +2912,245 @@
                 ]
             }
         },
+        "/map/entries/geojson": {
+            "get": {
+                "tags": [
+                    "Map Query & Export"
+                ],
+                "summary": "Get province-level GeoJSON with entry counts for map visualization",
+                "description": "Returns a GeoJSON FeatureCollection of provinces, each containing the count of matching programme entries. Only accessible by nep_admin and nep_coordinator.",
+                "operationId": "6dd6e9ee54c96bd871211c2f394fd82a",
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Filter by category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "subcategory_id",
+                        "in": "query",
+                        "description": "Filter by sub-category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "item_id",
+                        "in": "query",
+                        "description": "Filter by item ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "education_level_id",
+                        "in": "query",
+                        "description": "Filter by education level ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "inclusion_group",
+                        "in": "query",
+                        "description": "Filter by inclusion group",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "inclusion_type",
+                        "in": "query",
+                        "description": "Filter by inclusion type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "keyword",
+                        "in": "query",
+                        "description": "Filter by keyword",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "organisation_name",
+                        "in": "query",
+                        "description": "Filter by organisation name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "budget_band_id",
+                        "in": "query",
+                        "description": "Filter by budget band ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "min_staff",
+                        "in": "query",
+                        "description": "Filter by minimum staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "max_staff",
+                        "in": "query",
+                        "description": "Filter by maximum staff",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "min_beneficiaries",
+                        "in": "query",
+                        "description": "Filter by minimum beneficiaries",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "max_beneficiaries",
+                        "in": "query",
+                        "description": "Filter by maximum beneficiaries",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "province_id",
+                        "in": "query",
+                        "description": "Filter by province ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "district_id",
+                        "in": "query",
+                        "description": "Filter by district ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "agreement_counterpart_type",
+                        "in": "query",
+                        "description": "Filter by counterpart type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "agreement_status",
+                        "in": "query",
+                        "description": "Filter by agreement status",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GeoJSON FeatureCollection retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "example": "FeatureCollection"
+                                        },
+                                        "features": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "Feature"
+                                                    },
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "properties": {
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "entry_count": {
+                                                                "type": "integer"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "geometry": {
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "example": "Point"
+                                                            },
+                                                            "coordinates": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "number"
+                                                                },
+                                                                "example": [
+                                                                    104.9174,
+                                                                    11.5564
+                                                                ]
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/organisations/me": {
             "get": {
                 "tags": [
@@ -2427,7 +3438,7 @@
                     "Programme Entries"
                 ],
                 "summary": "Create a new programme entry",
-                "description": "Creates a Section 1 programme entry, automatically scoped to the authenticated user's organisation.",
+                "description": "Creates a Section 1 programme entry. member_org users create entries for their own organisation as usual (organisation_id is automatically assigned). NEP Admin and NEP Coordinator can additionally create an entry on behalf of a member organisation — for example, to assist an organisation that needs help using the system — by specifying organisation_id explicitly.",
                 "operationId": "a73ca51d62e59cc204ac25ab800d03f4",
                 "requestBody": {
                     "required": true,
@@ -2439,6 +3450,12 @@
                                     "start_year"
                                 ],
                                 "properties": {
+                                    "organisation_id": {
+                                        "description": "Only used by NEP Admin/Coordinator when creating an entry on behalf of a member organisation. member_org users should omit this field — it is auto-assigned to their own organisation and will be rejected if sent.",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "programme_name": {
                                         "type": "string",
                                         "example": "Youth Skills Initiative"
@@ -2513,7 +3530,7 @@
                         "description": "Unauthenticated"
                     },
                     "422": {
-                        "description": "Validation failed",
+                        "description": "Validation failed — organisation_id is required for NEP Admin/Coordinator, and prohibited for member_org",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3212,6 +4229,120 @@
                 ]
             }
         },
+        "/refdata/education-levels": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all education levels",
+                "description": "Returns a list of education levels for populating frontend dropdowns.",
+                "operationId": "1e8ed9567f3e18cfaa6e0e237b1bcc97",
+                "responses": {
+                    "200": {
+                        "description": "List of education levels",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EducationLevel"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/budget-bands": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all budget bands",
+                "description": "Returns a list of budget bands for populating frontend dropdowns.",
+                "operationId": "0f3e69dacbf8727aba457d2b971f0fc2",
+                "responses": {
+                    "200": {
+                        "description": "List of budget bands",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BudgetBand"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/refdata/counterpart-agencies": {
+            "get": {
+                "tags": [
+                    "Reference Data"
+                ],
+                "summary": "Get all counterpart agency types",
+                "description": "Returns the list of valid counterpart agency types for government agreements.",
+                "operationId": "563c53158cf23f195cf01947ba749437",
+                "responses": {
+                    "200": {
+                        "description": "List of counterpart agency types",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/taxonomy/categories": {
             "get": {
                 "tags": [
@@ -3820,6 +4951,60 @@
                     }
                 ]
             }
+        },
+        "/taxonomy/categories/counts": {
+            "get": {
+                "tags": [
+                    "Taxonomy"
+                ],
+                "summary": "Get programme counts per taxonomy category",
+                "description": "Returns each taxonomy category with the count of distinct programme entries linked to it. Ordered by count descending.",
+                "operationId": "297a0387ea54fef86634b22691c477d4",
+                "responses": {
+                    "200": {
+                        "description": "List of categories with programme counts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "code": {
+                                                "type": "string",
+                                                "example": "education"
+                                            },
+                                            "label": {
+                                                "type": "string",
+                                                "example": "Education"
+                                            },
+                                            "programme_count": {
+                                                "type": "integer",
+                                                "example": 42
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -3870,6 +5055,16 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "logo_path": {
+                        "type": "string",
+                        "example": "6789abc123def456",
+                        "nullable": true
+                    },
+                    "logo_url": {
+                        "type": "string",
+                        "example": "https://ik.imagekit.io/rn6hppesw/organisation-logos/6789abc123def456",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -3965,6 +5160,84 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AdvisoryNoteResponse": {
+                "properties": {
+                    "executive_summary": {
+                        "type": "string",
+                        "example": "The submitted programme shows significant overlap with existing programmes in the education sector..."
+                    },
+                    "similar_or_overlapping_programmes": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "programme_name": {
+                                    "type": "string"
+                                },
+                                "organisation": {
+                                    "type": "string"
+                                },
+                                "overlap_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "activity",
+                                        "geography",
+                                        "audience",
+                                        "multiple"
+                                    ]
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "potential_duplication": {
+                        "type": "string",
+                        "example": "There is potential duplication with Programme X in the area of..."
+                    },
+                    "coverage_gaps": {
+                        "type": "string",
+                        "example": "The programme could address gaps in..."
+                    },
+                    "recommendations": {
+                        "type": "string",
+                        "example": "It is recommended to..."
+                    },
+                    "confidence_notes": {
+                        "type": "string",
+                        "example": "Analysis based on full map scope with 3 overlapping programmes identified.",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardStats": {
+                "properties": {
+                    "total_organizations": {
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "total_program_entries": {
+                        "type": "integer",
+                        "example": 156
+                    },
+                    "unverified_program_entries": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "coordinator_advisory_notes": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "total_advisory_notes": {
+                        "type": "integer",
+                        "example": 28
                     }
                 },
                 "type": "object"
@@ -4373,6 +5646,36 @@
                 },
                 "type": "object"
             },
+            "EducationLevel": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "level_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "BudgetBand": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "min_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "max_amount": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "TaxonomyCategory": {
                 "properties": {
                     "id": {
@@ -4521,6 +5824,9 @@
     },
     "tags": [
         {
+            "name": "Adviser"
+        },
+        {
             "name": "Admin - Organisations",
             "description": "Admin - Organisations"
         },
@@ -4529,12 +5835,12 @@
             "description": "Admin - User Management"
         },
         {
-            "name": "Adviser",
-            "description": "Adviser"
-        },
-        {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard"
         },
         {
             "name": "Programme Entries",
@@ -4563,6 +5869,10 @@
         {
             "name": "Programme Geography",
             "description": "Programme Geography"
+        },
+        {
+            "name": "Reference Data",
+            "description": "Reference Data"
         },
         {
             "name": "Taxonomy",

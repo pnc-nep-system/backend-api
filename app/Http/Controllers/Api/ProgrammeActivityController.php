@@ -176,8 +176,14 @@ class ProgrammeActivityController extends Controller
             $activityIndex++;
         }
 
-        // Bulk insert activities
+        // Bulk insert activities (replace existing activities for this programme entry)
         if (!empty($activitiesToCreate)) {
+            $existingActivityIds = ProgrammeActivity::where('programme_entry_id', $programmeEntry->id)->pluck('id');
+            if ($existingActivityIds->isNotEmpty()) {
+                ProgrammeActivityLevel::whereIn('programme_activity_id', $existingActivityIds)->delete();
+                ProgrammeActivity::whereIn('id', $existingActivityIds)->delete();
+            }
+
             ProgrammeActivity::insert($activitiesToCreate);
             
             // Now bulk insert activity levels for each activity
