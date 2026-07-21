@@ -71,6 +71,7 @@ use OpenApi\Attributes as OA;
                         ],
                         type: "object",
                         nullable: true
+
                     ),
                 ],
                 type: "object"
@@ -146,6 +147,7 @@ class ProgrammeEntryController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
+
 
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $validated['organisation_id'] = $user->organisation_id;
@@ -232,26 +234,11 @@ class ProgrammeEntryController extends Controller
         }
         $programmeEntry->update($request->validated());
 
-        // Notify admin/coordinator reviewers only on the actual draft -> submitted transition
-        if (! $wasSubmitted && $programmeEntry->fresh()->is_submitted) {
-            $this->notifyReviewers($programmeEntry);
-        }
 
         return response()->json([
             'message' => 'Programme entry updated.',
             'data' => $programmeEntry->fresh(),
         ]);
-    }
-
-    private function notifyReviewers(ProgrammeEntry $entry): void
-    {
-        $reviewers = \App\Models\User::whereIn('role', ['nep_admin', 'nep_coordinator'])
-            ->where('status', 'active')
-            ->get();
-
-        foreach ($reviewers as $reviewer) {
-            $reviewer->notify(new \App\Notifications\ProgrammeEntrySubmittedForReview($entry));
-        }
     }
     #[OA\Get(
         path: "/organisations/{organisation}/programme-entries",
@@ -337,6 +324,7 @@ class ProgrammeEntryController extends Controller
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
+
         $programmeEntry->load([
             'organisation',
             'budgetBand',
@@ -409,6 +397,7 @@ class ProgrammeEntryController extends Controller
         return $this->entriesByStatus($request, false);
     }
 
+
     #[OA\Get(
         path: "/programme-entries/submitted",
         summary: "List submitted programme entries",
@@ -464,7 +453,6 @@ class ProgrammeEntryController extends Controller
         $query = ProgrammeEntry::with([
             'organisation:id,name',
             'locations.province',
-            'activities' => fn($q) => $q->where('is_primary', true),
             'activities.activityItem',
         ])->orderBy('id', 'desc');
 
@@ -476,11 +464,12 @@ class ProgrammeEntryController extends Controller
             $query->where('organisation_id', $user->organisation_id);
         }
 
-        return response()->json($query->paginate(10)->through(fn ($entry) => [
+        return response()->json($query->paginate(10)->through(fn($entry) => [
             ...$entry->toArray(),
             'organisation_name' => $entry->organisation?->name,
         ]));
     }
+
 
     #[OA\Patch(
         path: "/programme-entries/{programmeEntry}/verify",

@@ -52,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:nep_admin');
 
     Route::middleware('role:nep_admin,member_org')->group(function () {
+        Route::get('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'index']);
         Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
         Route::put('/programme-entries/{programmeEntry}/keywords', [EntryKeywordController::class, 'store']);
         Route::put('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'store']);
