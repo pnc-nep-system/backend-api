@@ -7,6 +7,7 @@ use App\Models\PolicyDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -307,5 +308,23 @@ class PolicyDocumentController extends Controller
                 'message' => 'An error occurred while deleting the policy document.',
             ], 500);
         }
+    }
+
+    public function getFile(PolicyDocument $policyDocument)
+    {
+        if (! $policyDocument->file_url) {
+            return response()->json(['message' => 'No file associated with this document.'], 404);
+        }
+
+        if (Storage::disk('public')->exists($policyDocument->file_url)) {
+            return Storage::disk('public')->response($policyDocument->file_url);
+        }
+
+        $fullPath = storage_path('app/public/' . $policyDocument->file_url);
+        if (file_exists($fullPath)) {
+            return response()->file($fullPath);
+        }
+
+        return response()->json(['message' => 'File not found on server.'], 404);
     }
 }

@@ -73,11 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
         Route::get('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'index']);
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
-        Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
-        Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
+        Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);
+        Route::get('/policy-documents/{policyDocument}/file', [ApiPolicyDocumentController::class, 'getFile']);
         Route::post('/policy-documents', [ApiPolicyDocumentController::class, 'store']);
         Route::patch('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'update']);
         Route::delete('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'destroy']);
