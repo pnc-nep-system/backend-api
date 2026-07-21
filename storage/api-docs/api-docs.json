@@ -619,6 +619,86 @@
                 ]
             }
         },
+        "/admin/users/invite": {
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Invite a new user via email",
+                "description": "Creates a new user account with a default password and sends an invitation email. Prevents duplicate invitations for existing email addresses.",
+                "operationId": "17f80fa0f36a81ee67dd47e4d0bedb09",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "example": "member_org",
+                                        "enum": [
+                                            "nep_admin",
+                                            "nep_coordinator",
+                                            "member_org"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User invited successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User created successfully. Invitation email has been sent."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation error or email already exists"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/admin/users/{user}": {
             "patch": {
                 "tags": [
@@ -1267,6 +1347,10 @@
                     {
                         "name": "id",
                         "in": "path",
+<<<<<<< HEAD
+=======
+                        "description": "The advisory note submission ID",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1305,6 +1389,8 @@
                                         "type": "string",
                                         "example": "final-report.pdf",
                                         "nullable": true
+<<<<<<< HEAD
+=======
                                     }
                                 },
                                 "type": "object"
@@ -1336,6 +1422,119 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/generate-advisory-note": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "programme_profile": {
+                                        "description": "The extracted programme profile for analysis",
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+<<<<<<< HEAD
+                        "description": "Submission updated successfully",
+=======
+                        "description": "Advisory note generated successfully",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+<<<<<<< HEAD
+                                            "example": "Submission updated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+=======
+                                            "example": "Advisory note generated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+<<<<<<< HEAD
                         "description": "Forbidden"
                     },
                     "404": {
@@ -1492,6 +1691,8 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
+=======
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                         "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
                         "content": {
                             "application/json": {
@@ -1560,6 +1761,64 @@
                                 }
                             }
                         }
+<<<<<<< HEAD
+=======
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/mark-delivered": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Mark an adviser submission as delivered",
+                "description": "Marks an adviser submission's advice as delivered and records the delivery timestamp.",
+                "operationId": "2f120aea865d69f7819444499d7ccbab",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission marked as delivered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                     }
                 },
                 "security": [
@@ -3326,6 +3585,7 @@
                 ]
             }
         },
+<<<<<<< HEAD
         "/policy-documents": {
             "get": {
                 "tags": [
@@ -3397,12 +3657,23 @@
                 "summary": "Create a new policy document",
                 "description": "Creates a new policy document. Only NEP Admins and Coordinators can create documents.",
                 "operationId": "00e72127233864dd0e2f7600d90327a4",
+=======
+        "/forgot-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Request a password reset link",
+                "description": "Sends a password reset link to the given email if an account with that email exists. Always returns 200 regardless of whether the email exists, to avoid leaking which emails are registered.",
+                "operationId": "acda779aa92ecfcafdf471d6b18d54aa",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
+<<<<<<< HEAD
                                     "title",
                                     "authority",
                                     "version",
@@ -3439,6 +3710,15 @@
                                         "type": "string",
                                         "example": "https://example.com/policy.pdf",
                                         "nullable": true
+=======
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                                     }
                                 },
                                 "type": "object"
@@ -3447,18 +3727,27 @@
                     }
                 },
                 "responses": {
+<<<<<<< HEAD
                     "201": {
                         "description": "Policy document created successfully",
+=======
+                    "200": {
+                        "description": "Reset link sent if the account exists",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
+<<<<<<< HEAD
                                             "example": "Policy document created successfully."
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/PolicyDocument"
+=======
+                                            "example": "If an account exists for that email, a reset link has been sent."
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                                         }
                                     },
                                     "type": "object"
@@ -3466,6 +3755,7 @@
                             }
                         }
                     },
+<<<<<<< HEAD
                     "401": {
                         "description": "Unauthenticated"
                     },
@@ -3597,11 +3887,28 @@
                         }
                     }
                 ],
+=======
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                }
+            }
+        },
+        "/reset-password": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password using a token from the reset link",
+                "description": "Validates the reset token and sets a new password. Revokes all existing API tokens for the account once the password is reset.",
+                "operationId": "79e83437ac7e4fbef2724b36e6ba4ec7",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
+<<<<<<< HEAD
                                 "properties": {
                                     "title": {
                                         "type": "string",
@@ -3633,6 +3940,33 @@
                                         "type": "string",
                                         "example": "https://example.com/policy-v2.pdf",
                                         "nullable": true
+=======
+                                "required": [
+                                    "token",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string",
+                                        "example": "9d8f2a3b1c..."
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "newSecurePass123"
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                                     }
                                 },
                                 "type": "object"
@@ -3642,17 +3976,25 @@
                 },
                 "responses": {
                     "200": {
+<<<<<<< HEAD
                         "description": "Policy document updated successfully",
+=======
+                        "description": "Password reset successfully",
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
+<<<<<<< HEAD
                                             "example": "Policy document updated successfully."
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/PolicyDocument"
+=======
+                                            "example": "Password reset successfully. Please log in with your new password."
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
                                         }
                                     },
                                     "type": "object"
@@ -3660,6 +4002,7 @@
                             }
                         }
                     },
+<<<<<<< HEAD
                     "401": {
                         "description": "Unauthenticated"
                     },
@@ -3678,6 +4021,27 @@
                         "bearerAuth": []
                     }
                 ]
+=======
+                    "422": {
+                        "description": "Invalid or expired token, or validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+>>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
             }
         },
         "/programme-entries/{programmeEntry}/activities": {
