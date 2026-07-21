@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrganisationProfileController;
 use App\Http\Controllers\Api\ProgrammeEntryController;
@@ -37,6 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/refdata/education-levels', [RefdataController::class, 'educationLevels']);
     Route::get('/refdata/budget-bands', [RefdataController::class, 'budgetBands']);
     Route::get('/refdata/counterpart-agencies', [RefdataController::class, 'counterpartAgencies']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
     Route::get('/user', fn(Request $request) => $request->user());
     Route::get('/session', [AuthController::class, 'session']);
