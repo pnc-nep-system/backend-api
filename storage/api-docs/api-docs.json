@@ -3869,6 +3869,52 @@
             }
         },
         "/programme-entries/{programmeEntry}/activities": {
+            "get": {
+                "tags": [
+                    "Programme Activities"
+                ],
+                "summary": "Get Section 2 activities for a programme entry",
+                "operationId": "44d9a24e32823a2a77fc4d21145be675",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "description": "Programme entry ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of activities for programme entry",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ProgrammeActivity"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Programme entry not found, or caller not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "Programme Activities"
