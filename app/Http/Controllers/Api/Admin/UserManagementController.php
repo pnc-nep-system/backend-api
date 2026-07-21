@@ -122,14 +122,33 @@ class UserManagementController extends Controller
             $data['password'] = $tempPassword;
         }
 
+        $plainPassword = $data['password'];
+
         $user = User::create([
             ...$data,
-            'password' => Hash::make($data['password']),
+            'password' => Hash::make($plainPassword),
             'status' => User::STATUS_ACTIVE,
         ]);
 
+        $loginUrl = config('app.frontend_url') . '/login';
+
+        try {
+            Mail::to($user->email)->send(new UserInvitationMail(
+                $user->name,
+                $user->email,
+                $plainPassword,
+                $loginUrl
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation email on account creation', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Account created.',
+            'message' => 'Account created. Invitation email has been sent.',
             'user' => $user->fresh('organisation'),
             'temporary_password' => $tempPassword,
         ], 201);
