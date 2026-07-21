@@ -22,6 +22,7 @@ class UpdateAdviserSubmissionRequest extends FormRequest
             'section_gaps' => ['nullable', 'string', 'max:1000'],
             'section_coordinators_notes' => ['nullable', 'string', 'max:1000'],
             'final_note_file' => ['nullable', 'string', 'max:255'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
         ];
     }
 
