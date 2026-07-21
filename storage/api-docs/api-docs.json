@@ -1206,7 +1206,6 @@
                 ]
             }
         },
-<<<<<<< HEAD
         "/adviser/submissions/{id}": {
             "get": {
                 "tags": [
@@ -1264,24 +1263,10 @@
                 "summary": "Update an adviser submission",
                 "description": "Update the coordinator assignment and/or sections for an adviser submission.",
                 "operationId": "2be18ef98b17043c1cba6f9dfdff1d33",
-=======
-        "/adviser/submissions/{id}/generate-advisory-note": {
-            "post": {
-                "tags": [
-                    "Adviser"
-                ],
-                "summary": "Generate an AI-powered advisory note using Mistral",
-                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
-                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-<<<<<<< HEAD
-=======
-                        "description": "The advisory note submission ID",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1289,7 +1274,6 @@
                     }
                 ],
                 "requestBody": {
-<<<<<<< HEAD
                     "description": "Fields to update",
                     "required": false,
                     "content": {
@@ -1321,42 +1305,6 @@
                                         "type": "string",
                                         "example": "final-report.pdf",
                                         "nullable": true
-=======
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "programme_profile"
-                                ],
-                                "properties": {
-                                    "programme_profile": {
-                                        "description": "The extracted programme profile for analysis",
-                                        "type": "object",
-                                        "example": {
-                                            "activities": {
-                                                "category_ids": [
-                                                    1
-                                                ],
-                                                "education_level_ids": [
-                                                    2
-                                                ],
-                                                "inclusion_groups": [
-                                                    "boys"
-                                                ]
-                                            },
-                                            "audiences": {
-                                                "inclusion_types": [
-                                                    "target"
-                                                ]
-                                            },
-                                            "geography": {
-                                                "province_ids": [
-                                                    3
-                                                ]
-                                            }
-                                        }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                     }
                                 },
                                 "type": "object"
@@ -1366,28 +1314,17 @@
                 },
                 "responses": {
                     "200": {
-<<<<<<< HEAD
                         "description": "Submission updated successfully",
-=======
-                        "description": "Advisory note generated successfully",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-<<<<<<< HEAD
                                             "example": "Submission updated successfully."
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/AdviserSubmission"
-=======
-                                            "example": "Advisory note generated successfully."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                         }
                                     },
                                     "type": "object"
@@ -1399,7 +1336,6 @@
                         "description": "Unauthenticated"
                     },
                     "403": {
-<<<<<<< HEAD
                         "description": "Forbidden"
                     },
                     "404": {
@@ -1437,7 +1373,125 @@
                 "responses": {
                     "200": {
                         "description": "Submission marked as delivered",
-=======
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/generate-advisory-note": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Generate an AI-powered advisory note using Mistral",
+                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The advisory note submission ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "programme_profile"
+                                ],
+                                "properties": {
+                                    "programme_profile": {
+                                        "description": "The extracted programme profile for analysis",
+                                        "type": "object",
+                                        "example": {
+                                            "activities": {
+                                                "category_ids": [
+                                                    1
+                                                ],
+                                                "education_level_ids": [
+                                                    2
+                                                ],
+                                                "inclusion_groups": [
+                                                    "boys"
+                                                ]
+                                            },
+                                            "audiences": {
+                                                "inclusion_types": [
+                                                    "target"
+                                                ]
+                                            },
+                                            "geography": {
+                                                "province_ids": [
+                                                    3
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Advisory note generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Advisory note generated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
                         "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
                         "content": {
                             "application/json": {
@@ -1458,24 +1512,16 @@
                     },
                     "422": {
                         "description": "Validation failed",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-<<<<<<< HEAD
-                                            "example": "Submission marked as delivered."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdviserSubmission"
-=======
                                             "example": "The given data was invalid."
                                         },
                                         "errors": {
                                             "type": "object"
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                                         }
                                     },
                                     "type": "object"
@@ -1483,16 +1529,6 @@
                             }
                         }
                     },
-<<<<<<< HEAD
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "404": {
-                        "description": "Not Found"
-=======
                     "503": {
                         "description": "AI service unavailable",
                         "content": {
@@ -1524,7 +1560,6 @@
                                 }
                             }
                         }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     }
                 },
                 "security": [
@@ -3279,6 +3314,360 @@
                     },
                     "404": {
                         "description": "User has no organisation"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/policy-documents": {
+            "get": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "List all policy documents",
+                "description": "Returns a paginated list of policy documents. Accessible by all authenticated users.",
+                "operationId": "92837f64a8f816d8f142a41dd1c6b482",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of records per page (default: 15, max: 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of policy documents",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PolicyDocument"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Create a new policy document",
+                "description": "Creates a new policy document. Only NEP Admins and Coordinators can create documents.",
+                "operationId": "00e72127233864dd0e2f7600d90327a4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "authority",
+                                    "version",
+                                    "date"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "National Education Policy 2026"
+                                    },
+                                    "authority": {
+                                        "type": "string",
+                                        "example": "Ministry of Education"
+                                    },
+                                    "version": {
+                                        "type": "string",
+                                        "example": "1.0"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-01-15"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive",
+                                            "superseded"
+                                        ]
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/policy.pdf",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Policy document created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document created successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/policy-documents/{id}": {
+            "get": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Get a single policy document",
+                "description": "Returns the details of a specific policy document.",
+                "operationId": "8bc6e54d943f3d599b08da88d550206e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy document details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Delete a policy document",
+                "description": "Deletes a policy document. Only NEP Admins and Coordinators can delete documents.",
+                "operationId": "b9b14b826e2a73e9d1835d6dff3bfd85",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Policy document deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document deleted successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Policy Documents"
+                ],
+                "summary": "Update a policy document",
+                "description": "Updates an existing policy document. Only NEP Admins and Coordinators can update documents.",
+                "operationId": "5e3e3df78f3af4d629a06574824c103f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "National Education Policy 2026"
+                                    },
+                                    "authority": {
+                                        "type": "string",
+                                        "example": "Ministry of Education"
+                                    },
+                                    "version": {
+                                        "type": "string",
+                                        "example": "2.0"
+                                    },
+                                    "date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-06-01"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "active",
+                                        "enum": [
+                                            "active",
+                                            "inactive",
+                                            "superseded"
+                                        ]
+                                    },
+                                    "file_url": {
+                                        "type": "string",
+                                        "example": "https://example.com/policy-v2.pdf",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Policy document updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Policy document updated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PolicyDocument"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     },
                     "422": {
                         "description": "Validation failed"
@@ -5385,6 +5774,58 @@
                 },
                 "type": "object"
             },
+            "PolicyDocument": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "National Education Policy 2026"
+                    },
+                    "authority": {
+                        "type": "string",
+                        "example": "Ministry of Education"
+                    },
+                    "version": {
+                        "type": "string",
+                        "example": "1.0"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-01-15"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "active",
+                        "enum": [
+                            "active",
+                            "inactive",
+                            "superseded"
+                        ]
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "example": "https://example.com/policy.pdf",
+                        "nullable": true
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "ProgrammeActivity": {
                 "properties": {
                     "id": {
@@ -5861,6 +6302,10 @@
         {
             "name": "Organisation Profile",
             "description": "Organisation Profile"
+        },
+        {
+            "name": "Policy Documents",
+            "description": "Policy Documents"
         },
         {
             "name": "Programme Activities",
