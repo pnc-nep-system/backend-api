@@ -644,6 +644,207 @@
                 ]
             }
         },
+        "/adviser/submissions/{id}": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Get a single adviser submission",
+                "description": "Returns a single adviser submission with its staff assignment and recommendations.",
+                "operationId": "8b3441956da51f6727e68f5cde3b358c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Update an adviser submission",
+                "description": "Update the coordinator assignment and/or sections for an adviser submission.",
+                "operationId": "2be18ef98b17043c1cba6f9dfdff1d33",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Fields to update",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "assign_to_staff_user_id": {
+                                        "description": "Staff user ID to assign the submission to",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
+                                    "section_profile": {
+                                        "type": "string",
+                                        "example": "Profile section content",
+                                        "nullable": true
+                                    },
+                                    "section_gaps": {
+                                        "type": "string",
+                                        "example": "Gaps section content",
+                                        "nullable": true
+                                    },
+                                    "section_coordinators_notes": {
+                                        "type": "string",
+                                        "example": "Coordinator notes",
+                                        "nullable": true
+                                    },
+                                    "final_note_file": {
+                                        "type": "string",
+                                        "example": "final-report.pdf",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Submission updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission updated successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/deliver": {
+            "patch": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Mark an adviser submission as delivered",
+                "description": "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
+                "operationId": "ce60b44b53b806cccdfd025ac8deec34",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission marked as delivered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/login": {
             "post": {
                 "tags": [
