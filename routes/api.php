@@ -17,9 +17,9 @@ use App\Http\Controllers\Api\AdviserSubmissionController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PolicyDocumentController as ApiPolicyDocumentController;
 use App\Http\Controllers\Api\RefdataController;
+use App\Http\Controllers\Api\PasswordResetController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PasswordResetController;
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
@@ -85,18 +85,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/map/entries/export', [MapEntryController::class, 'export']);
         Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
         Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
+
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
-            ->middleware('throttle:10,1'); // Rate limit: 10 requests per minute
+            ->middleware('throttle:10,1');
 
         Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
         Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
-<<<<<<< HEAD
-        Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered']);
-
-=======
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
->>>>>>> fcbf1472680fb8d03c3d4e34503ead872f7c469c
+
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
@@ -123,7 +120,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
-        // Categories
         Route::post('/categories', [TaxonomyController::class, 'createCategory']);
         Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
         Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);
@@ -136,7 +132,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
         Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
 
-        // Other Entries Review
         Route::get('/other-entries', [TaxonomyController::class, 'listOtherEntries']);
     });
 });
