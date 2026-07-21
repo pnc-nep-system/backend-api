@@ -153,6 +153,16 @@ class ProgrammeEntryController extends Controller
 
         $entry = ProgrammeEntry::create($validated);
 
+        // Notify the org's users when admin/coordinator creates a programme on their behalf
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $orgUsers = \App\Models\User::where('organisation_id', $entry->organisation_id)
+                ->where('status', 'active')
+                ->get();
+            foreach ($orgUsers as $orgUser) {
+                $orgUser->notify(new \App\Notifications\ProgrammeEntryCreatedForOrg($entry));
+            }
+        }
+
         return response()->json([
             'message' => 'Programme entry created.',
             'data' => $entry,
@@ -230,6 +240,7 @@ class ProgrammeEntryController extends Controller
                 'message' => 'You are not authorized to update this entry.',
             ], 403);
         }
+        $wasSubmitted = $programmeEntry->is_submitted;
         $programmeEntry->update($request->validated());
 
         // Notify admin/coordinator reviewers only on the actual draft -> submitted transition
