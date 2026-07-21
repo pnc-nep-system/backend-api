@@ -226,7 +226,18 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        $perPage = $request->integer('per_page', 25);
+        $perPageInput = $request->input('per_page');
+
+        if ($perPageInput === 'all' || $request->boolean('all')) {
+            $allEntries = $query->get();
+            return response()->json([
+                'data' => $allEntries,
+                'total' => $allEntries->count(),
+            ]);
+        }
+
+        $perPage = $request->integer('per_page', 0);
+        if ($perPage > 0) {
         $entries = $query->paginate($perPage);
 
         return response()->json($entries);
