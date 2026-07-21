@@ -28,6 +28,7 @@ class MapEntryTest extends TestCase
         $province = Province::create(['province_name' => 'Test Province']);
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -58,6 +59,7 @@ class MapEntryTest extends TestCase
         ]);
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -73,7 +75,6 @@ class MapEntryTest extends TestCase
             ->assertJsonPath('data.0.id', $entry->id);
     }
 
-
     public function test_province_filter_excludes_other_provinces(): void
     {
         $organisation = Organisation::factory()->create();
@@ -86,9 +87,11 @@ class MapEntryTest extends TestCase
         $province2 = Province::create(['province_name' => 'Province 2']);
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -125,6 +128,7 @@ class MapEntryTest extends TestCase
         ]);
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -150,6 +154,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         GovernmentAgreement::create([
@@ -177,6 +182,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         GovernmentAgreement::create([
@@ -210,9 +216,11 @@ class MapEntryTest extends TestCase
         
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
 
         ProgrammeLocation::create([
@@ -259,9 +267,11 @@ class MapEntryTest extends TestCase
         $province = Province::create(['province_name' => 'Test Province']);
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org1->id,
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org2->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -293,9 +303,11 @@ class MapEntryTest extends TestCase
         $province = Province::create(['province_name' => 'Test Province']);
         $ownEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $ownOrg->id,
+            'is_submitted' => true,
         ]);
         $otherEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $otherOrg->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -332,6 +344,7 @@ class MapEntryTest extends TestCase
 
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         ProgrammeLocation::create([
             'programme_entry_id' => $entry1->id,
@@ -348,6 +361,7 @@ class MapEntryTest extends TestCase
 
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         ProgrammeLocation::create([
             'programme_entry_id' => $entry2->id,
@@ -364,6 +378,7 @@ class MapEntryTest extends TestCase
 
         $entry3 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         $otherProvince = Province::create(['province_name' => 'Other Province']);
         ProgrammeLocation::create([
@@ -408,6 +423,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
 
         ProgrammeLocation::create([
@@ -466,6 +482,7 @@ class MapEntryTest extends TestCase
 
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         ProgrammeLocation::create([
             'programme_entry_id' => $entry1->id,
@@ -482,6 +499,7 @@ class MapEntryTest extends TestCase
         
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         ProgrammeLocation::create([
             'programme_entry_id' => $entry2->id,
@@ -529,6 +547,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -560,6 +579,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
 
         GovernmentAgreement::create([
@@ -597,6 +617,7 @@ class MapEntryTest extends TestCase
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Test Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export');
@@ -628,6 +649,7 @@ class MapEntryTest extends TestCase
             'direct_beneficiaries' => 100,
             'indirect_beneficiaries' => 500,
             'method' => 'Direct implementation',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export');
@@ -666,10 +688,12 @@ class MapEntryTest extends TestCase
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Programme in Province',
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Programme Outside Province',
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -699,10 +723,12 @@ class MapEntryTest extends TestCase
         $ownEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $org1->id,
             'programme_name' => 'Own Programme',
+            'is_submitted' => true,
         ]);
         $otherEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $org2->id,
             'programme_name' => 'Other Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export');
@@ -723,10 +749,12 @@ class MapEntryTest extends TestCase
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org1->id,
             'programme_name' => 'Org1 Programme',
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org2->id,
             'programme_name' => 'Org2 Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($admin)->get('/api/map/entries/export');
@@ -754,6 +782,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
 
         EntryKeyword::create([
@@ -798,6 +827,7 @@ class MapEntryTest extends TestCase
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Test Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
@@ -825,6 +855,7 @@ class MapEntryTest extends TestCase
             'start_year' => 2023,
             'fte_staff' => 15,
             'direct_beneficiaries' => 200,
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
@@ -854,10 +885,12 @@ class MapEntryTest extends TestCase
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Programme in Province',
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
             'programme_name' => 'Programme Outside Province',
+            'is_submitted' => true,
         ]);
         
         ProgrammeLocation::create([
@@ -889,10 +922,12 @@ class MapEntryTest extends TestCase
         $ownEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $org1->id,
             'programme_name' => 'Own Programme',
+            'is_submitted' => true,
         ]);
         $otherEntry = ProgrammeEntry::factory()->create([
             'organisation_id' => $org2->id,
             'programme_name' => 'Other Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($user)->get('/api/map/entries/export/pdf');
@@ -914,10 +949,12 @@ class MapEntryTest extends TestCase
         $entry1 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org1->id,
             'programme_name' => 'Org1 Programme',
+            'is_submitted' => true,
         ]);
         $entry2 = ProgrammeEntry::factory()->create([
             'organisation_id' => $org2->id,
             'programme_name' => 'Org2 Programme',
+            'is_submitted' => true,
         ]);
 
         $response = $this->actingAs($admin)->get('/api/map/entries/export/pdf');
@@ -946,6 +983,7 @@ class MapEntryTest extends TestCase
         
         $entry = ProgrammeEntry::factory()->create([
             'organisation_id' => $organisation->id,
+            'is_submitted' => true,
         ]);
         
         EntryKeyword::create([
