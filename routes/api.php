@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
+        Route::get('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'index']);
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
         Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
         Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);

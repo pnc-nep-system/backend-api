@@ -144,6 +144,26 @@ class GovernmentAgreementController extends Controller
         ]);
     }
 
+    public function index(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if (! $this->canView($request, $programmeEntry)) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
+
+        return response()->json([
+            'data' => $programmeEntry->governmentAgreements()->get(),
+        ]);
+    }
+
+    protected function canView(Request $request, ProgrammeEntry $programmeEntry): bool
+    {
+        $user = $request->user();
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return true;
+        }
+        return $programmeEntry->organisation_id === $user->organisation_id;
+    }
+
     protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
