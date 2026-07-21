@@ -83,6 +83,26 @@ use OpenApi\Attributes as OA;
 )]
 class ProgrammeEntryController extends Controller
 {
+    public function myDrafts(Request $request)
+    {
+        $user = $request->user();
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem'])
+            ->where('is_submitted', false)
+            ->where('created_by', $user->id)
+            ->orderBy('updated_at', 'desc')
+            ->paginate(50);
+
+        return response()->json($entries->through(fn($entry) => [
+            ...$entry->toArray(),
+            'organisation_name' => $entry->organisation?->name,
+        ]));
+    }
+
     public function getAll(Request $request)
     {
         return $this->entriesByStatus($request, null);

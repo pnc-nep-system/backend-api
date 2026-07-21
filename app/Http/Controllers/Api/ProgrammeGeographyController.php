@@ -280,7 +280,7 @@ class ProgrammeGeographyController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role === 'nep_admin') {
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             return true;
         }
 

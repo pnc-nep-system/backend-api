@@ -167,7 +167,7 @@ class GovernmentAgreementController extends Controller
     protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-        return $user->role === 'nep_admin'
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }

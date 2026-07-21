@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/programme-entries', [ProgrammeEntryController::class, 'store']);
     Route::put('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'update']);
     Route::get('/programme-entries/draft', [ProgrammeEntryController::class, 'draft']);
+    Route::get('/programme-entries/my-drafts', [ProgrammeEntryController::class, 'myDrafts']);
     Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
@@ -60,7 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/programme-entries/{programmeEntry}/verify', [ProgrammeEntryController::class, 'verify'])
         ->middleware('role:nep_admin');
 
-    Route::middleware('role:nep_admin,member_org')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'index']);
         Route::post('/programme-entries/{programmeEntry}/activities', [ProgrammeActivityController::class, 'store']);
         Route::put('/programme-entries/{programmeEntry}/keywords', [EntryKeywordController::class, 'store']);
@@ -115,11 +116,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
     });
 
-    Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
         Route::get('/', [OrganisationController::class, 'index'])->name('index');
+        Route::get('/{organisation}', [OrganisationController::class, 'show'])->name('show');
+    });
+
+    Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.write.')->group(function () {
         Route::post('/', [OrganisationController::class, 'store'])->name('store');
         Route::post('/{organisation}/logo', [OrganisationController::class, 'uploadLogo'])->name('logo');
-        Route::get('/{organisation}', [OrganisationController::class, 'show'])->name('show');
         Route::put('/{organisation}', [OrganisationController::class, 'update'])->name('update');
         Route::patch('/{organisation}/deactivate', [OrganisationController::class, 'deactivate'])->name('deactivate');
         Route::patch('/{organisation}/activate', [OrganisationController::class, 'activate'])->name('activate');
