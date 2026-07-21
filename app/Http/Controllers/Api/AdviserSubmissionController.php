@@ -219,7 +219,6 @@ class AdviserSubmissionController extends Controller
         ], 201);
     }
 
-<<<<<<< HEAD
     #[OA\Get(
         path: "/adviser/submissions/{id}",
         summary: "Get a single adviser submission",
@@ -262,12 +261,6 @@ class AdviserSubmissionController extends Controller
         path: "/adviser/submissions/{id}",
         summary: "Update an adviser submission",
         description: "Update the coordinator assignment and/or sections for an adviser submission.",
-=======
-    #[OA\Post(
-        path: "/adviser/submissions/{id}/generate-advisory-note",
-        summary: "Generate an AI-powered advisory note using Mistral",
-        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
         security: [["bearerAuth" => []]],
         tags: ["Adviser"],
         parameters: [
@@ -275,15 +268,11 @@ class AdviserSubmissionController extends Controller
                 name: "id",
                 in: "path",
                 required: true,
-<<<<<<< HEAD
-=======
                 description: "The advisory note submission ID",
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                 schema: new OA\Schema(type: "integer")
             ),
         ],
         requestBody: new OA\RequestBody(
-<<<<<<< HEAD
             description: "Fields to update",
             required: false,
             content: new OA\JsonContent(
@@ -318,7 +307,55 @@ class AdviserSubmissionController extends Controller
                         type: "string",
                         nullable: true,
                         example: "final-report.pdf"
-=======
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Submission updated successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Submission updated successfully."),
+                        new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Not Found"),
+            new OA\Response(response: 422, description: "Validation failed"),
+        ]
+    )]
+    public function update(UpdateAdviserSubmissionRequest $request, AdvisoryNote $advisoryNote)
+    {
+        $validated = $request->validated();
+
+        $advisoryNote->update($validated);
+
+        return response()->json([
+            'message' => 'Submission updated successfully.',
+            'data' => $advisoryNote->fresh(),
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/adviser/submissions/{id}/generate-advisory-note",
+        summary: "Generate an AI-powered advisory note using Mistral",
+        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "The advisory note submission ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["programme_profile"],
@@ -340,7 +377,6 @@ class AdviserSubmissionController extends Controller
                                 "province_ids" => [3],
                             ],
                         ]
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     ),
                 ]
             )
@@ -348,92 +384,15 @@ class AdviserSubmissionController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-<<<<<<< HEAD
-                description: "Submission updated successfully",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "Submission updated successfully."),
-                        new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
-=======
                 description: "Advisory note generated successfully",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string", example: "Advisory note generated successfully."),
                         new OA\Property(property: "data", ref: "#/components/schemas/AdvisoryNoteResponse"),
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
                     ]
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
-<<<<<<< HEAD
-            new OA\Response(response: 403, description: "Forbidden"),
-            new OA\Response(response: 404, description: "Not Found"),
-            new OA\Response(response: 422, description: "Validation failed"),
-        ]
-    )]
-    public function update(UpdateAdviserSubmissionRequest $request, AdvisoryNote $advisoryNote)
-    {
-        $validated = $request->validated();
-
-        $advisoryNote->update($validated);
-
-        return response()->json([
-            'message' => 'Submission updated successfully.',
-            'data' => $advisoryNote->fresh(),
-        ]);
-    }
-
-    #[OA\Patch(
-        path: "/adviser/submissions/{id}/deliver",
-        summary: "Mark an adviser submission as delivered",
-        description: "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
-        security: [["bearerAuth" => []]],
-        tags: ["Adviser"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                schema: new OA\Schema(type: "integer")
-            ),
-        ],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: "Submission marked as delivered",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "Submission marked as delivered."),
-                        new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
-                    ]
-                )
-            ),
-            new OA\Response(response: 401, description: "Unauthenticated"),
-            new OA\Response(response: 403, description: "Forbidden"),
-            new OA\Response(response: 404, description: "Not Found"),
-        ]
-    )]
-    public function markDelivered(AdvisoryNote $advisoryNote)
-    {
-        if ($advisoryNote->status === 'advice_delivered') {
-            return response()->json([
-                'message' => 'Submission has already been marked as delivered.',
-                'data' => $advisoryNote,
-            ]);
-        }
-
-        $advisoryNote->update([
-            'status' => 'advice_delivered',
-            'delivered_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Submission marked as delivered.',
-            'data' => $advisoryNote->fresh(),
-        ]);
-    }
-}
-=======
             new OA\Response(
                 response: 403,
                 description: "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
@@ -564,5 +523,54 @@ class AdviserSubmissionController extends Controller
             ], $httpStatus);
         }
     }
+
+    #[OA\Patch(
+        path: "/adviser/submissions/{id}/deliver",
+        summary: "Mark an adviser submission as delivered",
+        description: "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Submission marked as delivered",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Submission marked as delivered."),
+                        new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "Not Found"),
+        ]
+    )]
+    public function markDelivered(AdvisoryNote $advisoryNote)
+    {
+        if ($advisoryNote->status === 'advice_delivered') {
+            return response()->json([
+                'message' => 'Submission has already been marked as delivered.',
+                'data' => $advisoryNote,
+            ]);
+        }
+
+        $advisoryNote->update([
+            'status' => 'advice_delivered',
+            'delivered_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Submission marked as delivered.',
+            'data' => $advisoryNote->fresh(),
+        ]);
+    }
 }
->>>>>>> 348ec287e30993e04dfe33f71eedc88978ce86c4
