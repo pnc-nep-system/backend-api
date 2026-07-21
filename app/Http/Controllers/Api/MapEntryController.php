@@ -94,9 +94,13 @@ class MapEntryController extends Controller
         $query->distinct();
 
         $hasActivityFilter = collect($request->only([
-            'category_id', 'subcategory_id', 'item_id',
-            'education_level_id', 'inclusion_group', 'inclusion_type',
-        ]))->filter(fn ($v) => filled($v))->isNotEmpty();
+            'category_id',
+            'subcategory_id',
+            'item_id',
+            'education_level_id',
+            'inclusion_group',
+            'inclusion_type',
+        ]))->filter(fn($v) => filled($v))->isNotEmpty();
 
         if ($request->filled('province_id') || $request->filled('district_id')) {
             $query->whereHas('locations', function ($q) use ($request) {
@@ -105,9 +109,9 @@ class MapEntryController extends Controller
 
                     $q->where(function ($subQ) use ($provinceId) {
                         $subQ->where('province_id', $provinceId)
-                              ->orWhereHas('district', function ($districtQ) use ($provinceId) {
-                                  $districtQ->where('province_id', $provinceId);
-                              });
+                            ->orWhereHas('district', function ($districtQ) use ($provinceId) {
+                                $districtQ->where('province_id', $provinceId);
+                            });
                     });
                 }
 
@@ -210,7 +214,7 @@ class MapEntryController extends Controller
     {
         $user = $request->user();
         $query = $this->buildMapQuery($request, $user)
-        ->where('is_submitted', true)
+            ->where('is_submitted', true)
             ->with([
                 'organisation',
                 'budgetBand',
@@ -226,11 +230,29 @@ class MapEntryController extends Controller
                 'governmentAgreements',
             ]);
 
-        $perPage = $request->integer('per_page', 25);
-        $entries = $query->paginate($perPage);
+        $perPageInput = $request->input('per_page');
 
-        return response()->json($entries);
+        if ($perPageInput === 'all' || $request->boolean('all')) {
+            $allEntries = $query->get();
+            return response()->json([
+                'data' => $allEntries,
+                'total' => $allEntries->count(),
+            ]);
+        }
+
+        $perPage = $request->integer('per_page', 0);
+        if ($perPage > 0) {
+            $entries = $query->paginate($perPage);
+            return response()->json($entries);
+        }
+
+        $allEntries = $query->get();
+        return response()->json([
+            'data' => $allEntries,
+            'total' => $allEntries->count(),
+        ]);
     }
+
 
     #[OA\Get(
         path: "/map/entries/export",
@@ -567,7 +589,7 @@ class MapEntryController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-      $query = $this->buildMapQuery($request, $user)->where('is_submitted', true);
+        $query = $this->buildMapQuery($request, $user)->where('is_submitted', true);
         $entryIds = $query->pluck('id');
 
         $counts = DB::table('programme_geography')

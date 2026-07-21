@@ -31,7 +31,6 @@ class StoreProgrammeActivityRequest extends FormRequest
             'activities.*.education_level_ids' => ['required', 'array', 'min:1'],
             'activities.*.education_level_ids.*' => [
                 'integer',
-                'distinct',
                 Rule::exists('education_levels', 'id'),
             ],
         ];
