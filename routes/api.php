@@ -93,6 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
         Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::post('/invite', [UserManagementController::class, 'invite'])->name('invite');
         Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
         Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
         Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');

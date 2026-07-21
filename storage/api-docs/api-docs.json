@@ -619,6 +619,86 @@
                 ]
             }
         },
+        "/admin/users/invite": {
+            "post": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Invite a new user via email",
+                "description": "Creates a new user account with a default password and sends an invitation email. Prevents duplicate invitations for existing email addresses.",
+                "operationId": "17f80fa0f36a81ee67dd47e4d0bedb09",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "role"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "example": "member_org",
+                                        "enum": [
+                                            "nep_admin",
+                                            "nep_coordinator",
+                                            "member_org"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User invited successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User created successfully. Invitation email has been sent."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation error or email already exists"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/admin/users/{user}": {
             "patch": {
                 "tags": [
@@ -1267,6 +1347,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "The advisory note submission ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1352,61 +1433,6 @@
                 ]
             }
         },
-        "/adviser/submissions/{id}/deliver": {
-            "patch": {
-                "tags": [
-                    "Adviser"
-                ],
-                "summary": "Mark an adviser submission as delivered",
-                "description": "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
-                "operationId": "ce60b44b53b806cccdfd025ac8deec34",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Submission marked as delivered",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Submission marked as delivered."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdviserSubmission"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/adviser/submissions/{id}/generate-advisory-note": {
             "post": {
                 "tags": [
@@ -1419,7 +1445,6 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The advisory note submission ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1560,6 +1585,61 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/mark-delivered": {
+            "post": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Mark an adviser submission as delivered",
+                "description": "Marks an adviser submission's advice as delivered and records the delivery timestamp.",
+                "operationId": "2f120aea865d69f7819444499d7ccbab",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submission marked as delivered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Submission marked as delivered."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     }
                 },
                 "security": [
