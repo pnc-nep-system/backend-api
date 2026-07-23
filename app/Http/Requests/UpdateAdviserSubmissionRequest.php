@@ -18,6 +18,7 @@ class UpdateAdviserSubmissionRequest extends FormRequest
     {
         return [
             'assign_to_staff_user_id' => ['nullable', 'integer', 'exists:staff_users,id'],
+            'coordinator_id'           => ['nullable', 'integer', 'exists:users,id'],
             'section_profile' => ['nullable', 'string', 'max:1000'],
             'section_gaps' => ['nullable', 'string', 'max:1000'],
             'section_coordinators_notes' => ['nullable', 'string', 'max:1000'],

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrganisationProfileController;
 use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
+use App\Http\Controllers\Api\ProgrammeActivityAiController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
 use App\Http\Controllers\Api\EntryKeywordController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
@@ -12,9 +13,13 @@ use App\Http\Controllers\Api\Admin\OrganisationController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
+use App\Http\Controllers\Api\MapExportController;
+use App\Http\Controllers\Api\MapGeoJsonController;
 use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
+use App\Http\Controllers\Api\AdviserAnalysisController;
+use App\Http\Controllers\Api\AdviserProgrammeEntryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PolicyDocumentController as ApiPolicyDocumentController;
 use App\Http\Controllers\Api\RefdataController;
@@ -71,9 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
-        Route::post('/programme-entries/suggest-activities', [ProgrammeActivityController::class, 'suggestActivities'])->middleware('throttle:10,1');
-        Route::post('/programme-entries/fetch-url', [ProgrammeActivityController::class, 'fetchUrl'])->middleware('throttle:20,1');
-        Route::post('/programme-entries/ai-autofill', [ProgrammeActivityController::class, 'aiAutofill'])->middleware('throttle:10,1');
+        Route::post('/programme-entries/suggest-activities', [ProgrammeActivityAiController::class, 'suggestActivities'])->middleware('throttle:10,1');
+        Route::post('/programme-entries/fetch-url', [ProgrammeActivityAiController::class, 'fetchUrl'])->middleware('throttle:20,1');
+        Route::post('/programme-entries/ai-autofill', [ProgrammeActivityAiController::class, 'aiAutofill'])->middleware('throttle:10,1');
     });
 
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
@@ -95,11 +100,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
         Route::get('/dashboard/recent-activity', [DashboardController::class, 'recentActivity']);
         Route::get('/adviser/submissions', [AdviserSubmissionController::class, 'index']);
+        Route::get('/adviser/coordinators', [AdviserSubmissionController::class, 'coordinators']);
 
         Route::get('/map/entries', [MapEntryController::class, 'index']);
-        Route::get('/map/entries/export', [MapEntryController::class, 'export']);
-        Route::get('/map/entries/export/pdf', [MapEntryController::class, 'exportPdf']);
-        Route::get('/map/entries/geojson', [MapEntryController::class, 'geojson']);
+        Route::get('/map/entries/export', [MapExportController::class, 'export']);
+        Route::get('/map/entries/export/pdf', [MapExportController::class, 'exportPdf']);
+        Route::get('/map/entries/geojson', [MapGeoJsonController::class, 'geojson']);
 
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
@@ -109,11 +115,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
 
-        Route::post('/adviser/submissions/{id}/parse-pdf', [AdviserSubmissionController::class, 'parsePdf'])
+        Route::post('/adviser/submissions/{id}/parse-pdf', [AdviserAnalysisController::class, 'parsePdf'])
             ->middleware('throttle:10,1');
-        Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
+        Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserAnalysisController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
-        Route::post('/adviser/submissions/{id}/create-programme-entry', [AdviserSubmissionController::class, 'createProgrammeEntry']);
+        Route::post('/adviser/submissions/{id}/create-programme-entry', [AdviserProgrammeEntryController::class, 'createProgrammeEntry']);
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 

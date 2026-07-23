@@ -7,18 +7,10 @@ use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Http\Requests\UpdateAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
-use Smalot\PdfParser\Parser as PdfParser;
-use App\Services\Adviser\MapOverlapMatcher;
-use App\Services\AI\GroqService;
-use App\Services\AI\PromptBuilder;
-use App\Models\ProgrammeActivity;
-use App\Models\ProgrammeActivityLevel;
-use App\Models\ProgrammeLocation;
-use Illuminate\Http\JsonResponse;
+use App\Models\User;
+use App\Notifications\AdviserSubmissionAssigned;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -106,27 +98,36 @@ class AdviserSubmissionController extends Controller
     )]
     public function index(ListAdviserSubmissionRequest $request)
     {
-        $query = AdvisoryNote::query();
+        $query = AdvisoryNote::with('coordinator:id,name')->orderBy('submitted_at', 'desc');
 
         if ($request->filled('analysis_scope')) {
-            $query->where('analysis_scope', $request->input('analysis_scope'));
+            $query->whereRaw('analysis_scope = ?', [$request->input('analysis_scope')]);
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $query->whereRaw('status = ?', [$request->input('status')]);
         }
 
-        $query->orderBy('submitted_at', 'desc');
+        return response()->json($query->paginate($request->integer('per_page', 25)));
+    }
 
-        $perPage = $request->integer('per_page', 25);
-        $submissions = $query->paginate($perPage);
+    public function coordinators(Request $request)
+    {
+        $user = $request->user();
 
-        return response()->json($submissions);
+        $query = User::where('role', 'nep_coordinator')->where('status', 'active');
+
+        // Coordinator sees all coordinators (including themselves)
+        // Admin sees all coordinators
+        $coordinators = $query->select('id', 'name', 'email')->orderBy('name')->get();
+
+        return response()->json(['data' => $coordinators]);
     }
 
     public function store(StoreAdviserSubmissionRequest $request)
     {
         $validated = $request->validated();
+        $user = $request->user();
 
         $validated['analysis_scope'] = $validated['analysis_scope'] ?? 'full map';
 
@@ -136,14 +137,21 @@ class AdviserSubmissionController extends Controller
 
         $validated['status'] = $validated['status'] ?? 'Submitted for review';
 
+        // Coordinator self-assigns by default unless they explicitly pick another
+        if ($user->role === 'nep_coordinator' && empty($validated['coordinator_id'])) {
+            $validated['coordinator_id'] = $user->id;
+        }
+
         $submission = AdvisoryNote::create([
             ...$validated,
             'submitted_at' => now(),
         ]);
 
+        $this->notifyCoordinator($submission, null);
+
         return response()->json([
             'message' => 'Document submitted for analysis.',
-            'data' => $submission,
+            'data'    => $submission,
         ], 201);
     }
 
@@ -204,24 +212,29 @@ class AdviserSubmissionController extends Controller
     {
         $validated = $request->validated();
 
-        // Handle file upload for final_note_file
         if ($request->hasFile('file')) {
-            // Delete old file if it exists and is stored locally
             if ($advisoryNote->final_note_file && !str_starts_with($advisoryNote->final_note_file, 'http')) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($advisoryNote->final_note_file);
+                Storage::disk('public')->delete($advisoryNote->final_note_file);
             }
-            $path = $request->file('file')->store('adviser-notes', 'public');
-            $validated['final_note_file'] = $path;
+            $validated['final_note_file'] = $request->file('file')->store('adviser-notes', 'public');
         }
 
-        // Remove the 'file' key since it's not a model attribute
         unset($validated['file']);
+
+        $previousCoordinatorId = $advisoryNote->coordinator_id;
 
         $advisoryNote->update($validated);
 
+        if (
+            array_key_exists('coordinator_id', $validated) &&
+            $validated['coordinator_id'] !== $previousCoordinatorId
+        ) {
+            $this->notifyCoordinator($advisoryNote->fresh(), $previousCoordinatorId);
+        }
+
         return response()->json([
             'message' => 'Submission updated successfully.',
-            'data' => $advisoryNote->fresh(),
+            'data'    => $advisoryNote->fresh(),
         ]);
     }
 
@@ -241,280 +254,38 @@ class AdviserSubmissionController extends Controller
             new OA\Response(response: 404, description: "Not Found"),
         ]
     )]
+    private function notifyCoordinator(AdvisoryNote $submission, ?int $previousCoordinatorId): void
+    {
+        if (! $submission->coordinator_id) {
+            return;
+        }
+
+        // Don't re-notify if coordinator didn't change
+        if ($submission->coordinator_id === $previousCoordinatorId) {
+            return;
+        }
+
+        $coordinator = User::find($submission->coordinator_id);
+        $coordinator?->notify(new AdviserSubmissionAssigned($submission));
+    }
+
     public function markDelivered(AdvisoryNote $advisoryNote)
     {
         if ($advisoryNote->status === 'advice_delivered') {
             return response()->json([
                 'message' => 'Submission has already been marked as delivered.',
-                'data' => $advisoryNote,
+                'data'    => $advisoryNote,
             ]);
         }
 
         $advisoryNote->update([
-            'status' => 'advice_delivered',
+            'status'       => 'advice_delivered',
             'delivered_at' => now(),
         ]);
 
         return response()->json([
             'message' => 'Submission marked as delivered.',
-            'data' => $advisoryNote->fresh(),
+            'data'    => $advisoryNote->fresh(),
         ]);
-    }
-
-    #[OA\Post(
-        path: "/adviser/submissions/{id}/generate-advisory-note",
-        summary: "Generate an AI-powered advisory note using Mistral",
-        description: "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
-        security: [["bearerAuth" => []]],
-        tags: ["Adviser"],
-        parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, description: "The advisory note submission ID", schema: new OA\Schema(type: "integer")),
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["programme_profile"],
-                properties: [
-                    new OA\Property(
-                        property: "programme_profile",
-                        type: "object",
-                        description: "The extracted programme profile for analysis",
-                        example: [
-                            "activities" => ["category_ids" => [1], "education_level_ids" => [2], "inclusion_groups" => ["boys"]],
-                            "audiences" => ["inclusion_types" => ["target"]],
-                            "geography" => ["province_ids" => [3]],
-                        ]
-                    ),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: "Advisory note generated successfully", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "Advisory note generated successfully."), new OA\Property(property: "data", ref: "#/components/schemas/AdvisoryNoteResponse")])),
-            new OA\Response(response: 401, description: "Unauthenticated"),
-            new OA\Response(response: 403, description: "Forbidden - Only NEP Coordinators and Admins can generate advisory notes", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")])),
-            new OA\Response(response: 404, description: "Submission not found"),
-            new OA\Response(response: 422, description: "Validation failed", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "The given data was invalid."), new OA\Property(property: "errors", type: "object")])),
-            new OA\Response(response: 503, description: "AI service unavailable", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "AI service is temporarily unavailable. Please try again later.")])),
-            new OA\Response(response: 500, description: "AI service error", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "An unexpected error occurred while generating advisory content.")])),
-        ]
-    )]
-    public function generateAdvisoryNote(
-        int $id,
-        Request $request,
-        MapOverlapMatcher $matcher,
-        PromptBuilder $promptBuilder
-    ): JsonResponse {
-        $submission = AdvisoryNote::findOrFail($id);
-
-        $user = $request->user();
-        if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
-            return response()->json(['message' => 'Forbidden.'], 403);
-        }
-
-        $request->validate([
-            'programme_profile' => 'required|array',
-            'programme_profile.activities' => 'sometimes|array',
-            'programme_profile.geography' => 'sometimes|array',
-            'programme_profile.audiences' => 'sometimes|array',
-        ]);
-
-        $programmeProfile = $request->input('programme_profile');
-        $analysisScope = $submission->analysis_scope ?? 'full map';
-        $analysisScopeDetail = $submission->analysis_scope_detail;
-
-        $overlappingEntries = $matcher
-            ->match($programmeProfile, $analysisScope)
-            ->with([
-                'organisation', 'budgetBand', 'keywords',
-                'locations.province', 'locations.district', 'locations.commune', 'locations.village',
-                'activities.activityItem.subcategory.category',
-                'activities.activityItem.subcategory',
-                'activities.activityItem',
-                'activities.activityLevels.educationLevel',
-            ])
-            ->get();
-
-        $prompt = $promptBuilder->build(
-            $programmeProfile,
-            $overlappingEntries->toArray(),
-            $analysisScope,
-            $analysisScopeDetail
-        );
-
-        try {
-            $groq = App::make(GroqService::class);
-            $aiResponse = $groq->generateContent($prompt);
-
-            $submission->update(['status' => 'analysed']);
-
-            return response()->json([
-                'message' => 'Advisory note generated successfully.',
-                'data' => $aiResponse,
-            ]);
-        } catch (\RuntimeException $e) {
-            $statusCode = $e->getCode();
-            $httpStatus = in_array($statusCode, [400, 401, 403, 404, 429, 500, 502, 503]) ? $statusCode : 503;
-
-            if ($httpStatus < 100 || $httpStatus > 599) {
-                $httpStatus = 503;
-            }
-
-            Log::warning('Advisory note generation failed', [
-                'submission_id' => $submission->id,
-                'status_code' => $statusCode,
-                'user_id' => $user->id,
-            ]);
-
-            return response()->json(['message' => $e->getMessage()], $httpStatus);
-        }
-    }
-
-    public function parsePdf(int $id, Request $request): JsonResponse
-    {
-        AdvisoryNote::findOrFail($id);
-
-        $request->validate([
-            'file' => 'required|file|mimes:pdf|max:20480',
-        ]);
-
-        try {
-            $parser = new PdfParser();
-            $pdf = $parser->parseFile($request->file('file')->getRealPath());
-            $text = $pdf->getText();
-
-            if (empty(trim($text))) {
-                return response()->json(['message' => 'Could not extract text from the PDF. The file may be scanned or image-based.'], 422);
-            }
-
-            return response()->json(['text' => $text]);
-        } catch (\Exception $e) {
-            Log::error('PDF parsing failed', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Failed to parse PDF file.'], 422);
-        }
-    }
-
-    public function createProgrammeEntry(int $id, Request $request): JsonResponse
-    {
-        $submission = AdvisoryNote::findOrFail($id);
-
-        $user = $request->user();
-        if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
-            return response()->json(['message' => 'Forbidden.'], 403);
-        }
-
-        $request->validate([
-            'organisation_id'                    => 'required|integer|exists:organisations,id',
-            'programme_name'                     => 'required|string|max:255',
-            'start_year'                         => 'required|integer|min:1900|max:2100',
-            'end_year'                           => 'nullable|integer|min:1900|max:2100|gte:start_year',
-            'ongoing'                            => 'sometimes|boolean',
-            'fte_staff'                          => 'nullable|numeric|min:0',
-            'direct_beneficiaries'               => 'nullable|integer|min:0',
-            'indirect_beneficiaries'             => 'nullable|integer|min:0',
-            'method'                             => 'nullable|string',
-            'budget_band_id'                     => 'nullable|integer|exists:budget_bands,id',
-            'activities'                         => 'sometimes|array',
-            'activities.*.activity_item_id'      => 'required_with:activities|integer|exists:activity_items,id',
-            'activities.*.is_primary'            => 'sometimes|boolean',
-            'activities.*.education_level_ids'   => 'sometimes|array',
-            'activities.*.education_level_ids.*' => 'integer|exists:education_levels,id',
-            'activities.*.inclusion_group'       => 'nullable|string',
-            'activities.*.inclusion_type'        => 'nullable|string',
-            'geography'                          => 'sometimes|array',
-            'geography.province_ids'             => 'sometimes|array',
-            'geography.province_ids.*'           => 'integer|exists:provinces,id',
-            'geography.other_countries'          => 'sometimes|array',
-            'geography.other_countries.*'        => 'string',
-            'keywords'                           => 'sometimes|array|max:5',
-            'keywords.*'                         => 'string|max:100',
-        ]);
-
-        $entry = DB::transaction(function () use ($request, $submission) {
-            $entry = \App\Models\ProgrammeEntry::create([
-                'organisation_id'       => $request->input('organisation_id'),
-                'programme_name'        => $request->input('programme_name'),
-                'start_year'            => $request->input('start_year'),
-                'end_year'              => $request->input('ongoing') ? null : $request->input('end_year'),
-                'ongoing'               => $request->boolean('ongoing', false),
-                'fte_staff'             => $request->input('fte_staff'),
-                'direct_beneficiaries'  => $request->input('direct_beneficiaries'),
-                'indirect_beneficiaries'=> $request->input('indirect_beneficiaries'),
-                'method'                => $request->input('method'),
-                'budget_band_id'        => $request->input('budget_band_id'),
-                'is_submitted'          => false,
-            ]);
-
-            // Section 2 — Activities
-            foreach ($request->input('activities', []) as $actData) {
-                $activityItem = \App\Models\ActivityItem::find($actData['activity_item_id']);
-                if (!$activityItem) continue;
-
-                $activity = ProgrammeActivity::create([
-                    'programme_entry_id' => $entry->id,
-                    'activity_item_id'   => $actData['activity_item_id'],
-                    'is_primary'         => $actData['is_primary'] ?? false,
-                    'inclusion_group'    => $actData['inclusion_group'] ?? null,
-                    'inclusion_type'     => $actData['inclusion_type'] ?? null,
-                    'source'             => 'ai_confirmed',
-                    'taxonomy_version'   => $activityItem->version,
-                ]);
-
-                $levelIds = $actData['education_level_ids'] ?? [1];
-                ProgrammeActivityLevel::insert(array_map(fn($lid) => [
-                    'programme_activity_id' => $activity->id,
-                    'education_level_id'    => $lid,
-                    'created_at'            => now(),
-                    'updated_at'            => now(),
-                ], $levelIds));
-            }
-
-            // Section 3 — Geography
-            $locations = [];
-            foreach ($request->input('geography.province_ids', []) as $provinceId) {
-                $locations[] = [
-                    'programme_entry_id' => $entry->id,
-                    'province_id'        => $provinceId,
-                    'district_id'        => null,
-                    'commune_id'         => null,
-                    'village_id'         => null,
-                    'country'            => null,
-                    'created_at'         => now(),
-                    'updated_at'         => now(),
-                ];
-            }
-            foreach ($request->input('geography.other_countries', []) as $country) {
-                $locations[] = [
-                    'programme_entry_id' => $entry->id,
-                    'province_id'        => null,
-                    'district_id'        => null,
-                    'commune_id'         => null,
-                    'village_id'         => null,
-                    'country'            => $country,
-                    'created_at'         => now(),
-                    'updated_at'         => now(),
-                ];
-            }
-            if (!empty($locations)) {
-                ProgrammeLocation::insert($locations);
-            }
-
-            // Section 5 — Keywords
-            $keywords = array_filter(array_map('trim', $request->input('keywords', [])));
-            if (!empty($keywords)) {
-                \App\Models\EntryKeyword::insert(array_map(fn($kw) => [
-                    'programme_entry_id' => $entry->id,
-                    'keyword'            => $kw,
-                    'created_at'         => now(),
-                    'updated_at'         => now(),
-                ], $keywords));
-            }
-
-            return $entry;
-        });
-
-        return response()->json([
-            'message' => 'Programme entry draft created from AI analysis.',
-            'data'    => ['id' => $entry->id],
-        ], 201);
     }
 }

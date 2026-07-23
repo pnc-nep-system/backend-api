@@ -21,6 +21,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
             'document_name' => ['required', 'string', 'max:255'],
             'analysis_scope' => ['nullable', 'string', 'in:full map,geographic subset,thematic subset'],
             'analysis_scope_detail' => ['nullable', 'string', 'max:1000'],
+            'coordinator_id' => ['nullable', 'integer', 'exists:users,id'],
             'status' => ['nullable', 'string', 'max:255'],
         ];
     }

@@ -8,6 +8,6 @@ trait ClearsTaxonomyCache
 {
     protected function clearTaxonomyCache(): void
     {
-        Cache::forget('taxonomy.categories.all');
+        Cache::forget('taxonomy:categories:all');
     }
 }

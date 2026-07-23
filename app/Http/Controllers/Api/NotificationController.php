@@ -16,10 +16,11 @@ class NotificationController extends Controller
             ->get()
             ->map(fn($n) => [
                 'id'                 => $n->id,
-                'type'               => 'programme_sent',
-                'title'              => 'New programme: ' . ($n->data['programme_name'] ?? ''),
+                'type'               => $n->data['type'] ?? 'programme_sent',
+                'title'              => $n->data['title'] ?? $n->data['message'] ?? '',
                 'message'            => $n->data['message'] ?? '',
                 'programme_entry_id' => $n->data['programme_entry_id'] ?? null,
+                'advisory_note_id'   => $n->data['advisory_note_id'] ?? null,
                 'read_at'            => $n->read_at?->toISOString(),
                 'created_at'         => $n->created_at->toISOString(),
             ]);

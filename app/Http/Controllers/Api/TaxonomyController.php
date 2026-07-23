@@ -418,6 +418,7 @@ class TaxonomyController extends Controller
         ]));
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item, 201);
     }
@@ -472,6 +473,7 @@ class TaxonomyController extends Controller
         ]);
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item);
     }
@@ -512,6 +514,7 @@ class TaxonomyController extends Controller
         ]);
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item);
     }
@@ -555,9 +558,9 @@ class TaxonomyController extends Controller
         $otherEntries = TaxonomyOtherQueue::with([
             'item.subcategory.category'
         ])
-            ->select('other_text', 'item_id', DB::raw('SUM(frequency) as frequency'))
+            ->selectRaw('other_text, item_id, SUM(frequency) as frequency')
             ->groupBy('other_text', 'item_id')
-            ->orderByDesc('frequency')
+            ->orderByRaw('SUM(frequency) DESC')
             ->get()
             ->map(function ($entry) {
                 return [

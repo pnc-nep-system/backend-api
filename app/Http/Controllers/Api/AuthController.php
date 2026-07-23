@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
@@ -97,28 +96,24 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
 
-        $guard = Auth::guard('web');
+        /** @var \App\Models\User|null $user */
+        $user = User::with('organisation:id,name')
+            ->where('email', $credentials['email'])
+            ->first();
 
-        if (! $guard->attempt($credentials)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        /** @var \App\Models\User $user */
-        $user = $guard->user();
-
         if ($user->status !== User::STATUS_ACTIVE) {
-            $guard->logout();
-
             return response()->json([
                 'message' => 'Account is deactivated.',
             ], 403);
         }
 
-        $user->load('organisation');
-
-        $user->tokens()->delete();
+        $user->tokens()->where('name', 'api-token')->delete();
 
         $token = $user->createToken('api-token')->plainTextToken;
 

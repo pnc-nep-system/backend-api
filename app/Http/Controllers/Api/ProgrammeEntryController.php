@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateProgrammeEntryRequest;
 use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -91,10 +92,11 @@ class ProgrammeEntryController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem'])
+        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem:id,code,label'])
+            ->select('id','programme_name','organisation_id','updated_at','created_by','is_submitted','is_unverified')
             ->where('is_submitted', false)
             ->where('created_by', $user->id)
-            ->orderBy('updated_at', 'desc')
+            ->orderByDesc('updated_at')
             ->paginate(50);
 
         return response()->json($entries->through(fn($entry) => [
@@ -268,6 +270,7 @@ class ProgrammeEntryController extends Controller
             ], 403);
         }
         $wasSubmitted = $programmeEntry->is_submitted;
+        $user = $request->user();
         $validated = $request->validated();
 
         // Admin/coordinator cannot submit on behalf of org — force draft
@@ -323,7 +326,9 @@ class ProgrammeEntryController extends Controller
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator']) && $organisation->id !== $user->organisation_id) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
-        $entries = ProgrammeEntry::where('organisation_id', $organisation->id)->get();
+        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem:id,code,label'])
+            ->where('organisation_id', $organisation->id)
+            ->get();
         return response()->json(['data' => $entries]);
     }
 
@@ -433,18 +438,8 @@ class ProgrammeEntryController extends Controller
     {
         $user = $request->user();
 
-        // Admin/coordinator see only drafts they personally created
         if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem'])
-                ->where('is_submitted', false)
-                ->where('created_by', $user->id)
-                ->orderBy('updated_at', 'desc')
-                ->paginate(50);
-
-            return response()->json($entries->through(fn($entry) => [
-                ...$entry->toArray(),
-                'organisation_name' => $entry->organisation?->name,
-            ]));
+            return $this->myDrafts($request);
         }
 
         return $this->entriesByStatus($request, false);
@@ -505,16 +500,20 @@ class ProgrammeEntryController extends Controller
         $user = $request->user();
         $query = ProgrammeEntry::with([
             'organisation:id,name',
-            'locations.province',
-            'activities.activityItem',
-        ])->orderBy('id', 'desc');
+            'locations.province:id,province_name',
+            'activities.activityItem:id,code,label',
+        ])->select(
+            'id','programme_name','organisation_id','budget_band_id',
+            'start_year','end_year','ongoing','is_submitted','is_unverified',
+            'updated_at','created_at'
+        )->orderByDesc('id');
 
         if ($isSubmitted !== null) {
-            $query->where('is_submitted', $isSubmitted);
+            $query->whereRaw('is_submitted = ?', [(int) $isSubmitted]);
         }
 
         if ($user->role === 'member_org') {
-            $query->where('organisation_id', $user->organisation_id);
+            $query->whereRaw('organisation_id = ?', [(int) $user->organisation_id]);
         }
 
         return response()->json($query->paginate(10)->through(fn($entry) => [
