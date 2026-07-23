@@ -97,6 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/adviser/submissions', [AdviserSubmissionController::class, 'store'])
             ->middleware('throttle:10,1');
 
+        Route::get('/adviser/staff-users', [AdviserSubmissionController::class, 'listStaffUsers']);
         Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
         Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])

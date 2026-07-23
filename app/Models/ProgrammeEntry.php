@@ -95,6 +95,11 @@ class ProgrammeEntry extends Model
         return $this->hasMany(TaxonomyOtherQueue::class);
     }
 
+    public function advisoryNotes()
+    {
+        return $this->hasMany(AdvisoryNote::class);
+    }
+
     public function lastUpdatedBy()
     {
         return $this->belongsTo(User::class, 'last_updated_by');

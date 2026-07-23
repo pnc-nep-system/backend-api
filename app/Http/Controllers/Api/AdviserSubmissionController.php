@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use App\Models\StaffUser;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -99,6 +100,29 @@ class AdviserSubmissionController extends Controller
             new OA\Response(response: 403, description: "Forbidden - Only NEP Coordinators and Admins can retrieve submission records", content: new OA\JsonContent(properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")])),
         ]
     )]
+    /**
+     * Get the list of staff users for the "Assign to other" dropdown.
+     */
+    #[OA\Get(
+        path: "/adviser/staff-users",
+        summary: "List staff users for assignment",
+        description: "Returns a list of staff users that can be assigned to an adviser submission. Used by the frontend for the 'Assign to other' dropdown.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        responses: [
+            new OA\Response(response: 200, description: "Staff users retrieved successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+        ]
+    )]
+    public function listStaffUsers()
+    {
+        $staffUsers = StaffUser::select('id', 'name', 'email', 'role')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $staffUsers]);
+    }
+
     public function index(ListAdviserSubmissionRequest $request)
     {
         $query = AdvisoryNote::query();
@@ -130,6 +154,17 @@ class AdviserSubmissionController extends Controller
         }
 
         $validated['status'] = $validated['status'] ?? 'Submitted for review';
+
+        // Handle assign_to_self vs assign_to_staff_user_id
+        if (!empty($validated['assign_to_self'])) {
+            // Resolve to the staff user matching the current authenticated user by email
+            $currentUser = $request->user();
+            $staffUser = \App\Models\StaffUser::where('email', $currentUser->email)->first();
+            $validated['assign_to_staff_user_id'] = $staffUser?->id;
+        }
+
+        // Remove assign_to_self as it's not a column on the table
+        unset($validated['assign_to_self']);
 
         $submission = AdvisoryNote::create([
             ...$validated,

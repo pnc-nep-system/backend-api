@@ -11,6 +11,7 @@ class AdvisoryNote extends Model
     use HasFactory;
 
     protected $fillable = [
+        'programme_entry_id',
         'assign_to_staff_user_id',
         'coordinator_id',
         'submitting_party',
@@ -41,6 +42,11 @@ class AdvisoryNote extends Model
     public function coordinator()
     {
         return $this->belongsTo(User::class, 'coordinator_id');
+    }
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
     }
 
     public function recommendations()

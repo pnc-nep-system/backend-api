@@ -17,6 +17,9 @@ class StoreAdviserSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'programme_entry_id' => ['nullable', 'integer', 'exists:programme_entries,id'],
+            'assign_to_staff_user_id' => ['nullable', 'integer', 'exists:staff_users,id'],
+            'assign_to_self' => ['nullable', 'boolean'],
             'submitting_party' => ['required', 'string', 'max:255'],
             'document_name' => ['required', 'string', 'max:255'],
             'analysis_scope' => ['nullable', 'string', 'in:full map,geographic subset,thematic subset'],
