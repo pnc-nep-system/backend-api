@@ -108,7 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 
-    Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator')->prefix('admin/users')->name('admin.users.')->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
         Route::post('/', [UserManagementController::class, 'store'])->name('store');
         Route::post('/invite', [UserManagementController::class, 'invite'])->name('invite');

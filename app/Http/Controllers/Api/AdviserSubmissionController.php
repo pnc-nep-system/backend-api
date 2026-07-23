@@ -14,7 +14,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
-use App\Models\StaffUser;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -116,7 +115,9 @@ class AdviserSubmissionController extends Controller
     )]
     public function listStaffUsers()
     {
-        $staffUsers = StaffUser::select('id', 'name', 'email', 'role')
+        $staffUsers = \App\Models\User::select('id', 'name', 'email', 'role')
+            ->whereIn('role', [\App\Models\User::ROLE_NEP_ADMIN, \App\Models\User::ROLE_NEP_COORDINATOR])
+            ->where('status', \App\Models\User::STATUS_ACTIVE)
             ->orderBy('name')
             ->get();
 
@@ -135,7 +136,7 @@ class AdviserSubmissionController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $query->orderBy('submitted_at', 'desc');
+        $query->with('staffUser:id,name,email,role')->orderBy('submitted_at', 'desc');
 
         $perPage = $request->integer('per_page', 25);
         $submissions = $query->paginate($perPage);
@@ -157,10 +158,7 @@ class AdviserSubmissionController extends Controller
 
         // Handle assign_to_self vs assign_to_staff_user_id
         if (!empty($validated['assign_to_self'])) {
-            // Resolve to the staff user matching the current authenticated user by email
-            $currentUser = $request->user();
-            $staffUser = \App\Models\StaffUser::where('email', $currentUser->email)->first();
-            $validated['assign_to_staff_user_id'] = $staffUser?->id;
+            $validated['assign_to_staff_user_id'] = $request->user()->id;
         }
 
         // Remove assign_to_self as it's not a column on the table
@@ -173,7 +171,7 @@ class AdviserSubmissionController extends Controller
 
         return response()->json([
             'message' => 'Document submitted for analysis.',
-            'data' => $submission,
+            'data' => $submission->load('staffUser:id,name,email,role'),
         ], 201);
     }
 
@@ -195,7 +193,7 @@ class AdviserSubmissionController extends Controller
     )]
     public function show(AdvisoryNote $advisoryNote)
     {
-        $advisoryNote->load(['staffUser', 'recommendations']);
+        $advisoryNote->load(['staffUser:id,name,email,role', 'recommendations']);
 
         return response()->json(['data' => $advisoryNote]);
     }

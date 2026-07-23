@@ -35,29 +35,20 @@ class UserManagementController extends Controller
         path: "/admin/users",
         tags: ["Admin - User Management"],
         summary: "List user accounts",
-        description: "Only accessible to nep_admin. Supports filtering by role and status.",
+        description: "Accessible to nep_admin and nep_coordinator. Supports filtering by role.",
         security: [["bearerAuth" => []]],
         parameters: [
             new OA\Parameter(name: "role", in: "query", required: false,
                 schema: new OA\Schema(type: "string", enum: ["nep_admin", "nep_coordinator", "member_org"])
             ),
-            new OA\Parameter(name: "status", in: "query", required: false,
-                schema: new OA\Schema(type: "string", enum: ["active", "inactive"])
-            ),
-            // new OA\Parameter(name: "per_page", in: "query", required: false,
-            //     schema: new OA\Schema(type: "integer", default: 25)
-            // ),
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Paginated list of users",
+                description: "List of users",
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "data", type: "array", items: new OA\Items(ref: "#/components/schemas/User")),
-                        new OA\Property(property: "current_page", type: "integer"),
-                        new OA\Property(property: "total", type: "integer"),
-                    ]
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/User")
                 )
             ),
             new OA\Response(response: 401, description: "Unauthenticated"),
@@ -66,14 +57,17 @@ class UserManagementController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $users = User::query()
-            ->with('organisation:id,name')
-            ->when($request->filled('role'), fn ($q) => $q->where('role', $request->query('role')))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
-            ->orderBy('name')
-            ->paginate($request->integer('per_page', 25));
+        $query = User::query();
 
-        return response()->json($users);
+        if ($request->has('role')) {
+            $query->where('role', $request->query('role'));
+        }
+
+        return response()->json(
+            $query->select('id', 'name', 'email', 'role', 'status')
+                ->orderBy('name')
+                ->get()
+        );
     }
 
     #[OA\Post(

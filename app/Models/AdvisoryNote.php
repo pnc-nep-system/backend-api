@@ -36,7 +36,7 @@ class AdvisoryNote extends Model
 
     public function staffUser()
     {
-        return $this->belongsTo(StaffUser::class, 'assign_to_staff_user_id');
+        return $this->belongsTo(User::class, 'assign_to_staff_user_id');
     }
 
     public function coordinator()
