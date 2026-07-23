@@ -1941,6 +1941,103 @@
                 ]
             }
         },
+        "/change-password": {
+            "patch": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Change Password",
+                "description": "Change the authenticated user's password. Requires current password verification.",
+                "operationId": "e35911eb78fc71ee02cce8dbe017ab8f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "current_password",
+                                    "new_password",
+                                    "new_password_confirmation"
+                                ],
+                                "properties": {
+                                    "current_password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "TempPassword123!"
+                                    },
+                                    "new_password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "MyNewPassword@123"
+                                    },
+                                    "new_password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "MyNewPassword@123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password changed successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The current password is incorrect."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/dashboard/stats": {
             "get": {
                 "tags": [
