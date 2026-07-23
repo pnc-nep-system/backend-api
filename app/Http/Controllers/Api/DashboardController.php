@@ -9,6 +9,7 @@ use App\Models\ProgrammeEntry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -43,92 +44,107 @@ class DashboardController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user();
+        $isAdmin = $user->isNepAdmin();
 
-        $totalOrganizations = Organisation::count();
-        $totalProgramEntries = ProgrammeEntry::where('is_submitted', true)->count();
-        $unverifiedProgramEntries = ProgrammeEntry::where('is_unverified', true)->count();
-        $totalAdvisoryNotes = AdvisoryNote::count();
+        $shared = Cache::remember('dashboard:stats:shared', 30, function () {
+            return [
+                'total_organizations'       => Organisation::count(),
+                'total_program_entries'     => ProgrammeEntry::where('is_submitted', true)->count(),
+                'unverified_program_entries'=> ProgrammeEntry::where('is_unverified', true)->count(),
+                'total_advisory_notes'      => AdvisoryNote::count(),
+            ];
+        });
 
-        $coordinatorAdvisoryNotes = $user->isNepAdmin()
+        $coordinatorAdvisoryNotes = $isAdmin
             ? null
-            : AdvisoryNote::where('coordinator_id', $user->id)->count();
+            : Cache::remember("dashboard:stats:coordinator:{$user->id}", 30, fn () =>
+                AdvisoryNote::where('coordinator_id', $user->id)->count()
+              );
 
-        return response()->json([
-            'total_organizations' => $totalOrganizations,
-            'total_program_entries' => $totalProgramEntries,
-            'unverified_program_entries' => $unverifiedProgramEntries,
+        return response()->json(array_merge($shared, [
             'coordinator_advisory_notes' => $coordinatorAdvisoryNotes,
-            'total_advisory_notes' => $totalAdvisoryNotes,
-        ]);
+        ]));
     }
 
     public function recentActivity(Request $request): JsonResponse
     {
         $user = $request->user();
         $isAdmin = $user->isNepAdmin();
+        $cacheKey = $isAdmin ? 'dashboard:recent:admin' : "dashboard:recent:coordinator:{$user->id}";
 
-        // 1. Advisory notes delivered
-        $notesQuery = AdvisoryNote::where('status', 'delivered');
-        if (!$isAdmin) {
-            $notesQuery->where('coordinator_id', $user->id);
-        }
-        $notes = $notesQuery->orderBy('delivered_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(fn($note) => [
-                'type'            => 'advisory_note',
-                'id'              => $note->id,
-                'label'           => $note->submitting_party,
-                'occurred_at'     => $note->delivered_at,
-            ]);
+        $activity = Cache::remember($cacheKey, 30, function () use ($user, $isAdmin) {
+            // 1. Advisory notes delivered
+            $notesQuery = AdvisoryNote::where('status', 'delivered');
+            if (!$isAdmin) {
+                $notesQuery->where('coordinator_id', $user->id);
+            }
+            $notes = $notesQuery->orderBy('delivered_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($note) => [
+                    'type'        => 'advisory_note',
+                    'id'          => $note->id,
+                    'label'       => $note->submitting_party,
+                    'occurred_at' => $note->delivered_at,
+                ]);
 
-        // 2. New submitted entries (first-time: created_at = last_updated_at)
-        //    Match to a draft advisory note by submitting_party = org name
-        $draftNotes = AdvisoryNote::whereIn('status', ['pending', 'analysed'])
-            ->get()
-            ->keyBy('submitting_party');
+            // 2. New submitted entries — join advisory_notes in DB instead of loading all into PHP
+            $newEntries = ProgrammeEntry::select(
+                    'programme_entries.id',
+                    'programme_entries.programme_name',
+                    'programme_entries.created_at',
+                    'organisations.name as org_name',
+                    'an.id as advisory_note_id'
+                )
+                ->join('organisations', 'organisations.id', '=', 'programme_entries.organisation_id')
+                ->leftJoin('advisory_notes as an', function ($join) {
+                    $join->on('an.submitting_party', '=', 'organisations.name')
+                         ->whereIn('an.status', ['pending', 'analysed']);
+                })
+                ->where('programme_entries.is_submitted', true)
+                ->whereColumn('programme_entries.last_updated_at', '<=', 'programme_entries.created_at')
+                ->orderBy('programme_entries.created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($e) => [
+                    'type'             => 'programme_new',
+                    'id'               => $e->id,
+                    'label'            => $e->org_name ?? 'Unknown',
+                    'programme'        => $e->programme_name,
+                    'advisory_note_id' => $e->advisory_note_id,
+                    'occurred_at'      => $e->created_at,
+                ]);
 
-        $newEntries = ProgrammeEntry::with('organisation')
-            ->where('is_submitted', true)
-            ->whereColumn('last_updated_at', '<=', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(function ($entry) use ($draftNotes) {
-                $orgName = $entry->organisation->name ?? 'Unknown';
-                $advisoryNote = $draftNotes->get($orgName);
-                return [
-                    'type'            => 'programme_new',
-                    'id'              => $entry->id,
-                    'label'           => $orgName,
-                    'programme'       => $entry->programme_name,
-                    'advisory_note_id'=> $advisoryNote?->id,
-                    'occurred_at'     => $entry->created_at,
-                ];
-            });
+            // 3. Updated submitted entries
+            $updatedEntries = ProgrammeEntry::select(
+                    'programme_entries.id',
+                    'programme_entries.programme_name',
+                    'programme_entries.last_updated_at',
+                    'organisations.name as org_name'
+                )
+                ->join('organisations', 'organisations.id', '=', 'programme_entries.organisation_id')
+                ->where('programme_entries.is_submitted', true)
+                ->whereColumn('programme_entries.last_updated_at', '>', 'programme_entries.created_at')
+                ->orderBy('programme_entries.last_updated_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($e) => [
+                    'type'        => 'programme_updated',
+                    'id'          => $e->id,
+                    'label'       => $e->org_name ?? 'Unknown',
+                    'programme'   => $e->programme_name,
+                    'occurred_at' => $e->last_updated_at,
+                ]);
 
-        // 3. Updated submitted entries (re-submitted: last_updated_at > created_at)
-        $updatedEntries = ProgrammeEntry::with('organisation')
-            ->where('is_submitted', true)
-            ->whereColumn('last_updated_at', '>', 'created_at')
-            ->orderBy('last_updated_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->map(fn($entry) => [
-                'type'        => 'programme_updated',
-                'id'          => $entry->id,
-                'label'       => $entry->organisation->name ?? 'Unknown',
-                'programme'   => $entry->programme_name,
-                'occurred_at' => $entry->last_updated_at,
-            ]);
-
-        $activity = collect()
-            ->merge($notes)
-            ->merge($newEntries)
-            ->merge($updatedEntries)
-            ->sortByDesc('occurred_at')
-            ->values()
-            ->take(15);
+            return collect()
+                ->merge($notes)
+                ->merge($newEntries)
+                ->merge($updatedEntries)
+                ->sortByDesc('occurred_at')
+                ->values()
+                ->take(15)
+                ->all();
+        });
 
         return response()->json($activity);
     }

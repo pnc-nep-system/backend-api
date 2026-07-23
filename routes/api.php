@@ -44,7 +44,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/refdata/budget-bands', [RefdataController::class, 'budgetBands']);
     Route::get('/refdata/counterpart-agencies', [RefdataController::class, 'counterpartAgencies']);
 
-    Route::get('/user', fn(Request $request) => $request->user());
+    Route::get('/user', fn(Request $request) => $request->user()->only(
+        'id', 'name', 'email', 'role', 'status', 'organisation_id'
+    ));
     Route::get('/session', [AuthController::class, 'session']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::patch('/change-password', [AuthController::class, 'changePassword']);

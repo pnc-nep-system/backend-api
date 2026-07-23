@@ -21,8 +21,6 @@ class MapExportController extends Controller
         'locations.commune',
         'locations.village',
         'activities.activityItem.subcategory.category',
-        'activities.activityItem.subcategory',
-        'activities.activityItem',
         'activities.activityLevels.educationLevel',
         'governmentAgreements',
     ];

@@ -21,8 +21,6 @@ class MapEntryController extends Controller
         'locations.commune:id,name',
         'locations.village:id,name',
         'activities.activityItem.subcategory.category',
-        'activities.activityItem.subcategory',
-        'activities.activityItem',
         'activities.activityLevels.educationLevel',
         'governmentAgreements',
     ];

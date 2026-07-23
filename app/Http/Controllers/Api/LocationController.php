@@ -237,13 +237,15 @@ class LocationController extends Controller
     )]
     public function provinceProgrammeCounts()
     {
-        $counts = DB::table('provinces as p')
-            ->leftJoin('programme_geography as pg', 'pg.province_id', '=', 'p.id')
-            ->select('p.id', 'p.province_name',
-                DB::raw('COUNT(DISTINCT pg.programme_entry_id) as programme_count'))
-            ->groupBy('p.id', 'p.province_name')
-            ->orderByDesc('programme_count')
-            ->get();
+        $counts = Cache::remember('provinces:programme_counts', 300, function () {
+            return DB::table('provinces as p')
+                ->leftJoin('programme_geography as pg', 'pg.province_id', '=', 'p.id')
+                ->select('p.id', 'p.province_name',
+                    DB::raw('COUNT(DISTINCT pg.programme_entry_id) as programme_count'))
+                ->groupBy('p.id', 'p.province_name')
+                ->orderByDesc('programme_count')
+                ->get();
+        });
 
         return response()->json($counts);
     }

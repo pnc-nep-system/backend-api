@@ -616,15 +616,17 @@ class TaxonomyController extends Controller
     )]
     public function categoryProgrammeCounts()
     {
-        $counts = DB::table('taxonomy_categories as tc')
-            ->leftJoin('taxonomy_subcategories as ts', 'ts.category_id', '=', 'tc.id')
-            ->leftJoin('taxonomy_items as ti', 'ti.subcategory_id', '=', 'ts.id')
-            ->leftJoin('programme_activities as pa', 'pa.activity_item_id', '=', 'ti.id')
-            ->select('tc.id', 'tc.code', 'tc.label',
-                DB::raw('COUNT(DISTINCT pa.programme_entry_id) as programme_count'))
-            ->groupBy('tc.id', 'tc.code', 'tc.label')
-            ->orderByDesc('programme_count')
-            ->get();
+        $counts = Cache::remember('taxonomy:category_counts', 300, function () {
+            return DB::table('taxonomy_categories as tc')
+                ->leftJoin('taxonomy_subcategories as ts', 'ts.category_id', '=', 'tc.id')
+                ->leftJoin('taxonomy_items as ti', 'ti.subcategory_id', '=', 'ts.id')
+                ->leftJoin('programme_activities as pa', 'pa.activity_item_id', '=', 'ti.id')
+                ->select('tc.id', 'tc.code', 'tc.label',
+                    DB::raw('COUNT(DISTINCT pa.programme_entry_id) as programme_count'))
+                ->groupBy('tc.id', 'tc.code', 'tc.label')
+                ->orderByDesc('programme_count')
+                ->get();
+        });
 
         return response()->json($counts);
     }
