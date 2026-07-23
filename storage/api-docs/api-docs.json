@@ -1069,7 +1069,7 @@
                 ],
                 "summary": "List Adviser document submissions",
                 "description": "Returns a paginated list of Adviser document submission records. Only NEP Coordinators and Admins can retrieve submission records. Supports filtering by analysis scope and status.",
-                "operationId": "ffb9213c9e475ed04ecd525509b632c9",
+                "operationId": "b7b0feafeef782fee2ee7cb4ac4c1955",
                 "parameters": [
                     {
                         "name": "analysis_scope",
@@ -1171,7 +1171,7 @@
                 ],
                 "summary": "Submit a document for Adviser analysis",
                 "description": "Allows NEP Coordinators and Admins to submit a document for analysis. The submitting party is captured as free text (not linked to the member database). Analysis scope defaults to 'full map' when not specified.",
-                "operationId": "ae3a9493f22b6d825aad616acd6f497b",
+                "operationId": "2b12e5a6bae5448a15f6d7f898aaa391",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1277,6 +1277,29 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/staff-users": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "List staff users for assignment",
+                "description": "Returns a list of staff users that can be assigned to an adviser submission. Used by the frontend for the 'Assign to other' dropdown.",
+                "operationId": "47950822a13e60ad30268fae8b770855",
+                "responses": {
+                    "200": {
+                        "description": "Staff users retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
