@@ -173,6 +173,11 @@ class ProgrammeEntryController extends Controller
             $validated['organisation_id'] = $user->organisation_id;
         }
 
+        // Admin/coordinator always create as draft — the org reviews and submits
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['is_submitted'] = false;
+        }
+
         $entry = ProgrammeEntry::create($validated);
 
         // Notify the org's users when admin/coordinator creates a programme on their behalf
@@ -263,7 +268,14 @@ class ProgrammeEntryController extends Controller
             ], 403);
         }
         $wasSubmitted = $programmeEntry->is_submitted;
-        $programmeEntry->update($request->validated());
+        $validated = $request->validated();
+
+        // Admin/coordinator cannot submit on behalf of org — force draft
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['is_submitted'] = false;
+        }
+
+        $programmeEntry->update($validated);
 
 
         return response()->json([
@@ -421,8 +433,18 @@ class ProgrammeEntryController extends Controller
     {
         $user = $request->user();
 
+        // Admin/coordinator see only drafts they personally created
         if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            return response()->json(['message' => 'Forbidden.'], 403);
+            $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem'])
+                ->where('is_submitted', false)
+                ->where('created_by', $user->id)
+                ->orderBy('updated_at', 'desc')
+                ->paginate(50);
+
+            return response()->json($entries->through(fn($entry) => [
+                ...$entry->toArray(),
+                'organisation_name' => $entry->organisation?->name,
+            ]));
         }
 
         return $this->entriesByStatus($request, false);

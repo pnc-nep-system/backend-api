@@ -23,18 +23,17 @@ return [
         ],
     ],
 
-    'mistral' => [
-        'api_key' => env('MISTRAL_API_KEY'),
-        'model' => env('MISTRAL_MODEL', 'mistral-small-latest'),
-        'timeout' => env('MISTRAL_TIMEOUT', 30),
-        'retry_attempts' => env('MISTRAL_RETRY_ATTEMPTS', 2),
-        'retry_delay' => env('MISTRAL_RETRY_DELAY', 500),
-    ],
-
-    'imagekit' => [
+'imagekit' => [
         'public_key'   => env('IMAGEKIT_PUBLIC_KEY'),
         'private_key'  => env('IMAGEKIT_PRIVATE_KEY'),
         'url_endpoint' => env('IMAGEKIT_URL_ENDPOINT'),
+    ],
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'timeout' => env('GROQ_TIMEOUT', 30),
+        'retry_attempts' => env('GROQ_RETRY_ATTEMPTS', 2),
+        'retry_delay' => env('GROQ_RETRY_DELAY', 500),
     ],
 
 ];

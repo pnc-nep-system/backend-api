@@ -69,6 +69,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'store']);
     });
 
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+        Route::post('/programme-entries/suggest-activities', [ProgrammeActivityController::class, 'suggestActivities'])->middleware('throttle:10,1');
+        Route::post('/programme-entries/fetch-url', [ProgrammeActivityController::class, 'fetchUrl'])->middleware('throttle:20,1');
+        Route::post('/programme-entries/ai-autofill', [ProgrammeActivityController::class, 'aiAutofill'])->middleware('throttle:10,1');
+    });
+
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
         Route::get('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'index']);
@@ -102,8 +108,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
 
+        Route::post('/adviser/submissions/{id}/parse-pdf', [AdviserSubmissionController::class, 'parsePdf'])
+            ->middleware('throttle:10,1');
         Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserSubmissionController::class, 'generateAdvisoryNote'])
             ->middleware('throttle:5,1');
+        Route::post('/adviser/submissions/{id}/create-programme-entry', [AdviserSubmissionController::class, 'createProgrammeEntry']);
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 

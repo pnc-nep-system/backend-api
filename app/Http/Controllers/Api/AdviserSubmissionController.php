@@ -7,12 +7,17 @@ use App\Http\Requests\ListAdviserSubmissionRequest;
 use App\Http\Requests\StoreAdviserSubmissionRequest;
 use App\Http\Requests\UpdateAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
+use Smalot\PdfParser\Parser as PdfParser;
 use App\Services\Adviser\MapOverlapMatcher;
-use App\Services\AI\MistralService;
+use App\Services\AI\GroqService;
 use App\Services\AI\PromptBuilder;
+use App\Models\ProgrammeActivity;
+use App\Models\ProgrammeActivityLevel;
+use App\Models\ProgrammeLocation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
@@ -337,8 +342,8 @@ class AdviserSubmissionController extends Controller
         );
 
         try {
-            $mistral = App::make(MistralService::class);
-            $aiResponse = $mistral->generateContent($prompt);
+            $groq = App::make(GroqService::class);
+            $aiResponse = $groq->generateContent($prompt);
 
             $submission->update(['status' => 'analysed']);
 
@@ -362,5 +367,154 @@ class AdviserSubmissionController extends Controller
 
             return response()->json(['message' => $e->getMessage()], $httpStatus);
         }
+    }
+
+    public function parsePdf(int $id, Request $request): JsonResponse
+    {
+        AdvisoryNote::findOrFail($id);
+
+        $request->validate([
+            'file' => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        try {
+            $parser = new PdfParser();
+            $pdf = $parser->parseFile($request->file('file')->getRealPath());
+            $text = $pdf->getText();
+
+            if (empty(trim($text))) {
+                return response()->json(['message' => 'Could not extract text from the PDF. The file may be scanned or image-based.'], 422);
+            }
+
+            return response()->json(['text' => $text]);
+        } catch (\Exception $e) {
+            Log::error('PDF parsing failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to parse PDF file.'], 422);
+        }
+    }
+
+    public function createProgrammeEntry(int $id, Request $request): JsonResponse
+    {
+        $submission = AdvisoryNote::findOrFail($id);
+
+        $user = $request->user();
+        if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $request->validate([
+            'organisation_id'                    => 'required|integer|exists:organisations,id',
+            'programme_name'                     => 'required|string|max:255',
+            'start_year'                         => 'required|integer|min:1900|max:2100',
+            'end_year'                           => 'nullable|integer|min:1900|max:2100|gte:start_year',
+            'ongoing'                            => 'sometimes|boolean',
+            'fte_staff'                          => 'nullable|numeric|min:0',
+            'direct_beneficiaries'               => 'nullable|integer|min:0',
+            'indirect_beneficiaries'             => 'nullable|integer|min:0',
+            'method'                             => 'nullable|string',
+            'budget_band_id'                     => 'nullable|integer|exists:budget_bands,id',
+            'activities'                         => 'sometimes|array',
+            'activities.*.activity_item_id'      => 'required_with:activities|integer|exists:activity_items,id',
+            'activities.*.is_primary'            => 'sometimes|boolean',
+            'activities.*.education_level_ids'   => 'sometimes|array',
+            'activities.*.education_level_ids.*' => 'integer|exists:education_levels,id',
+            'activities.*.inclusion_group'       => 'nullable|string',
+            'activities.*.inclusion_type'        => 'nullable|string',
+            'geography'                          => 'sometimes|array',
+            'geography.province_ids'             => 'sometimes|array',
+            'geography.province_ids.*'           => 'integer|exists:provinces,id',
+            'geography.other_countries'          => 'sometimes|array',
+            'geography.other_countries.*'        => 'string',
+            'keywords'                           => 'sometimes|array|max:5',
+            'keywords.*'                         => 'string|max:100',
+        ]);
+
+        $entry = DB::transaction(function () use ($request, $submission) {
+            $entry = \App\Models\ProgrammeEntry::create([
+                'organisation_id'       => $request->input('organisation_id'),
+                'programme_name'        => $request->input('programme_name'),
+                'start_year'            => $request->input('start_year'),
+                'end_year'              => $request->input('ongoing') ? null : $request->input('end_year'),
+                'ongoing'               => $request->boolean('ongoing', false),
+                'fte_staff'             => $request->input('fte_staff'),
+                'direct_beneficiaries'  => $request->input('direct_beneficiaries'),
+                'indirect_beneficiaries'=> $request->input('indirect_beneficiaries'),
+                'method'                => $request->input('method'),
+                'budget_band_id'        => $request->input('budget_band_id'),
+                'is_submitted'          => false,
+            ]);
+
+            // Section 2 — Activities
+            foreach ($request->input('activities', []) as $actData) {
+                $activityItem = \App\Models\ActivityItem::find($actData['activity_item_id']);
+                if (!$activityItem) continue;
+
+                $activity = ProgrammeActivity::create([
+                    'programme_entry_id' => $entry->id,
+                    'activity_item_id'   => $actData['activity_item_id'],
+                    'is_primary'         => $actData['is_primary'] ?? false,
+                    'inclusion_group'    => $actData['inclusion_group'] ?? null,
+                    'inclusion_type'     => $actData['inclusion_type'] ?? null,
+                    'source'             => 'ai_confirmed',
+                    'taxonomy_version'   => $activityItem->version,
+                ]);
+
+                $levelIds = $actData['education_level_ids'] ?? [1];
+                ProgrammeActivityLevel::insert(array_map(fn($lid) => [
+                    'programme_activity_id' => $activity->id,
+                    'education_level_id'    => $lid,
+                    'created_at'            => now(),
+                    'updated_at'            => now(),
+                ], $levelIds));
+            }
+
+            // Section 3 — Geography
+            $locations = [];
+            foreach ($request->input('geography.province_ids', []) as $provinceId) {
+                $locations[] = [
+                    'programme_entry_id' => $entry->id,
+                    'province_id'        => $provinceId,
+                    'district_id'        => null,
+                    'commune_id'         => null,
+                    'village_id'         => null,
+                    'country'            => null,
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                ];
+            }
+            foreach ($request->input('geography.other_countries', []) as $country) {
+                $locations[] = [
+                    'programme_entry_id' => $entry->id,
+                    'province_id'        => null,
+                    'district_id'        => null,
+                    'commune_id'         => null,
+                    'village_id'         => null,
+                    'country'            => $country,
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                ];
+            }
+            if (!empty($locations)) {
+                ProgrammeLocation::insert($locations);
+            }
+
+            // Section 5 — Keywords
+            $keywords = array_filter(array_map('trim', $request->input('keywords', [])));
+            if (!empty($keywords)) {
+                \App\Models\EntryKeyword::insert(array_map(fn($kw) => [
+                    'programme_entry_id' => $entry->id,
+                    'keyword'            => $kw,
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
+                ], $keywords));
+            }
+
+            return $entry;
+        });
+
+        return response()->json([
+            'message' => 'Programme entry draft created from AI analysis.',
+            'data'    => ['id' => $entry->id],
+        ], 201);
     }
 }

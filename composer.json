@@ -14,7 +14,9 @@
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
-        "predis/predis": "^3.5"
+        "phpoffice/phpword": "^1.1",
+        "predis/predis": "^3.5",
+        "smalot/pdfparser": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
