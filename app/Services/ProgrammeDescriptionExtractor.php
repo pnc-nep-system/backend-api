@@ -11,7 +11,7 @@ class ProgrammeDescriptionExtractor
     {
         $realPath = $file->getRealPath();
 
-        if ($realPath === false || !str_starts_with($realPath, sys_get_temp_dir())) {
+        if ($realPath === false || !str_starts_with(realpath($realPath) ?: $realPath, realpath(sys_get_temp_dir()) ?: sys_get_temp_dir())) {
             return '';
         }
 
@@ -24,7 +24,7 @@ class ProgrammeDescriptionExtractor
 
     public function fromPdf(string $path): string
     {
-        if (!str_starts_with($path, sys_get_temp_dir())) {
+        if (!str_starts_with(realpath($path) ?: $path, realpath(sys_get_temp_dir()) ?: sys_get_temp_dir())) {
             return '';
         }
 
@@ -40,7 +40,7 @@ class ProgrammeDescriptionExtractor
         }
 
         $safePath = realpath($path);
-        if ($safePath === false || !str_starts_with($safePath, sys_get_temp_dir())) {
+        if ($safePath === false || !str_starts_with($safePath, realpath(sys_get_temp_dir()) ?: sys_get_temp_dir())) {
             return '';
         }
 
