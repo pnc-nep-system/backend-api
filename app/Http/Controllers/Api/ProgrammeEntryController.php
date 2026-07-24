@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateProgrammeEntryRequest;
 use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -26,16 +27,93 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "direct_beneficiaries", type: "integer", example: 150),
         new OA\Property(property: "method", type: "string", example: "Workshops and mentoring", nullable: true),
         new OA\Property(property: "verified_date", type: "string", format: "date", example: "2026-03-01", nullable: true),
+        new OA\Property(property: "last_updated_at", type: "string", format: "date-time", nullable: true, description: "Timestamp of last update (automatically set by system)"),
+        new OA\Property(property: "last_updated_by", type: "integer", nullable: true, description: "ID of user who last updated (automatically set by system, read-only)"),
+        new OA\Property(property: "is_submitted", type: "boolean", example: false, description: "Whether the entry has been submitted for review"),
+        new OA\Property(property: "is_unverified", type: "boolean", example: false, description: "Whether the entry is flagged as unverified (stale)"),
+        new OA\Property(
+            property: "locations",
+            type: "array",
+            nullable: true,
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: "id", type: "integer"),
+                    new OA\Property(property: "programme_entry_id", type: "integer"),
+                    new OA\Property(
+                        property: "province",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "name", type: "string"),
+                        ],
+                        type: "object",
+                        nullable: true
+                    ),
+                    new OA\Property(property: "country", type: "string", nullable: true),
+                ],
+                type: "object"
+            )
+        ),
+        new OA\Property(
+            property: "activities",
+            type: "array",
+            nullable: true,
+            description: "Primary activities (is_primary = true)",
+            items: new OA\Items(
+                properties: [
+                    new OA\Property(property: "id", type: "integer"),
+                    new OA\Property(property: "programme_entry_id", type: "integer"),
+                    new OA\Property(property: "is_primary", type: "boolean", example: true),
+                    new OA\Property(
+                        property: "activity_item",
+                        properties: [
+                            new OA\Property(property: "id", type: "integer"),
+                            new OA\Property(property: "label", type: "string"),
+                            new OA\Property(property: "code", type: "string"),
+                        ],
+                        type: "object",
+                        nullable: true
+
+                    ),
+                ],
+                type: "object"
+            )
+        ),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
     ]
 )]
 class ProgrammeEntryController extends Controller
 {
+    public function myDrafts(Request $request)
+    {
+        $user = $request->user();
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem:id,code,label'])
+            ->select('id','programme_name','organisation_id','updated_at','created_by','is_submitted','is_unverified')
+            ->where('is_submitted', false)
+            ->where('created_by', $user->id)
+            ->orderByDesc('updated_at')
+            ->paginate(50);
+
+        return response()->json($entries->through(fn($entry) => [
+            ...$entry->toArray(),
+            'organisation_name' => $entry->organisation?->name,
+        ]));
+    }
+
+    public function getAll(Request $request)
+    {
+        return $this->entriesByStatus($request, null);
+    }
+
     #[OA\Post(
         path: "/programme-entries",
         summary: "Create a new programme entry",
-        description: "Creates a Section 1 programme entry, automatically scoped to the authenticated user's organisation.",
+        description: "Creates a Section 1 programme entry. member_org users create entries for their own organisation as usual (organisation_id is automatically assigned). NEP Admin and NEP Coordinator can additionally create an entry on behalf of a member organisation — for example, to assist an organisation that needs help using the system — by specifying organisation_id explicitly.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Entries"],
         requestBody: new OA\RequestBody(
@@ -43,6 +121,13 @@ class ProgrammeEntryController extends Controller
             content: new OA\JsonContent(
                 required: ["programme_name", "start_year"],
                 properties: [
+                    new OA\Property(
+                        property: "organisation_id",
+                        type: "integer",
+                        example: 1,
+                        nullable: true,
+                        description: "Only used by NEP Admin/Coordinator when creating an entry on behalf of a member organisation. member_org users should omit this field — it is auto-assigned to their own organisation and will be rejected if sent."
+                    ),
                     new OA\Property(property: "programme_name", type: "string", example: "Youth Skills Initiative"),
                     new OA\Property(property: "start_year", type: "integer", example: 2026),
                     new OA\Property(property: "end_year", type: "integer", example: 2027, nullable: true),
@@ -70,7 +155,7 @@ class ProgrammeEntryController extends Controller
             new OA\Response(response: 401, description: "Unauthenticated"),
             new OA\Response(
                 response: 422,
-                description: "Validation failed",
+                description: "Validation failed — organisation_id is required for NEP Admin/Coordinator, and prohibited for member_org",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "message", type: "string", example: "The given data was invalid."),
@@ -82,10 +167,31 @@ class ProgrammeEntryController extends Controller
     )]
     public function store(StoreProgrammeEntryRequest $request)
     {
-        $entry = ProgrammeEntry::create([
-            ...$request->validated(),
-            'organisation_id' => $request->user()->organisation_id,
-        ]);
+        $user = $request->user();
+        $validated = $request->validated();
+
+
+        if (! in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['organisation_id'] = $user->organisation_id;
+        }
+
+        // Admin/coordinator always create as draft — the org reviews and submits
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['is_submitted'] = false;
+        }
+
+        $entry = ProgrammeEntry::create($validated);
+
+        // Notify the org's users when admin/coordinator creates a programme on their behalf
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $orgUsers = \App\Models\User::where('organisation_id', $entry->organisation_id)
+                ->where('status', 'active')
+                ->get();
+            foreach ($orgUsers as $orgUser) {
+                $orgUser->notify(new \App\Notifications\ProgrammeEntryCreatedForOrg($entry));
+            }
+        }
+
         return response()->json([
             'message' => 'Programme entry created.',
             'data' => $entry,
@@ -163,7 +269,17 @@ class ProgrammeEntryController extends Controller
                 'message' => 'You are not authorized to update this entry.',
             ], 403);
         }
-        $programmeEntry->update($request->validated());
+        $wasSubmitted = $programmeEntry->is_submitted;
+        $user = $request->user();
+        $validated = $request->validated();
+
+        // Admin/coordinator cannot submit on behalf of org — force draft
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            $validated['is_submitted'] = false;
+        }
+
+        $programmeEntry->update($validated);
+
 
         return response()->json([
             'message' => 'Programme entry updated.',
@@ -210,7 +326,9 @@ class ProgrammeEntryController extends Controller
         if (! in_array($user->role, ['nep_admin', 'nep_coordinator']) && $organisation->id !== $user->organisation_id) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
-        $entries = ProgrammeEntry::where('organisation_id', $organisation->id)->get();
+        $entries = ProgrammeEntry::with(['organisation:id,name', 'activities.activityItem:id,code,label'])
+            ->where('organisation_id', $organisation->id)
+            ->get();
         return response()->json(['data' => $entries]);
     }
 
@@ -254,14 +372,154 @@ class ProgrammeEntryController extends Controller
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
+
         $programmeEntry->load([
-            'activities.activityLevels',
-            'locations',
+            'organisation',
+            'budgetBand',
+            'keywords',
+            'locations.province',
+            'locations.district',
+            'locations.commune',
+            'locations.village',
+            'activities.activityItem.subcategory.category',
+            'activities.activityLevels.educationLevel',
             'governmentAgreements',
         ]);
 
         return response()->json(['data' => $programmeEntry]);
     }
+
+    #[OA\Get(
+        path: "/programme-entries/draft",
+        summary: "List draft (unsubmitted) programme entries",
+        description: "Returns paginated draft programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept that doesn't apply to review roles. member_org users see only their own organisation's drafts.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                required: false,
+                description: "Page number for pagination",
+                schema: new OA\Schema(type: "integer", default: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Paginated list of draft entries",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
+                        ),
+                        new OA\Property(property: "current_page", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", type: "integer", example: 10),
+                        new OA\Property(property: "total", type: "integer", example: 42),
+                        new OA\Property(property: "last_page", type: "integer", example: 5),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")]
+                )
+            ),
+        ]
+    )]
+    public function draft(Request $request)
+    {
+        $user = $request->user();
+
+        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
+            return $this->myDrafts($request);
+        }
+
+        return $this->entriesByStatus($request, false);
+    }
+
+
+    #[OA\Get(
+        path: "/programme-entries/submitted",
+        summary: "List submitted programme entries",
+        description: "Returns paginated submitted programme entries. Restricted to member_org role — NEP Admin and NEP Coordinator are forbidden, since draft/submission status is a member-organisation workflow concept. member_org users see only their own organisation's submitted entries.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                required: false,
+                description: "Page number for pagination",
+                schema: new OA\Schema(type: "integer", default: 1)
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Paginated list of submitted entries",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(ref: "#/components/schemas/ProgrammeEntry")
+                        ),
+                        new OA\Property(property: "current_page", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", type: "integer", example: 10),
+                        new OA\Property(property: "total", type: "integer", example: 42),
+                        new OA\Property(property: "last_page", type: "integer", example: 5),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Forbidden — NEP Admin and NEP Coordinator cannot access this endpoint",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "Forbidden.")]
+                )
+            ),
+        ]
+    )]
+
+    public function submitted(Request $request)
+    {
+        return $this->entriesByStatus($request, true);
+    }
+
+    private function entriesByStatus(Request $request, ?bool $isSubmitted)
+    {
+        $user = $request->user();
+        $query = ProgrammeEntry::with([
+            'organisation:id,name',
+            'locations.province:id,province_name',
+            'activities.activityItem:id,code,label',
+        ])->select(
+            'id','programme_name','organisation_id','budget_band_id',
+            'start_year','end_year','ongoing','is_submitted','is_unverified',
+            'updated_at','created_at'
+        )->orderByDesc('id');
+
+        if ($isSubmitted !== null) {
+            $query->whereRaw('is_submitted = ?', [(int) $isSubmitted]);
+        }
+
+        if ($user->role === 'member_org') {
+            $query->whereRaw('organisation_id = ?', [(int) $user->organisation_id]);
+        }
+
+        return response()->json($query->paginate(10)->through(fn($entry) => [
+            ...$entry->toArray(),
+            'organisation_name' => $entry->organisation?->name,
+        ]));
+    }
+
 
     #[OA\Patch(
         path: "/programme-entries/{programmeEntry}/verify",
@@ -312,7 +570,7 @@ class ProgrammeEntryController extends Controller
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-        return $user->role === 'nep_admin'
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
             || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }

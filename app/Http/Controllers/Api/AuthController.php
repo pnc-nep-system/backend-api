@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
 
@@ -95,28 +96,24 @@ class AuthController extends Controller
 
         $credentials = $validator->validated();
 
-        $guard = Auth::guard('web');
+        /** @var \App\Models\User|null $user */
+        $user = User::with('organisation:id,name')
+            ->where('email', $credentials['email'])
+            ->first();
 
-        if (! $guard->attempt($credentials)) {
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        /** @var \App\Models\User $user */
-        $user = $guard->user();
-
         if ($user->status !== User::STATUS_ACTIVE) {
-            $guard->logout();
-
             return response()->json([
                 'message' => 'Account is deactivated.',
             ], 403);
         }
 
-        $user->load('organisation');
-
-        $user->tokens()->delete();
+        $user->tokens()->where('name', 'api-token')->delete();
 
         $token = $user->createToken('api-token')->plainTextToken;
 
@@ -238,6 +235,65 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully.',
+        ]);
+    }
+
+    #[OA\Patch(
+        path: "/change-password",
+        summary: "Change Password",
+        description: "Change the authenticated user's password. Requires current password verification.",
+        security: [["bearerAuth" => []]],
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["current_password", "new_password", "new_password_confirmation"],
+                properties: [
+                    new OA\Property(property: "current_password", type: "string", format: "password", example: "TempPassword123!"),
+                    new OA\Property(property: "new_password", type: "string", format: "password", example: "MyNewPassword@123"),
+                    new OA\Property(property: "new_password_confirmation", type: "string", format: "password", example: "MyNewPassword@123"),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Password changed successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Password changed successfully."),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: "Unauthenticated",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Unauthenticated."),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation failed",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "The current password is incorrect."),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        $user->password = Hash::make($request->validated('new_password'));
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
         ]);
     }
 }

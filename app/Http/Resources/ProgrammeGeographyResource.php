@@ -20,6 +20,14 @@ class ProgrammeGeographyResource extends JsonResource
                 'id' => $this->district->id,
                 'name' => $this->district->name,
             ] : null),
+            'commune' => $this->whenLoaded('commune', fn () => $this->commune ? [
+                'id' => $this->commune->id,
+                'name' => $this->commune->name,
+            ] : null),
+            'village' => $this->whenLoaded('village', fn () => $this->village ? [
+                'id' => $this->village->id,
+                'name' => $this->village->name,
+            ] : null),
             'country' => $this->country,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\TaxonomyOtherQueueCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgrammeActivityRequest;
 use App\Models\ActivityItem;
+use App\Models\ProgrammeActivity;
+use App\Models\ProgrammeActivityLevel;
 use App\Models\ProgrammeEntry;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class ProgrammeActivityController extends Controller
@@ -39,154 +41,116 @@ class ProgrammeActivityController extends Controller
         ]
     )]
 
+    #[OA\Get(
+        path: "/programme-entries/{programmeEntry}/activities",
+        summary: "Get Section 2 activities for a programme entry",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Activities"],
+        parameters: [
+            new OA\Parameter(name: "programmeEntry", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "List of activities for programme entry"),
+            new OA\Response(response: 404, description: "Programme entry not found, or caller not authorized"),
+        ]
+    )]
+    public function index(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if (!$this->canView($request, $programmeEntry)) {
+            return response()->json(['message' => 'Not Found.'], 404);
+        }
+
+        return response()->json([
+            'data' => $programmeEntry->activities()
+                ->with(['activityItem', 'activityLevels.educationLevel'])
+                ->get(),
+        ]);
+    }
 
     #[OA\Post(
         path: "/programme-entries/{programmeEntry}/activities",
         summary: "Save Section 2 activity selections for a programme entry",
-        description: "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the accompanying free-text value is required (SRS 5.5) and is captured in the taxonomy other-queue for later admin review.",
+        description: "Accepts one or more activity selections. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the free-text value is captured in the taxonomy other-queue for later admin review.",
         security: [["bearerAuth" => []]],
         tags: ["Programme Activities"],
         parameters: [
-            new OA\Parameter(
-                name: "programmeEntry",
-                in: "path",
-                required: true,
-                description: "Programme entry ID",
-                schema: new OA\Schema(type: "integer")
-            ),
+            new OA\Parameter(name: "programmeEntry", in: "path", required: true, schema: new OA\Schema(type: "integer")),
         ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activities"],
-                properties: [
-                    new OA\Property(
-                        property: "activities",
-                        type: "array",
-                        items: new OA\Items(
-                            properties: [
-                                new OA\Property(property: "activity_item_id", type: "integer", example: 12),
-                                new OA\Property(property: "is_primary", type: "boolean", example: true),
-                                new OA\Property(property: "inclusion_group", type: "string", example: "gender", nullable: true),
-                                new OA\Property(property: "inclusion_type", type: "string", example: "girls", nullable: true),
-                                new OA\Property(property: "source", type: "string", enum: ["ai_confirmed", "ai_modified", "human_entered"], example: "human_entered"),
-                                new OA\Property(property: "other_text", type: "string", example: "Community radio literacy programme", nullable: true, description: "Required when the selected activity_item_id is flagged as \"Other\" (SRS 5.5)"),
-                                new OA\Property(
-                                    property: "education_level_ids",
-                                    type: "array",
-                                    items: new OA\Items(type: "integer"),
-                                    example: [1, 2, 3]
-                                ),
-                            ]
-                        )
-                    ),
-                ]
-            )
-        ),
         responses: [
-            new OA\Response(
-                response: 201,
-                description: "Activities saved successfully",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "Activities saved."),
-                        new OA\Property(
-                            property: "data",
-                            type: "array",
-                            items: new OA\Items(ref: "#/components/schemas/ProgrammeActivity")
-                        ),
-                    ]
-                )
-            ),
+            new OA\Response(response: 201, description: "Activities saved successfully"),
             new OA\Response(response: 401, description: "Unauthenticated"),
             new OA\Response(response: 404, description: "Programme entry not found, or caller not authorized"),
-            new OA\Response(
-                response: 422,
-                description: "Validation failed — includes rejection of inactive/deprecated taxonomy items, and missing free-text when \"Other\" is selected",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string"),
-                        new OA\Property(property: "errors", type: "object"),
-                    ]
-                )
-            ),
+            new OA\Response(response: 422, description: "Validation failed"),
         ]
     )]
     public function store(StoreProgrammeActivityRequest $request, ProgrammeEntry $programmeEntry)
     {
-        if (! $this->canWrite($request, $programmeEntry)) {
+        if (!$this->canWrite($request, $programmeEntry)) {
             return response()->json(['message' => 'Not Found.'], 404);
         }
 
-        $created = [];
-        $itemIds = collect($request->validated('activities'))
-            ->pluck('activity_item_id')
-            ->unique();
+        $activitiesData = $request->validated('activities') ?? [];
+        $itemIds        = collect($activitiesData)->pluck('activity_item_id')->unique();
+        $activityItems  = ActivityItem::whereIn('id', $itemIds)->get()->keyBy('id');
 
-        $activityItems = ActivityItem::whereIn('id', $itemIds)->get()->keyBy('id');
-
-        foreach ($request->validated('activities') as $activityData) {
-            $activityItem = ActivityItem::findOrFail($activityData['activity_item_id']);
-
-            $activity = $programmeEntry->activities()->create([
-                'activity_item_id' => $activityData['activity_item_id'],
-                'is_primary' => $activityData['is_primary'] ?? false,
-                'inclusion_group' => $activityData['inclusion_group'] ?? null,
-                'inclusion_type' => $activityData['inclusion_type'] ?? null,
-                'source' => $activityData['source'] ?? 'human_entered',
-                'taxonomy_version' => $activityItem->version,
-            ]);
-
-            $activity->activityLevels()->createMany(
-                array_map(
-                    fn($levelId) => ['education_level_id' => $levelId],
-                    $activityData['education_level_ids']
-                )
-            );
-
-            $activityItem = $activityItems->get($activityData['activity_item_id']);
-
-            if ($activityItem && $activityItem->is_other) {
-                $queueEntry = TaxonomyOtherQueue::create([
-                    'programme_entry_id' => $programmeEntry->id,
-                    'item_id' => $activityItem->id,
-                    'other_text' => $activityData['other_text'],
-                    'suggested_subcategory_id' => $activityItem->subcategory_id,
-                    'frequency' => 1,
-                    'status' => 'pending',
-                ]);
-
-                event(new TaxonomyOtherQueueCreated($queueEntry));
+        DB::transaction(function () use ($programmeEntry, $activitiesData, $activityItems) {
+            $existingIds = ProgrammeActivity::where('programme_entry_id', $programmeEntry->id)->pluck('id');
+            if ($existingIds->isNotEmpty()) {
+                ProgrammeActivityLevel::whereIn('programme_activity_id', $existingIds)->delete();
+                ProgrammeActivity::whereIn('id', $existingIds)->delete();
             }
 
-            $created[] = $activity->load('activityLevels');
-        }
+            foreach ($activitiesData as $data) {
+                $item = $activityItems->get($data['activity_item_id']);
+                if (!$item) continue;
+
+                $activity = ProgrammeActivity::create([
+                    'programme_entry_id' => $programmeEntry->id,
+                    'activity_item_id'   => $data['activity_item_id'],
+                    'is_primary'         => !empty($data['is_primary']),
+                    'inclusion_group'    => $data['inclusion_group'] ?? null,
+                    'inclusion_type'     => $data['inclusion_type'] ?? null,
+                    'source'             => $data['source'] ?? 'human_entered',
+                    'taxonomy_version'   => $item->version,
+                ]);
+
+                if (!empty($data['education_level_ids']) && is_array($data['education_level_ids'])) {
+                    ProgrammeActivityLevel::insert(array_map(fn($lid) => [
+                        'programme_activity_id' => $activity->id,
+                        'education_level_id'    => $lid,
+                        'created_at'            => now(),
+                        'updated_at'            => now(),
+                    ], $data['education_level_ids']));
+                }
+
+                if ($item->is_other && !empty($data['other_text'])) {
+                    TaxonomyOtherQueue::create([
+                        'programme_entry_id'       => $programmeEntry->id,
+                        'item_id'                  => $item->id,
+                        'other_text'               => $data['other_text'],
+                        'suggested_subcategory_id' => $item->subcategory_id,
+                        'frequency'                => 1,
+                        'status'                   => 'pending',
+                    ]);
+                }
+            }
+        });
 
         return response()->json([
             'message' => 'Activities saved.',
-            'data' => $created,
+            'data'    => $programmeEntry->activities()->with(['activityItem', 'activityLevels'])->get(),
         ], 201);
     }
 
     protected function canView(Request $request, ProgrammeEntry $programmeEntry): bool
     {
-        $user = $request->user();
-
-        if (in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
-            return true;
-        }
-
-        return $programmeEntry->organisation_id === $user->organisation_id;
+        return $this->canWrite($request, $programmeEntry);
     }
 
     protected function canWrite(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();
-
-        if ($user->role === 'nep_admin') {
-            return true;
-        }
-
-        return $programmeEntry->organisation_id === $user->organisation_id;
+        return in_array($user->role, ['nep_admin', 'nep_coordinator'])
+            || $programmeEntry->organisation_id === $user->organisation_id;
     }
 }

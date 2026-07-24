@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\UserInvitationMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -118,17 +122,118 @@ class UserManagementController extends Controller
             $data['password'] = $tempPassword;
         }
 
+        $plainPassword = $data['password'];
+
         $user = User::create([
             ...$data,
-            'password' => Hash::make($data['password']),
+            'password' => Hash::make($plainPassword),
             'status' => User::STATUS_ACTIVE,
         ]);
 
+        $loginUrl = config('app.frontend_url') . '/login';
+
+        try {
+            Mail::to($user->email)->send(new UserInvitationMail(
+                $user->name,
+                $user->email,
+                $plainPassword,
+                $loginUrl
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation email on account creation', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Account created.',
+            'message' => 'Account created. Invitation email has been sent.',
             'user' => $user->fresh('organisation'),
             'temporary_password' => $tempPassword,
         ], 201);
+    }
+
+    #[OA\Post(
+        path: "/admin/users/invite",
+        tags: ["Admin - User Management"],
+        summary: "Invite a new user via email",
+        description: "Creates a new user account with a default password and sends an invitation email. Prevents duplicate invitations for existing email addresses.",
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "email", "role"],
+                properties: [
+                    new OA\Property(property: "name", type: "string", example: "John Doe"),
+                    new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
+                    new OA\Property(property: "role", type: "string", enum: ["nep_admin", "nep_coordinator", "member_org"], example: "member_org"),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: "User invited successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "User created successfully. Invitation email has been sent."),
+                        new OA\Property(property: "user", ref: "#/components/schemas/User"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden — not a nep_admin"),
+            new OA\Response(response: 422, description: "Validation error or email already exists"),
+        ]
+    )]
+    public function invite(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', Rule::in([
+                User::ROLE_NEP_ADMIN,
+                User::ROLE_NEP_COORDINATOR,
+                User::ROLE_MEMBER_ORG,
+            ])],
+        ]);
+
+        $defaultPassword = 'nep@nep!#$';
+        $loginUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/login';
+
+        try {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($defaultPassword),
+                'role' => $data['role'],
+                'status' => User::STATUS_ACTIVE,
+            ]);
+
+            Mail::to($user->email)->send(new UserInvitationMail(
+                $user->name,
+                $user->email,
+                $defaultPassword,
+                $loginUrl
+            ));
+
+            return response()->json([
+                'message' => 'User created successfully. Invitation email has been sent.',
+                'user' => $user->fresh('organisation'),
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation email', [
+                'user_id' => $user->id ?? null,
+                'email' => $data['email'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'User created successfully. Invitation email has been sent.',
+                'user' => $user->fresh('organisation'),
+            ], 201);
+        }
     }
 
     #[OA\Patch(

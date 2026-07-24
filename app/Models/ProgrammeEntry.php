@@ -23,7 +23,8 @@ class ProgrammeEntry extends Model
         'method',
         'verified_date',
         'last_updated_at',
-        'last_updated_by',
+        'is_submitted',
+        'created_by',
     ];
 
     protected $casts = [
@@ -32,10 +33,17 @@ class ProgrammeEntry extends Model
         'verified_date' => 'date',
         'last_updated_at' => 'datetime',
         'is_unverified' => 'boolean',
+        'is_submitted' => 'boolean',
     ];
     
     protected static function booted(): void
     {
+        static::creating(function (ProgrammeEntry $entry) {
+            if (Auth::check()) {
+                $entry->created_by = Auth::id();
+            }
+        });
+
         static::saving(function (ProgrammeEntry $entry) {
             $entry->last_updated_at = now();
             $entry->is_unverified = false; // any real save clears the stale flag

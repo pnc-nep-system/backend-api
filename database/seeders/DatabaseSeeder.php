@@ -8,10 +8,14 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ProvinceSeeder::class,
             DistrictSeeder::class,
+            CommuneSeeder::class,
+            VillageSeeder::class,
             EducationLevelSeeder::class,
             BudgetBandSeeder::class,
             TaxonomySeeder::class,
             OrganisationSeeder::class,
+            OrganisationAccountSeeder::class,
+            ProgrammeEntriesSeeder::class,
             UserSeeder::class,
         ]);
     }

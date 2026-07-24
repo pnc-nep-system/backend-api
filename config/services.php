@@ -23,4 +23,17 @@ return [
         ],
     ],
 
+'imagekit' => [
+        'public_key'   => env('IMAGEKIT_PUBLIC_KEY'),
+        'private_key'  => env('IMAGEKIT_PRIVATE_KEY'),
+        'url_endpoint' => env('IMAGEKIT_URL_ENDPOINT'),
+    ],
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'timeout' => env('GROQ_TIMEOUT', 30),
+        'retry_attempts' => env('GROQ_RETRY_ATTEMPTS', 2),
+        'retry_delay' => env('GROQ_RETRY_DELAY', 500),
+    ],
+
 ];

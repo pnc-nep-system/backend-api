@@ -9,12 +9,16 @@ use App\Models\ActivitySubcategory;
 use App\Models\TaxonomyOtherQueue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Support\ClearsTaxonomyCache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
+
+
 class TaxonomyController extends Controller
 {
+    use ClearsTaxonomyCache;
     #[OA\Schema(
         schema: "TaxonomyCategory",
         type: "object",
@@ -85,7 +89,7 @@ class TaxonomyController extends Controller
         $categories = Cache::remember('taxonomy:categories:all', now()->addHours(24), function () {
             return ActivityCategory::with(['subcategories.items'])->get();
         });
-
+        
         return response()->json($categories);
     }
 
@@ -414,6 +418,7 @@ class TaxonomyController extends Controller
         ]));
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item, 201);
     }
@@ -468,6 +473,7 @@ class TaxonomyController extends Controller
         ]);
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item);
     }
@@ -508,6 +514,7 @@ class TaxonomyController extends Controller
         ]);
 
         Cache::forget('taxonomy:categories:all');
+        Cache::forget('taxonomy:active_codes');
 
         return response()->json($item);
     }
@@ -551,9 +558,9 @@ class TaxonomyController extends Controller
         $otherEntries = TaxonomyOtherQueue::with([
             'item.subcategory.category'
         ])
-            ->select('other_text', 'item_id', DB::raw('SUM(frequency) as frequency'))
+            ->selectRaw('other_text, item_id, SUM(frequency) as frequency')
             ->groupBy('other_text', 'item_id')
-            ->orderByDesc('frequency')
+            ->orderByRaw('SUM(frequency) DESC')
             ->get()
             ->map(function ($entry) {
                 return [
@@ -579,6 +586,49 @@ class TaxonomyController extends Controller
             });
 
         return response()->json($otherEntries);
+    }
+
+    #[OA\Get(
+        path: "/taxonomy/categories/counts",
+        summary: "Get programme counts per taxonomy category",
+        description: "Returns each taxonomy category with the count of distinct programme entries linked to it. Ordered by count descending.",
+        security: [["bearerAuth" => []]],
+        tags: ["Taxonomy"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of categories with programme counts",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: "id", type: "integer", example: 1),
+                            new OA\Property(property: "code", type: "string", example: "education"),
+                            new OA\Property(property: "label", type: "string", example: "Education"),
+                            new OA\Property(property: "programme_count", type: "integer", example: 42),
+                        ]
+                    )
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+        ]
+    )]
+    public function categoryProgrammeCounts()
+    {
+        $counts = Cache::remember('taxonomy:category_counts', 300, function () {
+            return DB::table('taxonomy_categories as tc')
+                ->leftJoin('taxonomy_subcategories as ts', 'ts.category_id', '=', 'tc.id')
+                ->leftJoin('taxonomy_items as ti', 'ti.subcategory_id', '=', 'ts.id')
+                ->leftJoin('programme_activities as pa', 'pa.activity_item_id', '=', 'ti.id')
+                ->select('tc.id', 'tc.code', 'tc.label',
+                    DB::raw('COUNT(DISTINCT pa.programme_entry_id) as programme_count'))
+                ->groupBy('tc.id', 'tc.code', 'tc.label')
+                ->orderByDesc('programme_count')
+                ->get();
+        });
+
+        return response()->json($counts);
     }
 
     protected function authorizeAdmin(Request $request): void

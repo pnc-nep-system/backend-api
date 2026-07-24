@@ -17,9 +17,18 @@ return [
 
     'guard' => ['web'],
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 60), // minutes
 
     'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Last Used At Tracking
+    |--------------------------------------------------------------------------
+    | Disable per-request UPDATE on personal_access_tokens for performance.
+    | Set to true only if you need last_used_at tracking.
+    */
+    'last_used_at' => false,
 
     'middleware' => [
         'authenticate_session' => AuthenticateSession::class,
