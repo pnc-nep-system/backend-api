@@ -123,8 +123,19 @@ class LocationController extends Controller
     public function districts(Province $province)
     {
         $districts = Cache::remember("districts:province:{$province->id}", now()->addHours(24), function () use ($province) {
-            return $province->districts;
+            $result = $province->districts()->get();
+            if ($result->isEmpty()) {
+                // Don't cache empty results — data may not be seeded yet
+                return null;
+            }
+            return $result;
         });
+
+        if ($districts === null) {
+            Cache::forget("districts:province:{$province->id}");
+            $districts = $province->districts()->get();
+        }
+
         return response()->json(['data' => $districts]);
     }
 
@@ -164,8 +175,16 @@ class LocationController extends Controller
     public function communes(District $district)
     {
         $communes = Cache::remember("communes:district:{$district->id}", now()->addHours(24), function () use ($district) {
-            return $district->communes;
+            $result = $district->communes()->get();
+            if ($result->isEmpty()) return null;
+            return $result;
         });
+
+        if ($communes === null) {
+            Cache::forget("communes:district:{$district->id}");
+            $communes = $district->communes()->get();
+        }
+
         return response()->json(['data' => $communes]);
     }
 
@@ -205,8 +224,16 @@ class LocationController extends Controller
     public function villages(Commune $commune)
     {
         $villages = Cache::remember("villages:commune:{$commune->id}", now()->addHours(24), function () use ($commune) {
-            return $commune->villages;
+            $result = $commune->villages()->get();
+            if ($result->isEmpty()) return null;
+            return $result;
         });
+
+        if ($villages === null) {
+            Cache::forget("villages:commune:{$commune->id}");
+            $villages = $commune->villages()->get();
+        }
+
         return response()->json(['data' => $villages]);
     }
 
