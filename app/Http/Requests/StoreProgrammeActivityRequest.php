@@ -26,7 +26,6 @@ class StoreProgrammeActivityRequest extends FormRequest
             'activities.*.is_primary' => ['sometimes', 'boolean'],
             'activities.*.inclusion_group' => ['nullable', 'string', 'max:255'],
             'activities.*.inclusion_type' => ['nullable', 'string', 'max:255'],
-            'activities.*.source' => ['sometimes', Rule::in(['ai_confirmed', 'ai_modified', 'human_entered'])],
             'activities.*.other_text' => ['nullable', 'string', 'max:1000'],
             'activities.*.education_level_ids' => ['required', 'array', 'min:1'],
             'activities.*.education_level_ids.*' => [
