@@ -179,6 +179,8 @@ class AdviserSubmissionController extends Controller
             'staffUser',
             'coordinator:id,name',
             'programmeEntry.organisation:id,name',
+            'programmeEntry.activities.activityItem.subcategory',
+            'programmeEntry.locations',
             'recommendations.programmeEntry.organisation:id,name',
         ]);
 
@@ -210,6 +212,8 @@ class AdviserSubmissionController extends Controller
                 'staffUser',
                 'coordinator:id,name',
                 'programmeEntry.organisation:id,name',
+                'programmeEntry.activities.activityItem.subcategory',
+                'programmeEntry.locations',
                 'recommendations.programmeEntry.organisation:id,name',
             ])
             ->latest();
