@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -44,6 +45,13 @@ class PasswordResetController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
         ]);
+
+        if (!User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => ['email' => ['No account found with that email address.']],
+            ], 422);
+        }
 
         Password::sendResetLink($request->only('email'));
 
