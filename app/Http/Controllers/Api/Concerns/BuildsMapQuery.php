@@ -12,6 +12,7 @@ trait BuildsMapQuery
     private function buildMapQuery(Request $request, $user): Builder
     {
         $request->validate([
+            'entry_ids'                  => 'sometimes',
             'category_id'                => 'sometimes|integer',
             'subcategory_id'             => 'sometimes|integer',
             'item_id'                    => 'sometimes|integer',
@@ -33,6 +34,15 @@ trait BuildsMapQuery
         ]);
 
         $query = ProgrammeEntry::query()->where('is_submitted', true)->distinct();
+
+        if ($request->filled('entry_ids')) {
+            $raw = $request->input('entry_ids');
+            $ids = is_array($raw) ? $raw : explode(',', (string) $raw);
+            $validIds = array_filter(array_map('intval', $ids));
+            if (!empty($validIds)) {
+                $query->whereIn('id', $validIds);
+            }
+        }
 
         if (!in_array($user->role, ['nep_admin', 'nep_coordinator'])) {
             $query->where('organisation_id', $user->organisation_id);
@@ -80,7 +90,7 @@ trait BuildsMapQuery
                 if ($request->filled('subcategory_id') || $request->filled('category_id')) {
                     $q->whereHas('activityItem.subcategory', function ($sub) use ($request) {
                         if ($request->filled('subcategory_id')) {
-                            $sub->where('subcategory_id', (int) $request->input('subcategory_id'));
+                            $sub->where('id', (int) $request->input('subcategory_id'));
                         }
                         if ($request->filled('category_id')) {
                             $sub->where('category_id', (int) $request->input('category_id'));
