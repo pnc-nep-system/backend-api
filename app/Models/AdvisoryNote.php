@@ -13,6 +13,7 @@ class AdvisoryNote extends Model
     protected $fillable = [
         'assign_to_staff_user_id',
         'coordinator_id',
+        'programme_entry_id',
         'submitting_party',
         'document_name',
         'analysis_scope',
@@ -46,6 +47,11 @@ class AdvisoryNote extends Model
     public function recommendations()
     {
         return $this->hasMany(AdvisoryRecommendation::class);
+    }
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
     }
 
     /**

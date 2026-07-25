@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+Route::get('/adviser/submissions/{advisoryNote}/file', [AdviserSubmissionController::class, 'downloadFile']);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1')
@@ -80,6 +81,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
     });
 
+    // Member orgs can view the delivered advisory note for their own programme entries
+    Route::get('/adviser/programme-entries/{programmeEntry}/advisory-note', [AdviserSubmissionController::class, 'showByProgrammeEntry'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
+
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
         Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);
@@ -105,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
         Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
+        Route::post('/adviser/submissions/{advisoryNote}/file-token', [AdviserSubmissionController::class, 'fileToken']);
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
 

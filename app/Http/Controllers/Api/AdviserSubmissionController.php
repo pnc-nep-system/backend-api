@@ -10,7 +10,9 @@ use App\Models\AdvisoryNote;
 use App\Models\User;
 use App\Notifications\AdviserSubmissionAssigned;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -173,7 +175,60 @@ class AdviserSubmissionController extends Controller
     )]
     public function show(AdvisoryNote $advisoryNote)
     {
-        $advisoryNote->load(['staffUser', 'recommendations']);
+        $advisoryNote->load([
+            'staffUser',
+            'coordinator:id,name',
+            'programmeEntry.organisation:id,name',
+            'recommendations.programmeEntry.organisation:id,name',
+        ]);
+
+        return response()->json(['data' => $advisoryNote]);
+    }
+
+    #[OA\Get(
+        path: "/adviser/programme-entries/{programmeEntry}/advisory-note",
+        summary: "Get the advisory note for a programme entry",
+        description: "Returns the advisory note (with all sections and recommendations) linked to a specific programme entry. Used by the 'Analyse in the Adviser' button on the programme entry view.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(name: "programmeEntry", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Advisory note found", content: new OA\JsonContent(properties: [new OA\Property(property: "data", ref: "#/components/schemas/AdviserSubmission")])),
+            new OA\Response(response: 404, description: "No advisory note found for this programme entry"),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+        ]
+    )]
+    public function showByProgrammeEntry(Request $request, \App\Models\ProgrammeEntry $programmeEntry)
+    {
+        $user = $request->user();
+
+        $query = AdvisoryNote::where('programme_entry_id', $programmeEntry->id)
+            ->with([
+                'staffUser',
+                'coordinator:id,name',
+                'programmeEntry.organisation:id,name',
+                'recommendations.programmeEntry.organisation:id,name',
+            ])
+            ->latest();
+
+        // Member orgs only see delivered notes
+        if ($user->role === 'member_org') {
+            $query->where('status', 'advice_delivered');
+        }
+
+        $advisoryNote = $query->first();
+
+        if (! $advisoryNote) {
+            return response()->json(['message' => 'No advisory note found for this programme entry.'], 404);
+        }
+
+        // Hide internal coordinator notes from member orgs
+        if ($user->role === 'member_org') {
+            $advisoryNote->makeHidden('section_coordinators_notes');
+        }
 
         return response()->json(['data' => $advisoryNote]);
     }
@@ -219,6 +274,19 @@ class AdviserSubmissionController extends Controller
             $validated['final_note_file'] = $request->file('file')->store('adviser-notes', 'public');
         }
 
+        // Save recommendations (Section B) if provided
+        if ($request->has('recommendations')) {
+            $advisoryNote->recommendations()->delete();
+            foreach ($request->input('recommendations', []) as $rec) {
+                $advisoryNote->recommendations()->create([
+                    'programme_entry_id' => $rec['programme_entry_id'] ?? null,
+                    'organisation_name'  => $rec['organisation_name'] ?? null,
+                    'type'               => $rec['type'] ?? 'Geographic overlap',
+                    'relational'         => $rec['relational'] ?? '',
+                ]);
+            }
+        }
+
         unset($validated['file']);
 
         $previousCoordinatorId = $advisoryNote->coordinator_id;
@@ -234,7 +302,7 @@ class AdviserSubmissionController extends Controller
 
         return response()->json([
             'message' => 'Submission updated successfully.',
-            'data'    => $advisoryNote->fresh(),
+            'data'    => $advisoryNote->fresh()->load(['recommendations.programmeEntry.organisation:id,name']),
         ]);
     }
 
@@ -267,6 +335,64 @@ class AdviserSubmissionController extends Controller
 
         $coordinator = User::find($submission->coordinator_id);
         $coordinator?->notify(new AdviserSubmissionAssigned($submission));
+    }
+
+    #[OA\Get(
+        path: "/adviser/submissions/{id}/file",
+        summary: "Download the uploaded advisory note PDF file",
+        description: "Streams the uploaded final advisory note PDF file. Only accessible by NEP Admin and NEP Coordinator.",
+        security: [["bearerAuth" => []]],
+        tags: ["Adviser"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "File download successful", content: new OA\MediaType(mediaType: "application/pdf", schema: new OA\Schema(type: "string", format: "binary"))),
+            new OA\Response(response: 404, description: "No file uploaded for this advisory note"),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+        ]
+    )]
+    public function fileToken(AdvisoryNote $advisoryNote)
+    {
+        if (! $advisoryNote->final_note_file) {
+            return response()->json(['message' => 'No file uploaded for this advisory note.'], 404);
+        }
+
+        $token = Str::random(40);
+        Cache::put('adviser_file_token:' . $token, $advisoryNote->id, now()->addMinutes(5));
+
+        return response()->json(['token' => $token]);
+    }
+
+    public function downloadFile(Request $request, AdvisoryNote $advisoryNote)
+    {
+        $token = $request->query('token');
+        $cacheKey = 'adviser_file_token:' . $token;
+
+        if (! $token || Cache::get($cacheKey) !== $advisoryNote->id) {
+            return response()->json(['message' => 'Invalid or expired download token.'], 403);
+        }
+
+        Cache::forget($cacheKey);
+
+        $path = $advisoryNote->final_note_file;
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return redirect($path);
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'File not found on storage.'], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($path);
+        $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+
+        return response()->file($fullPath, [
+            'Content-Type'        => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+        ]);
     }
 
     public function markDelivered(AdvisoryNote $advisoryNote)

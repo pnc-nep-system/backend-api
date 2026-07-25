@@ -33,7 +33,7 @@ trait BuildsMapQuery
             'max_beneficiaries'          => 'sometimes|integer',
         ]);
 
-        $query = ProgrammeEntry::query()->where('is_submitted', true)->distinct();
+        $query = ProgrammeEntry::query()->where('is_submitted', true)->whereNotNull('organisation_id')->distinct();
 
         if ($request->filled('entry_ids')) {
             $raw = $request->input('entry_ids');
