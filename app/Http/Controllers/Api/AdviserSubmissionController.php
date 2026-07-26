@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateAdviserSubmissionRequest;
 use App\Models\AdvisoryNote;
 use App\Models\User;
 use App\Notifications\AdviserSubmissionAssigned;
+use App\Notifications\AdviceDelivered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -399,7 +400,7 @@ class AdviserSubmissionController extends Controller
         ]);
     }
 
-    public function markDelivered(AdvisoryNote $advisoryNote)
+    public function markDelivered(Request $request, AdvisoryNote $advisoryNote)
     {
         if ($advisoryNote->status === 'advice_delivered') {
             return response()->json([
@@ -412,6 +413,19 @@ class AdviserSubmissionController extends Controller
             'status'       => 'advice_delivered',
             'delivered_at' => now(),
         ]);
+
+        // Notify all member_org users of the linked programme entry's organisation
+        if ($advisoryNote->programme_entry_id) {
+            $advisoryNote->load('programmeEntry.organisation.users');
+            $coordinatorName = $request->user()->name;
+            $members = $advisoryNote->programmeEntry?->organisation?->users
+                ?->where('role', 'member_org')
+                ?->where('status', 'active') ?? collect();
+
+            foreach ($members as $member) {
+                $member->notify(new AdviceDelivered($advisoryNote, $coordinatorName));
+            }
+        }
 
         return response()->json([
             'message' => 'Submission marked as delivered.',
