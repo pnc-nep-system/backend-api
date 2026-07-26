@@ -406,7 +406,6 @@ class ProgrammeEntriesSeeder extends Seeder
                         'is_primary' => $act['is_primary'],
                         'inclusion_group' => $act['inclusion_group'],
                         'inclusion_type' => $act['inclusion_type'],
-                        'source' => 'human_entered',
                         'taxonomy_version' => $item->version ?? 'v1',
                     ]);
 

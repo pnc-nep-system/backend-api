@@ -65,7 +65,6 @@ class AdviserTestDataSeeder extends Seeder
                 'is_primary' => true,
                 'inclusion_group' => 'boys',
                 'inclusion_type' => 'target',
-                'source' => 'human_entered',
                 'taxonomy_version' => '1.0',
             ]);
 
