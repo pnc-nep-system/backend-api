@@ -25,7 +25,6 @@ class ProgrammeActivityController extends Controller
             new OA\Property(property: "is_primary", type: "boolean", example: true),
             new OA\Property(property: "inclusion_group", type: "string", example: "gender", nullable: true),
             new OA\Property(property: "inclusion_type", type: "string", example: "girls", nullable: true),
-            new OA\Property(property: "source", type: "string", enum: ["ai_confirmed", "ai_modified", "human_entered"]),
             new OA\Property(
                 property: "activity_levels",
                 type: "array",
@@ -110,7 +109,6 @@ class ProgrammeActivityController extends Controller
                     'is_primary'         => !empty($data['is_primary']),
                     'inclusion_group'    => $data['inclusion_group'] ?? null,
                     'inclusion_type'     => $data['inclusion_type'] ?? null,
-                    'source'             => $data['source'] ?? 'human_entered',
                     'taxonomy_version'   => $item->version,
                 ]);
 

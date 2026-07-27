@@ -228,11 +228,6 @@ class AuthController extends Controller
             $accessToken->delete();
         }
 
-        Auth::guard('web')->logout();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
         return response()->json([
             'message' => 'Logged out successfully.',
         ]);

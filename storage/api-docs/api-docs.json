@@ -1440,7 +1440,7 @@
                 ],
                 "summary": "Mark an adviser submission as delivered",
                 "description": "Sets the submission status to 'advice_delivered' and records the delivery timestamp.",
-                "operationId": "ce60b44b53b806cccdfd025ac8deec34",
+                "operationId": "a7fee871b065b2bd56947512313cde66",
                 "parameters": [
                     {
                         "name": "id",
@@ -1479,168 +1479,6 @@
                     },
                     "404": {
                         "description": "Not Found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/adviser/submissions/{id}/generate-advisory-note": {
-            "post": {
-                "tags": [
-                    "Adviser"
-                ],
-                "summary": "Generate an AI-powered advisory note using Mistral",
-                "description": "Takes a submitted programme profile, queries overlapping entries from the map, and generates a structured advisory note using Mistral AI.",
-                "operationId": "64e8f2537fb325b7fc1cbc56a545ec20",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "The advisory note submission ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "programme_profile"
-                                ],
-                                "properties": {
-                                    "programme_profile": {
-                                        "description": "The extracted programme profile for analysis",
-                                        "type": "object",
-                                        "example": {
-                                            "activities": {
-                                                "category_ids": [
-                                                    1
-                                                ],
-                                                "education_level_ids": [
-                                                    2
-                                                ],
-                                                "inclusion_groups": [
-                                                    "boys"
-                                                ]
-                                            },
-                                            "audiences": {
-                                                "inclusion_types": [
-                                                    "target"
-                                                ]
-                                            },
-                                            "geography": {
-                                                "province_ids": [
-                                                    3
-                                                ]
-                                            }
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Advisory note generated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Advisory note generated successfully."
-                                        },
-                                        "data": {
-                                            "$ref": "#/components/schemas/AdvisoryNoteResponse"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden - Only NEP Coordinators and Admins can generate advisory notes",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Forbidden."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Submission not found"
-                    },
-                    "422": {
-                        "description": "Validation failed",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "503": {
-                        "description": "AI service unavailable",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "AI service is temporarily unavailable. Please try again later."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "AI service error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "An unexpected error occurred while generating advisory content."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
                     }
                 },
                 "security": [
@@ -2556,14 +2394,13 @@
                 "tags": [
                     "Map Query & Export"
                 ],
-                "summary": "Query programme entries for map display, filterable by taxonomy, education level, inclusion, location, agreement, keyword, organisation, and scale",
-                "description": "Returns entries matching the given filters. Taxonomy (category/sub-category/item), education level, and inclusion group/type filters match entries with at least one qualifying activity. Location filters match via programme_locations. Agreement filters match via government_agreements. Keyword and organisation name filters use case-insensitive partial matching. Scale filters bucket by budget band, or by numeric staff/beneficiary ranges. All filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
-                "operationId": "e0a3612a71f70bae9b2046cff1cf36fc",
+                "summary": "Query programme entries for map display",
+                "description": "Returns entries matching the given filters. All filters combine with AND. Respects BE-010/BE-025 visibility rules: nep_admin and nep_coordinator see all entries, member_org sees only their own organisation's entries.",
+                "operationId": "07f62762c22c9a433eb51266e58b011d",
                 "parameters": [
                     {
                         "name": "category_id",
                         "in": "query",
-                        "description": "Filter by taxonomy category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2572,7 +2409,6 @@
                     {
                         "name": "subcategory_id",
                         "in": "query",
-                        "description": "Filter by taxonomy sub-category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2581,7 +2417,6 @@
                     {
                         "name": "item_id",
                         "in": "query",
-                        "description": "Filter by taxonomy item ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2590,7 +2425,6 @@
                     {
                         "name": "education_level_id",
                         "in": "query",
-                        "description": "Filter by education level ID (via programme_activity_levels)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2599,7 +2433,6 @@
                     {
                         "name": "inclusion_group",
                         "in": "query",
-                        "description": "Filter by inclusion group value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2608,7 +2441,6 @@
                     {
                         "name": "inclusion_type",
                         "in": "query",
-                        "description": "Filter by inclusion type value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2617,7 +2449,6 @@
                     {
                         "name": "keyword",
                         "in": "query",
-                        "description": "Case-insensitive partial match against entry keywords",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2626,7 +2457,6 @@
                     {
                         "name": "organisation_name",
                         "in": "query",
-                        "description": "Case-insensitive partial match against organisation name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2635,7 +2465,6 @@
                     {
                         "name": "budget_band_id",
                         "in": "query",
-                        "description": "Filter by budget band ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2644,7 +2473,6 @@
                     {
                         "name": "min_staff",
                         "in": "query",
-                        "description": "Minimum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -2653,7 +2481,6 @@
                     {
                         "name": "max_staff",
                         "in": "query",
-                        "description": "Maximum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -2662,7 +2489,6 @@
                     {
                         "name": "min_beneficiaries",
                         "in": "query",
-                        "description": "Minimum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2671,7 +2497,6 @@
                     {
                         "name": "max_beneficiaries",
                         "in": "query",
-                        "description": "Maximum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2680,7 +2505,6 @@
                     {
                         "name": "province_id",
                         "in": "query",
-                        "description": "Filter by province ID (matches entries with locations in this province or its districts)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2689,7 +2513,6 @@
                     {
                         "name": "district_id",
                         "in": "query",
-                        "description": "Filter by district ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2698,7 +2521,6 @@
                     {
                         "name": "commune_id",
                         "in": "query",
-                        "description": "Filter by commune ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2707,7 +2529,6 @@
                     {
                         "name": "agreement_counterpart_type",
                         "in": "query",
-                        "description": "Filter by government agreement counterpart agency type",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2716,31 +2537,24 @@
                     {
                         "name": "agreement_status",
                         "in": "query",
-                        "description": "Filter by government agreement status",
                         "required": false,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number per page, or omit for cached full result",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Filtered entries retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/ProgrammeEntry"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Filtered entries retrieved successfully"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -2759,13 +2573,12 @@
                     "Map Query & Export"
                 ],
                 "summary": "Export filtered programme entries as CSV",
-                "description": "Returns a CSV file containing all key fields for entries matching the given filters. Uses the same filters and permissions as the query endpoint. CSV includes entry details, organisation info, budget, staff, beneficiaries, locations, activities, keywords, and government agreements.",
-                "operationId": "42acde985d0cfd7ff68bba85ad82265f",
+                "description": "Returns a CSV file containing all key fields for entries matching the given filters. Uses the same filters and permissions as the query endpoint.",
+                "operationId": "5a04223513cecc48491ad6d3856240f8",
                 "parameters": [
                     {
                         "name": "category_id",
                         "in": "query",
-                        "description": "Filter by taxonomy category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2774,7 +2587,6 @@
                     {
                         "name": "subcategory_id",
                         "in": "query",
-                        "description": "Filter by taxonomy sub-category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2783,7 +2595,6 @@
                     {
                         "name": "item_id",
                         "in": "query",
-                        "description": "Filter by taxonomy item ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2792,7 +2603,6 @@
                     {
                         "name": "education_level_id",
                         "in": "query",
-                        "description": "Filter by education level ID (via programme_activity_levels)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2801,7 +2611,6 @@
                     {
                         "name": "inclusion_group",
                         "in": "query",
-                        "description": "Filter by inclusion group value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2810,7 +2619,6 @@
                     {
                         "name": "inclusion_type",
                         "in": "query",
-                        "description": "Filter by inclusion type value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2819,7 +2627,6 @@
                     {
                         "name": "keyword",
                         "in": "query",
-                        "description": "Case-insensitive partial match against entry keywords",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2828,7 +2635,6 @@
                     {
                         "name": "organisation_name",
                         "in": "query",
-                        "description": "Case-insensitive partial match against organisation name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2837,7 +2643,6 @@
                     {
                         "name": "budget_band_id",
                         "in": "query",
-                        "description": "Filter by budget band ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2846,7 +2651,6 @@
                     {
                         "name": "min_staff",
                         "in": "query",
-                        "description": "Minimum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -2855,7 +2659,6 @@
                     {
                         "name": "max_staff",
                         "in": "query",
-                        "description": "Maximum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -2864,7 +2667,6 @@
                     {
                         "name": "min_beneficiaries",
                         "in": "query",
-                        "description": "Minimum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2873,7 +2675,6 @@
                     {
                         "name": "max_beneficiaries",
                         "in": "query",
-                        "description": "Maximum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2882,7 +2683,6 @@
                     {
                         "name": "province_id",
                         "in": "query",
-                        "description": "Filter by province ID (matches entries with locations in this province or its districts)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2891,7 +2691,6 @@
                     {
                         "name": "district_id",
                         "in": "query",
-                        "description": "Filter by district ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2900,7 +2699,6 @@
                     {
                         "name": "agreement_counterpart_type",
                         "in": "query",
-                        "description": "Filter by government agreement counterpart agency type",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2909,7 +2707,6 @@
                     {
                         "name": "agreement_status",
                         "in": "query",
-                        "description": "Filter by government agreement status",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2945,13 +2742,12 @@
                     "Map Query & Export"
                 ],
                 "summary": "Export filtered programme entries as PDF summary report",
-                "description": "Returns a PDF file containing a readable summary report of entries matching the given filters. Uses the same filters and permissions as the query endpoint. PDF includes formatted sections for entry details, organisation info, budget, staff, beneficiaries, locations, activities, keywords, and government agreements. Large result sets are processed in chunks to prevent timeouts.",
-                "operationId": "65ad2aef3b85341e5f7b304f04726ccf",
+                "description": "Returns a PDF file containing a readable summary report of entries matching the given filters. Large result sets are processed in chunks to prevent timeouts.",
+                "operationId": "9a67131601f56dd0ef71e55cff84120e",
                 "parameters": [
                     {
                         "name": "category_id",
                         "in": "query",
-                        "description": "Filter by taxonomy category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2960,7 +2756,6 @@
                     {
                         "name": "subcategory_id",
                         "in": "query",
-                        "description": "Filter by taxonomy sub-category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2969,7 +2764,6 @@
                     {
                         "name": "item_id",
                         "in": "query",
-                        "description": "Filter by taxonomy item ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2978,7 +2772,6 @@
                     {
                         "name": "education_level_id",
                         "in": "query",
-                        "description": "Filter by education level ID (via programme_activity_levels)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -2987,7 +2780,6 @@
                     {
                         "name": "inclusion_group",
                         "in": "query",
-                        "description": "Filter by inclusion group value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -2996,7 +2788,6 @@
                     {
                         "name": "inclusion_type",
                         "in": "query",
-                        "description": "Filter by inclusion type value",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3005,7 +2796,6 @@
                     {
                         "name": "keyword",
                         "in": "query",
-                        "description": "Case-insensitive partial match against entry keywords",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3014,7 +2804,6 @@
                     {
                         "name": "organisation_name",
                         "in": "query",
-                        "description": "Case-insensitive partial match against organisation name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3023,7 +2812,6 @@
                     {
                         "name": "budget_band_id",
                         "in": "query",
-                        "description": "Filter by budget band ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3032,7 +2820,6 @@
                     {
                         "name": "min_staff",
                         "in": "query",
-                        "description": "Minimum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -3041,7 +2828,6 @@
                     {
                         "name": "max_staff",
                         "in": "query",
-                        "description": "Maximum FTE staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -3050,7 +2836,6 @@
                     {
                         "name": "min_beneficiaries",
                         "in": "query",
-                        "description": "Minimum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3059,7 +2844,6 @@
                     {
                         "name": "max_beneficiaries",
                         "in": "query",
-                        "description": "Maximum direct beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3068,7 +2852,6 @@
                     {
                         "name": "province_id",
                         "in": "query",
-                        "description": "Filter by province ID (matches entries with locations in this province or its districts)",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3077,7 +2860,6 @@
                     {
                         "name": "district_id",
                         "in": "query",
-                        "description": "Filter by district ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3086,7 +2868,6 @@
                     {
                         "name": "agreement_counterpart_type",
                         "in": "query",
-                        "description": "Filter by government agreement counterpart agency type",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3095,7 +2876,6 @@
                     {
                         "name": "agreement_status",
                         "in": "query",
-                        "description": "Filter by government agreement status",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3132,12 +2912,11 @@
                 ],
                 "summary": "Get province-level GeoJSON with entry counts for map visualization",
                 "description": "Returns a GeoJSON FeatureCollection of provinces, each containing the count of matching programme entries. Only accessible by nep_admin and nep_coordinator.",
-                "operationId": "6dd6e9ee54c96bd871211c2f394fd82a",
+                "operationId": "b432cff46eff3e779dd6af4d9a440a1f",
                 "parameters": [
                     {
                         "name": "category_id",
                         "in": "query",
-                        "description": "Filter by category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3146,7 +2925,6 @@
                     {
                         "name": "subcategory_id",
                         "in": "query",
-                        "description": "Filter by sub-category ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3155,7 +2933,6 @@
                     {
                         "name": "item_id",
                         "in": "query",
-                        "description": "Filter by item ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3164,7 +2941,6 @@
                     {
                         "name": "education_level_id",
                         "in": "query",
-                        "description": "Filter by education level ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3173,7 +2949,6 @@
                     {
                         "name": "inclusion_group",
                         "in": "query",
-                        "description": "Filter by inclusion group",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3182,7 +2957,6 @@
                     {
                         "name": "inclusion_type",
                         "in": "query",
-                        "description": "Filter by inclusion type",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3191,7 +2965,6 @@
                     {
                         "name": "keyword",
                         "in": "query",
-                        "description": "Filter by keyword",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3200,7 +2973,6 @@
                     {
                         "name": "organisation_name",
                         "in": "query",
-                        "description": "Filter by organisation name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3209,7 +2981,6 @@
                     {
                         "name": "budget_band_id",
                         "in": "query",
-                        "description": "Filter by budget band ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3218,7 +2989,6 @@
                     {
                         "name": "min_staff",
                         "in": "query",
-                        "description": "Filter by minimum staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -3227,7 +2997,6 @@
                     {
                         "name": "max_staff",
                         "in": "query",
-                        "description": "Filter by maximum staff",
                         "required": false,
                         "schema": {
                             "type": "number"
@@ -3236,7 +3005,6 @@
                     {
                         "name": "min_beneficiaries",
                         "in": "query",
-                        "description": "Filter by minimum beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3245,7 +3013,6 @@
                     {
                         "name": "max_beneficiaries",
                         "in": "query",
-                        "description": "Filter by maximum beneficiaries",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3254,7 +3021,6 @@
                     {
                         "name": "province_id",
                         "in": "query",
-                        "description": "Filter by province ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3263,7 +3029,6 @@
                     {
                         "name": "district_id",
                         "in": "query",
-                        "description": "Filter by district ID",
                         "required": false,
                         "schema": {
                             "type": "integer"
@@ -3272,7 +3037,6 @@
                     {
                         "name": "agreement_counterpart_type",
                         "in": "query",
-                        "description": "Filter by counterpart type",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3281,7 +3045,6 @@
                     {
                         "name": "agreement_status",
                         "in": "query",
-                        "description": "Filter by agreement status",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -3290,65 +3053,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "GeoJSON FeatureCollection retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "example": "FeatureCollection"
-                                        },
-                                        "features": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "type": {
-                                                        "type": "string",
-                                                        "example": "Feature"
-                                                    },
-                                                    "id": {
-                                                        "type": "integer"
-                                                    },
-                                                    "properties": {
-                                                        "properties": {
-                                                            "name": {
-                                                                "type": "string"
-                                                            },
-                                                            "entry_count": {
-                                                                "type": "integer"
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    },
-                                                    "geometry": {
-                                                        "properties": {
-                                                            "type": {
-                                                                "type": "string",
-                                                                "example": "Point"
-                                                            },
-                                                            "coordinates": {
-                                                                "type": "array",
-                                                                "items": {
-                                                                    "type": "number"
-                                                                },
-                                                                "example": [
-                                                                    104.9174,
-                                                                    11.5564
-                                                                ]
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "GeoJSON FeatureCollection retrieved successfully"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -3976,7 +3681,6 @@
                     {
                         "name": "programmeEntry",
                         "in": "path",
-                        "description": "Programme entry ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -3985,22 +3689,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of activities for programme entry",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/ProgrammeActivity"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "List of activities for programme entry"
                     },
                     "404": {
                         "description": "Programme entry not found, or caller not authorized"
@@ -4017,108 +3706,21 @@
                     "Programme Activities"
                 ],
                 "summary": "Save Section 2 activity selections for a programme entry",
-                "description": "Accepts one or more activity selections, each with a taxonomy item, inclusion flag/group/type, multiple education levels, and a primary/secondary flag. Inclusion is recorded once per activity item, not per education level. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the accompanying free-text value is required (SRS 5.5) and is captured in the taxonomy other-queue for later admin review.",
+                "description": "Accepts one or more activity selections. Rejects inactive or deprecated taxonomy items. When a selected item is flagged \"Other\", the free-text value is captured in the taxonomy other-queue for later admin review.",
                 "operationId": "7fcc2d764aa4b8e08d57f0be2737fe7a",
                 "parameters": [
                     {
                         "name": "programmeEntry",
                         "in": "path",
-                        "description": "Programme entry ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
                         }
                     }
                 ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "activities"
-                                ],
-                                "properties": {
-                                    "activities": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "activity_item_id": {
-                                                    "type": "integer",
-                                                    "example": 12
-                                                },
-                                                "is_primary": {
-                                                    "type": "boolean",
-                                                    "example": true
-                                                },
-                                                "inclusion_group": {
-                                                    "type": "string",
-                                                    "example": "gender",
-                                                    "nullable": true
-                                                },
-                                                "inclusion_type": {
-                                                    "type": "string",
-                                                    "example": "girls",
-                                                    "nullable": true
-                                                },
-                                                "source": {
-                                                    "type": "string",
-                                                    "example": "human_entered",
-                                                    "enum": [
-                                                        "ai_confirmed",
-                                                        "ai_modified",
-                                                        "human_entered"
-                                                    ]
-                                                },
-                                                "other_text": {
-                                                    "description": "Required when the selected activity_item_id is flagged as \"Other\" (SRS 5.5)",
-                                                    "type": "string",
-                                                    "example": "Community radio literacy programme",
-                                                    "nullable": true
-                                                },
-                                                "education_level_ids": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "integer"
-                                                    },
-                                                    "example": [
-                                                        1,
-                                                        2,
-                                                        3
-                                                    ]
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
                 "responses": {
                     "201": {
-                        "description": "Activities saved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Activities saved."
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/ProgrammeActivity"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Activities saved successfully"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -4127,22 +3729,7 @@
                         "description": "Programme entry not found, or caller not authorized"
                     },
                     "422": {
-                        "description": "Validation failed — includes rejection of inactive/deprecated taxonomy items, and missing free-text when \"Other\" is selected",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Validation failed"
                     }
                 },
                 "security": [
@@ -6184,14 +5771,6 @@
                         "type": "string",
                         "example": "girls",
                         "nullable": true
-                    },
-                    "source": {
-                        "type": "string",
-                        "enum": [
-                            "ai_confirmed",
-                            "ai_modified",
-                            "human_entered"
-                        ]
                     },
                     "activity_levels": {
                         "type": "array",

@@ -31,57 +31,41 @@ class MapOverlapMatcher
      */
     public function match(array $programmeProfile, string $analysisScope = 'full map'): Builder
     {
-        $q = ProgrammeEntry::query()->distinct();
+        // Only match against submitted entries that have an organisation
+        $q = ProgrammeEntry::query()
+            ->distinct()
+            ->where('is_submitted', true)
+            ->whereNotNull('organisation_id');
 
         $analysisScope = $analysisScope ?: 'full map';
 
-        // Flags to apply overlap on at least one dimension.
         $hasActivitySignals = $this->hasAnyActivitySignals($programmeProfile);
         $hasGeographySignals = $this->hasAnyGeographySignals($programmeProfile);
-        $hasAudienceSignals = $this->hasAnyAudienceSignals($programmeProfile);
 
-        // Build overlap predicates; final query is OR across dimensions
-        // but scope constraints are applied via the order of constraints:
-        // - geographic subset: constrain geography first (must match geography universe)
-        // - thematic subset: constrain thematic/activity first (must match thematic universe)
-        $activityPredicate = $this->buildActivityOverlapPredicate($programmeProfile);
+        $activityPredicate  = $this->buildActivityOverlapPredicate($programmeProfile);
         $geographyPredicate = $this->buildGeographyOverlapPredicate($programmeProfile);
-        $audiencePredicate = $this->buildAudienceOverlapPredicate($programmeProfile);
 
-        if ($analysisScope === 'geographic subset') {
-            // Require geography universe overlap when geography signals exist.
-            if ($hasGeographySignals) {
-                $q->where(function (Builder $sub) use ($geographyPredicate, $activityPredicate, $audiencePredicate) {
-                    $sub->where($geographyPredicate)
-                        ->orWhere($activityPredicate)
-                        ->orWhere($audiencePredicate);
-                });
-                return $q;
-            }
-
-            // If no geography signals were provided, fall back to OR across dimensions.
+        // Only flag a true duplicate when BOTH geography AND activity overlap.
+        // A programme in the same place but doing something different is not a duplicate.
+        // A programme doing the same thing but in a different place is not a duplicate.
+        if ($hasGeographySignals && $hasActivitySignals) {
+            $q->where($geographyPredicate)->where($activityPredicate);
+            return $q;
         }
 
-        if ($analysisScope === 'thematic subset') {
-            if ($hasActivitySignals || $hasAudienceSignals) {
-                $q->where(function (Builder $sub) use ($activityPredicate, $audiencePredicate, $geographyPredicate) {
-                    $sub->where($activityPredicate)
-                        ->orWhere($audiencePredicate)
-                        ->orWhere($geographyPredicate);
-                });
-                return $q;
-            }
-
-            // If no thematic signals were provided, fall back to OR across dimensions.
+        // If only one dimension is available, fall back to that single dimension.
+        if ($hasGeographySignals) {
+            $q->where($geographyPredicate);
+            return $q;
         }
 
-        // full map (or fallback): overlap on at least one of activity/geography/audience.
-        $q->where(function (Builder $sub) use ($activityPredicate, $geographyPredicate, $audiencePredicate) {
-            $sub->where($activityPredicate)
-                ->orWhere($geographyPredicate)
-                ->orWhere($audiencePredicate);
-        });
+        if ($hasActivitySignals) {
+            $q->where($activityPredicate);
+            return $q;
+        }
 
+        // No signals at all — return nothing.
+        $q->whereRaw('1=0');
         return $q;
     }
 
@@ -149,24 +133,26 @@ class MapOverlapMatcher
                 $inclusionGroups,
                 $inclusionTypes
             ) {
-                if (!empty($itemIds)) {
-                    $aq->whereIn('activity_item_id', $itemIds);
-                }
-
-                if (!empty($subcategoryIds) || !empty($categoryIds)) {
-                    $aq->whereHas('activityItem.subcategory', function (Builder $subQ) use ($subcategoryIds, $categoryIds) {
-                        if (!empty($subcategoryIds)) {
-                            $subQ->whereIn('subcategory_id', $subcategoryIds);
-                        }
-                        if (!empty($categoryIds)) {
-                            $subQ->whereIn('category_id', $categoryIds);
-                        }
-                    });
-                }
+                // item_ids, subcategory_ids, category_ids are OR — any matching activity item qualifies
+                $aq->where(function (Builder $taxQ) use ($itemIds, $subcategoryIds, $categoryIds) {
+                    if (!empty($itemIds)) {
+                        $taxQ->orWhereIn('activity_item_id', $itemIds);
+                    }
+                    if (!empty($subcategoryIds) || !empty($categoryIds)) {
+                        $taxQ->orWhereHas('activityItem.subcategory', function (Builder $subQ) use ($subcategoryIds, $categoryIds) {
+                            if (!empty($subcategoryIds)) {
+                                $subQ->whereIn('id', $subcategoryIds);
+                            }
+                            if (!empty($categoryIds)) {
+                                $subQ->whereIn('category_id', $categoryIds);
+                            }
+                        });
+                    }
+                });
 
                 if (!empty($educationLevelIds)) {
                     $aq->whereExists(function ($sub) use ($educationLevelIds) {
-                            $sub->select(DB::raw(1))
+                        $sub->select(DB::raw(1))
                             ->from('programme_activity_levels')
                             ->whereColumn('programme_activity_levels.programme_activity_id', 'programme_activities.id')
                             ->whereIn('programme_activity_levels.education_level_id', $educationLevelIds);

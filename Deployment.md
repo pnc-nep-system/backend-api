@@ -98,8 +98,6 @@ AWS_BUCKET=
 AWS_USE_PATH_STYLE_ENDPOINT=false
 
 # Third-Party Integrations
-GROQ_API_KEY="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"
-
 IMAGEKIT_PUBLIC_KEY=public_LOQZxmOszSDVdlnD1Jboe1c2qRA=
 IMAGEKIT_PRIVATE_KEY=private_y+Y6w12w6CeIHMnCBSg4muVekwM=
 IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/rn6hppesw

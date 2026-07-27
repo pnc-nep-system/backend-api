@@ -107,7 +107,7 @@ class PolicyDocumentController extends Controller
             'date'      => ['required', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
-            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
+            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:51200'],
         ]);
 
         try {
@@ -227,7 +227,7 @@ class PolicyDocumentController extends Controller
             'date'      => ['sometimes', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
-            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
+            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:51200'],
         ]);
 
         try {

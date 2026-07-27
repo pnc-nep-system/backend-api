@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrganisationProfileController;
 use App\Http\Controllers\Api\ProgrammeEntryController;
 use App\Http\Controllers\Api\ProgrammeActivityController;
-use App\Http\Controllers\Api\ProgrammeActivityAiController;
 use App\Http\Controllers\Api\ProgrammeGeographyController;
 use App\Http\Controllers\Api\EntryKeywordController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
@@ -18,8 +17,6 @@ use App\Http\Controllers\Api\MapGeoJsonController;
 use App\Http\Controllers\Api\AdviserMapOverlapController;
 use App\Http\Controllers\Api\TaxonomyController;
 use App\Http\Controllers\Api\AdviserSubmissionController;
-use App\Http\Controllers\Api\AdviserAnalysisController;
-use App\Http\Controllers\Api\AdviserProgrammeEntryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PolicyDocumentController as ApiPolicyDocumentController;
 use App\Http\Controllers\Api\RefdataController;
@@ -29,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+Route::get('/adviser/submissions/{advisoryNote}/file', [AdviserSubmissionController::class, 'downloadFile']);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1')
@@ -77,17 +75,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'store']);
     });
 
-    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
-        Route::post('/programme-entries/suggest-activities', [ProgrammeActivityAiController::class, 'suggestActivities'])->middleware('throttle:10,1');
-        Route::post('/programme-entries/fetch-url', [ProgrammeActivityAiController::class, 'fetchUrl'])->middleware('throttle:20,1');
-        Route::post('/programme-entries/ai-autofill', [ProgrammeActivityAiController::class, 'aiAutofill'])->middleware('throttle:10,1');
-    });
-
     Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/programme-entries/{programmeEntry}/geography', [ProgrammeGeographyController::class, 'index']);
         Route::get('/programme-entries/{programmeEntry}/government-agreements', [GovernmentAgreementController::class, 'index']);
         Route::get('/taxonomy/categories', [TaxonomyController::class, 'listCategories']);
     });
+
+    // Member orgs can view the delivered advisory note for their own programme entries
+    Route::get('/adviser/programme-entries/{programmeEntry}/advisory-note', [AdviserSubmissionController::class, 'showByProgrammeEntry'])
+        ->middleware('role:nep_admin,nep_coordinator,member_org');
 
     Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
@@ -114,14 +110,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
         Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
+        Route::post('/adviser/submissions/{advisoryNote}/file-token', [AdviserSubmissionController::class, 'fileToken']);
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])
             ->middleware('throttle:10,1');
 
-        Route::post('/adviser/submissions/{id}/parse-pdf', [AdviserAnalysisController::class, 'parsePdf'])
-            ->middleware('throttle:10,1');
-        Route::post('/adviser/submissions/{id}/generate-advisory-note', [AdviserAnalysisController::class, 'generateAdvisoryNote'])
-            ->middleware('throttle:5,1');
-        Route::post('/adviser/submissions/{id}/create-programme-entry', [AdviserProgrammeEntryController::class, 'createProgrammeEntry']);
         Route::post('/adviser/map/overlap-query', [AdviserMapOverlapController::class, 'match']);
     });
 
