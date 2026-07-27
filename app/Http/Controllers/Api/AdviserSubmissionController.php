@@ -101,7 +101,10 @@ class AdviserSubmissionController extends Controller
     )]
     public function index(ListAdviserSubmissionRequest $request)
     {
-        $query = AdvisoryNote::with('coordinator:id,name')->orderBy('submitted_at', 'desc');
+        $query = AdvisoryNote::with([
+            'coordinator:id,name',
+            'programmeEntry:id,programme_name',
+        ])->orderBy('submitted_at', 'desc');
 
         if ($request->filled('analysis_scope')) {
             $query->whereRaw('analysis_scope = ?', [$request->input('analysis_scope')]);
