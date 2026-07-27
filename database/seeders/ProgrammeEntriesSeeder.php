@@ -35,7 +35,9 @@ class ProgrammeEntriesSeeder extends Seeder
         $band50k200k = BudgetBand::where('label', 'like', '%50,000%')->where('label', 'like', '%200,000%')->first();
         $band200k500k = BudgetBand::where('label', 'like', '%200,000%')->where('label', 'like', '%500,000%')->first();
 
-        $abcOrg = Organisation::where('name', 'like', '%ABC%')->first();
+        $kapeOrg = Organisation::where('name', 'like', '%KAPE%')
+            ->orWhere('name', 'like', '%PNC%')
+            ->first() ?? Organisation::skip(1)->first();
 
         $primaryLevel = EducationLevel::where('level_name', 'Primary')->first();
         $lowerSecLevel = EducationLevel::where('level_name', 'Lower Secondary')->first();
@@ -251,11 +253,11 @@ class ProgrammeEntriesSeeder extends Seeder
                 ],
             ],
 
-            // ABC Organisation (orgadmin@example.com) - Submitted Programme 1
+            // KAPE Organisation (orgadmin@example.com) - Submitted Programme 1
             [
                 'identity' => [
                     'programme_name' => 'Early Childhood Care and Education Program',
-                    'organisation_id' => $abcOrg?->id ?? $ddspOrg->id,
+                    'organisation_id' => $kapeOrg?->id ?? $ddspOrg->id,
                     'budget_band_id' => $band200k500k?->id,
                     'start_year' => 2023,
                     'end_year' => null,
@@ -286,11 +288,11 @@ class ProgrammeEntriesSeeder extends Seeder
                 ],
             ],
 
-            // ABC Organisation (orgadmin@example.com) - Submitted Programme 2
+            // KAPE Organisation (orgadmin@example.com) - Submitted Programme 2
             [
                 'identity' => [
                     'programme_name' => 'Youth Digital Skills and Workforce Empowerment',
-                    'organisation_id' => $abcOrg?->id ?? $ddspOrg->id,
+                    'organisation_id' => $kapeOrg?->id ?? $ddspOrg->id,
                     'budget_band_id' => $band50k200k?->id,
                     'start_year' => 2022,
                     'end_year' => 2025,

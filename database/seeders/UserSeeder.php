@@ -16,6 +16,9 @@ class UserSeeder extends Seeder
     {
         $organisations = Organisation::orderBy('id')->get();
         $ddspOrg = Organisation::where('name', 'like', '%DDSP%')->first() ?? $organisations->first();
+        $kapeOrg = Organisation::where('name', 'like', '%KAPE%')->first() ?? $organisations->skip(1)->first();
+        $pncOrg  = Organisation::where('name', 'like', '%PNC%')->orWhere('name', 'like', '%Passerelles%')->first() ?? $organisations->skip(2)->first();
+        $pseOrg  = Organisation::where('name', 'like', '%PSE%')->orWhere('name', 'like', '%Sourire%')->first() ?? $organisations->skip(3)->first();
 
         $users = [
             [
@@ -115,8 +118,8 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'organisation_id' => $organisations[1]->id ?? null,
-                'name' => 'Organisation Admin',
+                'organisation_id' => $kapeOrg->id ?? null,
+                'name' => 'KAPE Organisation Lead',
                 'email' => 'orgadmin@example.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
@@ -127,8 +130,8 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'organisation_id' => $organisations[2]->id ?? null,
-                'name' => 'PNC Organisation',
+                'organisation_id' => $pncOrg->id ?? null,
+                'name' => 'PNC Organisation Lead',
                 'email' => 'pnc@example.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
@@ -139,8 +142,8 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'organisation_id' => $organisations[3]->id ?? null,
-                'name' => 'PSE Organisation',
+                'organisation_id' => $pseOrg->id ?? null,
+                'name' => 'PSE Organisation Lead',
                 'email' => 'pse@example.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
