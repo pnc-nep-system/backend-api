@@ -5,10 +5,18 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/logs/*.log
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/app/public/*
+/bootstrap/cache/*.php
 /vendor
 .env
 .env.backup
 .env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -21,6 +29,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+.DS_Store
+Thumbs.db
 
 **/caddy
 frankenphp
