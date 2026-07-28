@@ -45,22 +45,24 @@ class MapOverlapMatcher
         $activityPredicate  = $this->buildActivityOverlapPredicate($programmeProfile);
         $geographyPredicate = $this->buildGeographyOverlapPredicate($programmeProfile);
 
-        // Only flag a true duplicate when BOTH geography AND activity overlap.
-        // A programme in the same place but doing something different is not a duplicate.
-        // A programme doing the same thing but in a different place is not a duplicate.
-        if ($hasGeographySignals && $hasActivitySignals) {
-            $q->where($geographyPredicate)->where($activityPredicate);
+        // Match entries that overlap on Activity OR Geography (so advisers see both Geographic & Activity overlaps and cross-province Thematic overlaps)
+        if ($hasActivitySignals && $hasGeographySignals) {
+            $q->where(function (Builder $sub) use ($geographyPredicate, $activityPredicate) {
+                $sub->where($activityPredicate)
+                    ->orWhere($geographyPredicate);
+            });
             return $q;
         }
 
-        // If only one dimension is available, fall back to that single dimension.
-        if ($hasGeographySignals) {
-            $q->where($geographyPredicate);
-            return $q;
-        }
-
+        // If only activity signals are available, match on activity
         if ($hasActivitySignals) {
             $q->where($activityPredicate);
+            return $q;
+        }
+
+        // If only geography signals are available, match on geography
+        if ($hasGeographySignals) {
+            $q->where($geographyPredicate);
             return $q;
         }
 
