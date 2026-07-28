@@ -107,16 +107,19 @@ class PolicyDocumentController extends Controller
             'date'      => ['required', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
-            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:51200'],
+            'file'      => ['nullable', 'file', 'max:51200'],
         ]);
 
         try {
             $validated['created_by'] = $request->user()->id;
 
-            // Handle file upload
             if ($request->hasFile('file')) {
-                $path = $request->file('file')->store('policy-documents', 'public');
-                $validated['file_url'] = $path;
+                $file = $request->file('file');
+                $validated['file_name'] = $file->getClientOriginalName();
+                $validated['mime_type'] = $file->getClientMimeType();
+                $validated['file_size'] = $file->getSize();
+                $validated['file_data'] = file_get_contents($file->getRealPath());
+                $validated['file_url']  = null;
             }
 
             $document = PolicyDocument::create($validated);
@@ -132,7 +135,7 @@ class PolicyDocumentController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'An error occurred while creating the policy document.',
+                'message' => $e->getMessage() ?: 'An error occurred while creating the policy document.',
             ], 500);
         }
     }
@@ -227,18 +230,25 @@ class PolicyDocumentController extends Controller
             'date'      => ['sometimes', 'date'],
             'status'    => ['sometimes', 'in:active,inactive,superseded'],
             'file_url'  => ['nullable', 'string', 'max:2048'],
-            'file'      => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:51200'],
+            'file'      => ['nullable', 'file', 'max:51200'],
         ]);
 
         try {
-            // Handle file upload
             if ($request->hasFile('file')) {
-                // Delete old file if it exists and stored locally
                 if ($policyDocument->file_url && !str_starts_with($policyDocument->file_url, 'http')) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($policyDocument->file_url);
+                    Storage::disk('public')->delete($policyDocument->file_url);
                 }
-                $path = $request->file('file')->store('policy-documents', 'public');
-                $validated['file_url'] = $path;
+                $file = $request->file('file');
+                $validated['file_name'] = $file->getClientOriginalName();
+                $validated['mime_type'] = $file->getClientMimeType();
+                $validated['file_size'] = $file->getSize();
+                $validated['file_data'] = file_get_contents($file->getRealPath());
+                $validated['file_url']  = null;
+            } elseif (array_key_exists('file_url', $validated) && ! empty($validated['file_url'])) {
+                $validated['file_data'] = null;
+                $validated['file_name'] = null;
+                $validated['mime_type'] = null;
+                $validated['file_size'] = null;
             }
 
             $policyDocument->update($validated);
@@ -255,7 +265,7 @@ class PolicyDocumentController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'An error occurred while updating the policy document.',
+                'message' => $e->getMessage() ?: 'An error occurred while updating the policy document.',
             ], 500);
         }
     }
@@ -305,13 +315,29 @@ class PolicyDocumentController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'An error occurred while deleting the policy document.',
+                'message' => $e->getMessage() ?: 'An error occurred while deleting the policy document.',
             ], 500);
         }
     }
 
     public function getFile(PolicyDocument $policyDocument)
     {
+        // 1. Return binary file_data BLOB from database if available
+        if (! empty($policyDocument->file_data)) {
+            $filename = $policyDocument->file_name ?? ($policyDocument->title . '.pdf');
+            $mimeType = $policyDocument->mime_type ?? 'application/pdf';
+
+            $binaryData = base64_decode($policyDocument->file_data, true);
+            if ($binaryData === false || empty($binaryData)) {
+                $binaryData = $policyDocument->file_data;
+            }
+
+            return response($binaryData)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Disposition', 'inline; filename="' . rawurlencode($filename) . '"');
+        }
+
+        // 2. Fallback to file_url from storage disk
         if (! $policyDocument->file_url) {
             return response()->json(['message' => 'No file associated with this document.'], 404);
         }
