@@ -26,8 +26,10 @@ class UpdateAdviserSubmissionRequest extends FormRequest
             'file'                         => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg', 'max:10240'],
             'recommendations'              => ['nullable', 'array'],
             'recommendations.*.organisation_name'  => ['nullable', 'string', 'max:255'],
+            'recommendations.*.programme_name'     => ['nullable', 'string', 'max:255'],
             'recommendations.*.type'               => ['required_with:recommendations', 'string', 'max:100'],
-            'recommendations.*.relational'         => ['required_with:recommendations', 'string', 'max:10000'],
+            'recommendations.*.relational'         => ['nullable', 'string', 'max:10000'],
+            'recommendations.*.rationale'          => ['nullable', 'string', 'max:10000'],
             'recommendations.*.programme_entry_id' => ['nullable', 'integer', 'exists:programme_entries,id'],
         ];
     }

@@ -17,11 +17,11 @@ class GroqService
 
     public function __construct()
     {
-        $this->apiKey = config('services.groq.api_key', '');
-        $this->model = config('services.groq.model', 'llama-3.3-70b-versatile');
-        $this->timeout = config('services.groq.timeout', 30);
-        $this->retryAttempts = config('services.groq.retry_attempts', 2);
-        $this->retryDelay = config('services.groq.retry_delay', 500);
+        $this->apiKey = config('services.groq.api_key') ?? '';
+        $this->model = config('services.groq.model') ?? 'llama-3.3-70b-versatile';
+        $this->timeout = (int) (config('services.groq.timeout') ?? 30);
+        $this->retryAttempts = (int) (config('services.groq.retry_attempts') ?? 2);
+        $this->retryDelay = (int) (config('services.groq.retry_delay') ?? 500);
 
         if (empty($this->apiKey)) {
             throw new \RuntimeException('Groq API key is not configured. Please set GROQ_API_KEY in your environment variables.', 500);
@@ -109,12 +109,17 @@ class GroqService
 
         $parsed = $this->parseJsonFromText($text);
 
-        // Sequential array (e.g. ["B1.1.1", "B2.3.2"]) ΓÇö return as-is under _raw_array
+        // Advisory note 4-section format (section_a/b/c/d)
+        if (is_array($parsed) && isset($parsed['section_a'])) {
+            return $parsed;
+        }
+
+        // Sequential array (e.g. ["B1.1.1", "B2.3.2"]) — return as-is under _raw_array
         if (is_array($parsed) && array_is_list($parsed)) {
             return ['_raw_array' => $parsed];
         }
 
-        // Structured object with "codes" key ΓÇö return directly
+        // Structured object with "codes" key — return directly
         if (is_array($parsed) && isset($parsed['codes'])) {
             return $parsed;
         }

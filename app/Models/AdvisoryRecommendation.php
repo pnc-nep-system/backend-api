@@ -13,8 +13,10 @@ class AdvisoryRecommendation extends Model
         'advisory_note_id',
         'programme_entry_id',
         'organisation_name',
+        'programme_name',
         'type',
         'relational',
+        'rationale',
     ];
 
     public function advisoryNote()

@@ -201,37 +201,45 @@ class MapOverlapMatcher
 
             $provinceIds = $geo['province_ids'] ?? [];
             $districtIds = $geo['district_ids'] ?? [];
-            $communeIds = $geo['commune_ids'] ?? [];
-            // NOTE: if your ProgrammeLocation model has village_id, you can extend similarly.
-            $villageIds = $geo['village_ids'] ?? [];
+            $communeIds  = $geo['commune_ids']  ?? [];
+            $villageIds  = $geo['village_ids']  ?? [];
 
             if (empty($provinceIds) && empty($districtIds) && empty($communeIds) && empty($villageIds)) {
                 $q->whereRaw('1=0');
                 return;
             }
 
-            $q->whereHas('locations', function (Builder $lq) use ($provinceIds, $districtIds, $communeIds, $villageIds) {
-                // province_ids: include entries that have locations in province OR its districts (matches existing map endpoint behavior)
+            $q->where(function (Builder $outer) use ($provinceIds, $districtIds, $communeIds, $villageIds) {
+                // Match on province_id directly stored on the location row
                 if (!empty($provinceIds)) {
-                    $lq->where(function (Builder $subQ) use ($provinceIds) {
-                        $subQ->whereIn('province_id', $provinceIds)
-                            ->orWhereHas('district', function (Builder $districtQ) use ($provinceIds) {
-                                $districtQ->whereIn('province_id', $provinceIds);
-                            });
+                    $outer->orWhereHas('locations', function (Builder $lq) use ($provinceIds) {
+                        $lq->whereIn('province_id', $provinceIds);
+                    });
+                    // Also match entries whose district belongs to one of these provinces
+                    $outer->orWhereHas('locations', function (Builder $lq) use ($provinceIds) {
+                        $lq->whereNotNull('district_id')
+                           ->whereHas('district', function (Builder $dq) use ($provinceIds) {
+                               $dq->whereIn('province_id', $provinceIds);
+                           });
                     });
                 }
 
                 if (!empty($districtIds)) {
-                    $lq->whereIn('district_id', $districtIds);
+                    $outer->orWhereHas('locations', function (Builder $lq) use ($districtIds) {
+                        $lq->whereIn('district_id', $districtIds);
+                    });
                 }
 
                 if (!empty($communeIds)) {
-                    $lq->whereIn('commune_id', $communeIds);
+                    $outer->orWhereHas('locations', function (Builder $lq) use ($communeIds) {
+                        $lq->whereIn('commune_id', $communeIds);
+                    });
                 }
 
                 if (!empty($villageIds)) {
-                    // only applies if programme_locations table has village_id and ProgrammeLocation has village relation.
-                    $lq->whereIn('village_id', $villageIds);
+                    $outer->orWhereHas('locations', function (Builder $lq) use ($villageIds) {
+                        $lq->whereIn('village_id', $villageIds);
+                    });
                 }
             });
         };

@@ -2,19 +2,37 @@
 
 namespace App\Services\AI;
 
+use App\Models\ActivityCategory;
+use App\Models\ActivityItem;
+use App\Models\ActivitySubcategory;
+use App\Models\District;
+use App\Models\EducationLevel;
+use App\Models\Province;
+
 class PromptBuilder
 {
     public function build(
         array $programmeProfile,
         array $overlappingEntries,
         string $analysisScope = 'full map',
-        ?string $analysisScopeDetail = null
+        ?string $analysisScopeDetail = null,
+        ?string $documentText = null
     ): string {
-        $prompt = $this->buildSystemInstruction();
+        $resolvedProfile = $this->resolveProfileIds($programmeProfile);
+
+        $prompt  = $this->buildSystemInstruction();
         $prompt .= "\n\n---\n\n";
         $prompt .= $this->buildContextSection($analysisScope, $analysisScopeDetail);
         $prompt .= "\n\n---\n\n";
-        $prompt .= $this->buildProgrammeProfileSection($programmeProfile);
+
+        if ($documentText) {
+            $prompt .= $this->buildDocumentSection($documentText);
+            $prompt .= "\n\n---\n\n";
+        }
+
+        $prompt .= $this->buildTaxonomyReferenceSection();
+        $prompt .= "\n\n---\n\n";
+        $prompt .= $this->buildProgrammeProfileSection($resolvedProfile, $programmeProfile);
         $prompt .= "\n\n---\n\n";
         $prompt .= $this->buildOverlappingEntriesSection($overlappingEntries);
         $prompt .= "\n\n---\n\n";
@@ -23,68 +41,116 @@ class PromptBuilder
         return $prompt;
     }
 
+    // ── ID resolution ──────────────────────────────────────────────────────────
+
+    private function resolveProfileIds(array $profile): array
+    {
+        $activities = $profile['activities'] ?? [];
+        $geography  = $profile['geography']  ?? [];
+        $audiences  = $profile['audiences']  ?? [];
+
+        $categoryIds       = $activities['category_ids']       ?? [];
+        $subcategoryIds    = $activities['subcategory_ids']    ?? [];
+        $itemIds           = $activities['item_ids']           ?? [];
+        $educationLevelIds = $activities['education_level_ids'] ?? [];
+        $inclusionGroups   = $activities['inclusion_groups']   ?? $audiences['inclusion_groups'] ?? [];
+        $inclusionTypes    = $activities['inclusion_types']    ?? $audiences['inclusion_types']  ?? [];
+        $provinceIds       = $geography['province_ids']        ?? [];
+        $districtIds       = $geography['district_ids']        ?? [];
+
+        return [
+            'activities' => [
+                'categories'    => $categoryIds    ? ActivityCategory::whereIn('id', $categoryIds)->pluck('label')->toArray()    : [],
+                'subcategories' => $subcategoryIds ? ActivitySubcategory::whereIn('id', $subcategoryIds)->pluck('label')->toArray() : [],
+                'items'         => $itemIds        ? ActivityItem::whereIn('id', $itemIds)->pluck('label')->toArray()             : [],
+                'education_levels' => $educationLevelIds ? EducationLevel::whereIn('id', $educationLevelIds)->pluck('level_name')->toArray() : [],
+                'inclusion_groups' => $inclusionGroups,
+                'inclusion_types'  => $inclusionTypes,
+            ],
+            'geography' => [
+                'provinces' => $provinceIds  ? Province::whereIn('id', $provinceIds)->pluck('province_name')->toArray() : [],
+                'districts' => $districtIds  ? District::whereIn('id', $districtIds)->pluck('name')->toArray()          : [],
+            ],
+        ];
+    }
+
+    // ── Prompt sections ────────────────────────────────────────────────────────
+
     private function buildSystemInstruction(): string
     {
         return <<<SYSTEM
-You are an expert education sector advisor for the National Education Policy (NEP) in Cambodia.
-Your role is to analyse programme submissions against the existing education programme map
-and provide comprehensive, detailed advisory notes. You must base your analysis strictly on the data provided.
-Do not invent facts or make assumptions beyond the supplied information.
-
-When providing your analysis:
-- Be specific and detailed in your descriptions
-- Use the actual names of provinces, districts, and locations (not IDs)
-- Explain the significance of overlaps and gaps
-- Provide actionable, context-aware recommendations
-- Consider the geographic and thematic scope of programmes
+You are a concise education sector adviser for the National Education Policy (NEP) in Cambodia.
+Your task is to analyse a submitted document and produce a structured advisory note for the NEP coordinator.
+Base your analysis strictly on the data provided. Do not invent facts, organisations, or locations.
 SYSTEM;
     }
 
     private function buildContextSection(string $scope, ?string $scopeDetail): string
     {
         $context = "ANALYSIS CONTEXT\n";
-        $context .= "Analysis Scope: {$scope}\n";
-
+        $context .= "Scope: {$scope}\n";
         if ($scopeDetail) {
-            $context .= "Scope Detail: {$scopeDetail}\n";
+            $context .= "Detail: {$scopeDetail}\n";
         }
-
-        $context .= <<<CONTEXT
-
-Analyse the submitted programme profile against the overlapping programmes listed below.
-Your analysis should:
-1. Provide a comprehensive executive summary (2-3 paragraphs) highlighting key findings
-2. Identify and describe similar or overlapping programmes with specific details about HOW they overlap
-3. Assess potential duplication, considering geographic coverage, target audiences, and activities
-4. Identify coverage gaps that the submitted programme could address
-5. Provide specific, actionable recommendations grounded in the actual data
-6. Include confidence notes about the analysis quality and any data limitations
-
-Be thorough and detailed. Use actual location names (provinces, districts) and activity names in your analysis.
-CONTEXT;
-
         return $context;
     }
 
-    private function buildProgrammeProfileSection(array $profile): string
+    private function buildDocumentSection(string $documentText): string
     {
-        $section = "SUBMITTED PROGRAMME PROFILE\n";
-        $section .= "The following is the profile of the programme being submitted for analysis:\n\n";
+        $truncated = mb_substr($documentText, 0, 8000);
+        return "SUBMITTED DOCUMENT CONTENT\n" . $truncated;
+    }
 
-        if (!empty($profile['activities'])) {
-            $section .= "Activities:\n";
-            $section .= $this->formatActivities($profile['activities']);
+    private function buildTaxonomyReferenceSection(): string
+    {
+        $categories = ActivityCategory::with('subcategories.items')->get();
+
+        $section = "TAXONOMY REFERENCE (full activity taxonomy)\n";
+        foreach ($categories as $cat) {
+            $section .= "- {$cat->label}\n";
+            foreach ($cat->subcategories as $sub) {
+                $section .= "  - {$sub->label}\n";
+                foreach ($sub->items as $item) {
+                    $section .= "    - {$item->label}\n";
+                }
+            }
         }
 
-        if (!empty($profile['geography'])) {
-            $section .= "Geographic Coverage:\n";
-            $section .= $this->formatGeography($profile['geography']);
+        $educationLevels = EducationLevel::orderBy('id')->pluck('level_name');
+        if ($educationLevels->isNotEmpty()) {
+            $section .= "\nEDUCATION LEVELS: " . $educationLevels->implode(', ') . "\n";
         }
 
-        if (!empty($profile['audiences'])) {
-            $section .= "Target Audiences:\n";
-            $section .= $this->formatAudiences($profile['audiences']);
+        return $section;
+    }
+
+    private function buildProgrammeProfileSection(array $resolved, array $rawProfile): string
+    {
+        $section = "EXTRACTED PROGRAMME PROFILE\n";
+
+        $activities = $resolved['activities'];
+        $allActivityNames = array_unique(array_merge(
+            $activities['categories']    ?? [],
+            $activities['subcategories'] ?? [],
+            $activities['items']         ?? []
+        ));
+        $section .= "Activities: " . (empty($allActivityNames) ? '(none recorded)' : implode(', ', $allActivityNames)) . "\n";
+
+        if (!empty($activities['education_levels'])) {
+            $section .= "Education levels: " . implode(', ', $activities['education_levels']) . "\n";
         }
+
+        if (!empty($activities['inclusion_groups'])) {
+            $section .= "Inclusion groups: " . implode(', ', $activities['inclusion_groups']) . "\n";
+        }
+
+        if (!empty($activities['inclusion_types'])) {
+            $section .= "Inclusion types: " . implode(', ', $activities['inclusion_types']) . "\n";
+        }
+
+        $geo = $resolved['geography'];
+        $allLocationNames = array_unique(array_merge($geo['provinces'] ?? [], $geo['districts'] ?? []));
+        $section .= "Locations: " . (empty($allLocationNames) ? '(none recorded)' : implode(', ', $allLocationNames)) . "\n";
 
         return $section;
     }
@@ -92,90 +158,36 @@ CONTEXT;
     private function buildOverlappingEntriesSection(array $entries): string
     {
         if (empty($entries)) {
-            return "OVERLAPPING PROGRAMMES\nNo overlapping programmes were found in the current map.";
+            return "OVERLAPPING MAP ENTRIES\nNone found in the current map for this profile.\n" .
+                   "NOTE: Because no map entries overlap, section_b must be an empty array. " .
+                   "For section_c, identify which activities in the submitted programme have no equivalent in the map. " .
+                   "For section_d, note that the analysis is limited by the absence of comparable map data.";
         }
 
-        $section = "OVERLAPPING PROGRAMMES\n";
-        $section .= "The following " . count($entries) . " programme(s) from the existing map overlap with the submitted profile:\n\n";
+        $section = "OVERLAPPING MAP ENTRIES (" . count($entries) . " found)\n";
+        $section .= "These entries were matched because they share geography or activities with the submitted programme.\n\n";
 
-        foreach ($entries as $index => $entry) {
-            $num = $index + 1;
-            $section .= "--- Programme {$num} ---\n";
-            $section .= "Programme Name: " . ($entry['programme_name'] ?? 'N/A') . "\n";
-            $section .= "Organisation: " . ($entry['organisation']['name'] ?? 'N/A') . "\n";
-            $section .= "Budget Band: " . ($entry['budget_band']['label'] ?? 'N/A') . "\n";
-            $section .= "Duration: " . ($entry['start_year'] ?? 'N/A') . " - " . ($entry['end_year'] ?? 'N/A') . "\n";
-            $section .= "Ongoing: " . (($entry['ongoing'] ?? false) ? 'Yes' : 'No') . "\n";
-            $section .= "FTE Staff: " . ($entry['fte_staff'] ?? 'N/A') . "\n";
-            $section .= "Direct Beneficiaries: " . ($entry['direct_beneficiaries'] ?? 'N/A') . "\n";
-            $section .= "Indirect Beneficiaries: " . ($entry['indirect_beneficiaries'] ?? 'N/A') . "\n";
-            $section .= "Method: " . ($entry['method'] ?? 'N/A') . "\n";
+        foreach ($entries as $i => $entry) {
+            $n   = $i + 1;
+            $org = $entry['organisation'] ?? 'N/A';
+            $org = is_array($org) ? ($org['name'] ?? 'N/A') : $org;
+            $section .= "#{$n} {$org} — " . ($entry['programme_name'] ?? 'N/A') . "\n";
 
-            if (!empty($entry['keywords'])) {
-                $keywordNames = [];
-                foreach ($entry['keywords'] as $keyword) {
-                    if (is_string($keyword)) {
-                        $keywordNames[] = $keyword;
-                    } elseif (is_array($keyword)) {
-                        $keywordNames[] = $keyword['name'] ?? $keyword['keyword'] ?? json_encode($keyword);
-                    } elseif (is_object($keyword)) {
-                        $keywordNames[] = $keyword->name ?? $keyword->keyword ?? (string)$keyword;
-                    }
-                }
-                $section .= "Keywords: " . implode(', ', array_filter($keywordNames)) . "\n";
+            $locations = [];
+            foreach ($entry['locations'] ?? [] as $loc) {
+                $prov  = $loc['province_name'] ?? null;
+                $dist  = $loc['district_name'] ?? null;
+                $parts = array_filter([$prov, $dist]);
+                if ($parts) $locations[] = implode(' > ', $parts);
             }
+            $section .= "  Geography: " . (empty($locations) ? '(not recorded)' : implode('; ', array_unique($locations))) . "\n";
 
-            if (!empty($entry['locations'])) {
-                $section .= "Locations:\n";
-                foreach ($entry['locations'] as $loc) {
-                    $parts = [];
-                    if (!empty($loc['province']['name'])) {
-                        $parts[] = $loc['province']['name'];
-                    }
-                    if (!empty($loc['district']['name'])) {
-                        $parts[] = $loc['district']['name'];
-                    }
-                    if (!empty($loc['commune']['name'])) {
-                        $parts[] = $loc['commune']['name'];
-                    }
-                    if (!empty($loc['village']['name'])) {
-                        $parts[] = $loc['village']['name'];
-                    }
-                    if (!empty($parts)) {
-                        $section .= "  - " . implode(' > ', $parts) . "\n";
-                    }
-                }
+            $activityNames = [];
+            foreach ($entry['activities'] ?? [] as $act) {
+                $label = $act['name'] ?? null;
+                if ($label) $activityNames[] = $label;
             }
-
-            if (!empty($entry['activities'])) {
-                $section .= "Activities:\n";
-                foreach ($entry['activities'] as $activity) {
-                    $taxonomy = $activity['taxonomy'] ?? [];
-                    $parts = [];
-                    if (!empty($taxonomy['category']['name'])) {
-                        $parts[] = $taxonomy['category']['name'];
-                    }
-                    if (!empty($taxonomy['subcategory']['name'])) {
-                        $parts[] = $taxonomy['subcategory']['name'];
-                    }
-                    if (!empty($taxonomy['item']['name'])) {
-                        $parts[] = $taxonomy['item']['name'];
-                    }
-                    $activityStr = implode(' > ', $parts);
-                    if (!empty($activity['inclusion_group'])) {
-                        $activityStr .= " [Group: {$activity['inclusion_group']}]";
-                    }
-                    if (!empty($activity['inclusion_type'])) {
-                        $activityStr .= " [Type: {$activity['inclusion_type']}]";
-                    }
-                    if (!empty($activity['education_levels'])) {
-                        $levels = array_column($activity['education_levels'], 'name');
-                        $activityStr .= " [Levels: " . implode(', ', $levels) . "]";
-                    }
-                    $section .= "  - {$activityStr}\n";
-                }
-            }
-
+            $section .= "  Activities: " . (empty($activityNames) ? '(not recorded)' : implode(', ', array_unique($activityNames))) . "\n";
             $section .= "\n";
         }
 
@@ -184,108 +196,33 @@ CONTEXT;
 
     private function buildOutputFormatInstruction(): string
     {
-        return <<<FORMAT
+        return <<<'FORMAT'
 OUTPUT FORMAT
-You MUST respond with a valid JSON object containing the following keys. Do not include any text outside the JSON object.
+Respond with a valid JSON object only. No text outside the JSON.
 
 {
-  "executive_summary": "A comprehensive 2-3 paragraph summary of the analysis. Include specific details about the programme profile, key overlaps identified, and overall assessment. Mention specific provinces, activities, and organisations where relevant.",
-  
-  "similar_or_overlapping_programmes": [
+  "section_a": "2-3 sentences characterising the submitted programme: what activities it covers, who the audiences are (education levels, inclusion groups), and which geography it targets. This lets the coordinator verify the AI reading before acting on recommendations.",
+  "section_b": [
     {
-      "programme_name": "Name of the overlapping programme",
       "organisation": "Organisation name",
-      "overlap_type": "activity / geography / audience / multiple",
-      "description": "Detailed description of HOW this programme overlaps with the submitted profile. Be specific about shared geographic areas, target audiences, or activities. Use actual location names and activity names."
+      "programme_name": "Programme name from the map",
+      "overlap_type": "Geographic overlap | Thematic adjacency | Complementarity",
+      "rationale": "One sentence stating: (1) the specific shared dimension, (2) what each party covers that the other does not, and (3) the recommended relationship — coordinate to avoid duplication / learning exchange / collaborate to create a more complete response."
     }
   ],
-  
-  "potential_duplication": "Detailed assessment of whether the submitted programme may duplicate existing efforts. Explain WHERE and HOW duplication might occur. Reference specific overlapping programmes by name and describe the specific areas of concern (e.g., 'Both programmes target primary education in Phnom Penh province').",
-  
-  "coverage_gaps": "Detailed identification of any gaps in coverage that the submitted programme could address. Be specific about which geographic areas, beneficiary groups, or activity areas are underserved based on the existing map data. Use actual province/district names.",
-  
-  "recommendations": "Comprehensive, actionable recommendations for the programme submission. Provide 3-5 specific recommendations grounded in the data. Each recommendation should explain WHY it matters and HOW it addresses a specific finding from the analysis.",
-  
-  "confidence_notes": "Notes on confidence level, data quality, limitations, or additional context. For example: 'Analysis based on full map scope with 3 overlapping programmes identified. High confidence due to detailed activity and geographic data available.'"
+  "section_c": "Identify two things: (1) activities or dimensions in the SUBMITTED PROGRAMME that are NOT covered by any entry in OVERLAPPING MAP ENTRIES — these are genuine gaps or novel areas where NEP has no current basis for a recommendation; (2) activities or dimensions present in the OVERLAPPING MAP ENTRIES that the submitted programme does NOT cover — these represent complementarity opportunities where collaboration could create a more complete response. Be explicit about which is which. If neither applies, state 'No significant gaps or complementarity identified.'",
+  "section_d": "Internal notes for the NEP coordinator only — not released to the requesting party. You MUST address all of the following that apply: (1) Duplication risk: if any overlapping entry shares the same geography AND activities, explicitly flag it as a potential duplication and state which organisation the coordinator must contact before the project proceeds. (2) Ambiguities: any part of the submitted document that was unclear or could be interpreted multiple ways. (3) Low-confidence interpretations: where the AI had to infer rather than read directly. (4) Data quality issues: if the programme profile has missing activities or locations that limited the analysis. (5) Human judgement required: decisions that cannot be made from structured data alone. If none of the above apply, state 'No flags.'"
 }
 
-IMPORTANT: In your analysis, always use actual names (province names, district names, activity names) instead of IDs. Make your response detailed, specific, and actionable.
+Rules:
+- Base everything strictly on the data provided. Do not invent organisations, programmes, or locations.
+- section_b must only reference organisations and programmes listed in OVERLAPPING MAP ENTRIES above.
+- If no overlapping entries exist, return an empty array for section_b.
+- overlap_type must be one of: "Geographic overlap", "Thematic adjacency", "Complementarity".
+- For section_c: compare the submitted programme activities against the map entries activities line by line — do not just say 'no gaps'.
+- For section_d: if any map entry shares both the same province AND at least one activity item with the submitted programme, you MUST flag it as a duplication risk in section_d.
+- Use actual names (provinces, activities, organisations) — never IDs.
+- Keep every field concise but complete. Coordinators scan this in under 60 seconds.
 FORMAT;
-    }
-
-    private function formatActivities(array $activities): string
-    {
-        $text = '';
-        $categoryIds = $activities['category_ids'] ?? [];
-        $subcategoryIds = $activities['subcategory_ids'] ?? [];
-        $itemIds = $activities['item_ids'] ?? [];
-        $educationLevelIds = $activities['education_level_ids'] ?? [];
-        $inclusionGroups = $activities['inclusion_groups'] ?? [];
-        $inclusionTypes = $activities['inclusion_types'] ?? [];
-
-        if (!empty($categoryIds)) {
-            $text .= "  Category IDs: " . implode(', ', $categoryIds) . "\n";
-        }
-        if (!empty($subcategoryIds)) {
-            $text .= "  Subcategory IDs: " . implode(', ', $subcategoryIds) . "\n";
-        }
-        if (!empty($itemIds)) {
-            $text .= "  Item IDs: " . implode(', ', $itemIds) . "\n";
-        }
-        if (!empty($educationLevelIds)) {
-            $text .= "  Education Level IDs: " . implode(', ', $educationLevelIds) . "\n";
-        }
-        if (!empty($inclusionGroups)) {
-            $text .= "  Inclusion Groups: " . implode(', ', $inclusionGroups) . "\n";
-        }
-        if (!empty($inclusionTypes)) {
-            $text .= "  Inclusion Types: " . implode(', ', $inclusionTypes) . "\n";
-        }
-
-        $text .= "\n  Note: These IDs correspond to the taxonomy categories, subcategories, and items shown in the OVERLAPPING PROGRAMMES section below.\n";
-
-        return $text;
-    }
-
-    private function formatGeography(array $geography): string
-    {
-        $text = '';
-        $provinceIds = $geography['province_ids'] ?? [];
-        $districtIds = $geography['district_ids'] ?? [];
-        $communeIds = $geography['commune_ids'] ?? [];
-        $villageIds = $geography['village_ids'] ?? [];
-
-        if (!empty($provinceIds)) {
-            $text .= "  Province IDs: " . implode(', ', $provinceIds) . "\n";
-        }
-        if (!empty($districtIds)) {
-            $text .= "  District IDs: " . implode(', ', $districtIds) . "\n";
-        }
-        if (!empty($communeIds)) {
-            $text .= "  Commune IDs: " . implode(', ', $communeIds) . "\n";
-        }
-        if (!empty($villageIds)) {
-            $text .= "  Village IDs: " . implode(', ', $villageIds) . "\n";
-        }
-
-        $text .= "\n  Note: These location IDs correspond to the actual location names shown in the OVERLAPPING PROGRAMMES section below.\n";
-
-        return $text;
-    }
-
-    private function formatAudiences(array $audiences): string
-    {
-        $text = '';
-        $groups = $audiences['inclusion_groups'] ?? [];
-        $types = $audiences['inclusion_types'] ?? [];
-
-        if (!empty($groups)) {
-            $text .= "  Inclusion Groups: " . implode(', ', $groups) . "\n";
-        }
-        if (!empty($types)) {
-            $text .= "  Inclusion Types: " . implode(', ', $types) . "\n";
-        }
-
-        return $text;
     }
 }

@@ -103,8 +103,14 @@ class AdviserSubmissionController extends Controller
     {
         $query = AdvisoryNote::with([
             'coordinator:id,name',
-            'programmeEntry:id,programme_name',
+            'programmeEntry:id,programme_name,is_submitted',
         ])->orderBy('submitted_at', 'desc');
+
+        // Exclude advisory notes linked to draft (not yet submitted) programme entries
+        $query->where(function ($q) {
+            $q->whereNull('programme_entry_id')
+              ->orWhereHas('programmeEntry', fn($e) => $e->where('is_submitted', true));
+        });
 
         if ($request->filled('analysis_scope')) {
             $query->whereRaw('analysis_scope = ?', [$request->input('analysis_scope')]);
@@ -183,7 +189,7 @@ class AdviserSubmissionController extends Controller
             'staffUser',
             'coordinator:id,name',
             'programmeEntry.organisation:id,name',
-            'programmeEntry.activities.activityItem.subcategory',
+            'programmeEntry.activities.activityItem.subcategory.category',
             'programmeEntry.locations',
             'recommendations.programmeEntry.organisation:id,name',
         ]);
@@ -216,7 +222,7 @@ class AdviserSubmissionController extends Controller
                 'staffUser',
                 'coordinator:id,name',
                 'programmeEntry.organisation:id,name',
-                'programmeEntry.activities.activityItem.subcategory',
+                'programmeEntry.activities.activityItem.subcategory.category',
                 'programmeEntry.locations',
                 'recommendations.programmeEntry.organisation:id,name',
             ])
@@ -273,6 +279,16 @@ class AdviserSubmissionController extends Controller
     )]
     public function update(UpdateAdviserSubmissionRequest $request, AdvisoryNote $advisoryNote)
     {
+        // Block section edits if the linked programme entry has not been submitted by the member org
+        if ($advisoryNote->programme_entry_id) {
+            $advisoryNote->loadMissing('programmeEntry');
+            if ($advisoryNote->programmeEntry && ! $advisoryNote->programmeEntry->is_submitted) {
+                return response()->json([
+                    'message' => 'This advisory note cannot be edited until the member organisation submits the programme.',
+                ], 422);
+            }
+        }
+
         $validated = $request->validated();
 
         if ($request->hasFile('file')) {
@@ -288,9 +304,11 @@ class AdviserSubmissionController extends Controller
             foreach ($request->input('recommendations', []) as $rec) {
                 $advisoryNote->recommendations()->create([
                     'programme_entry_id' => $rec['programme_entry_id'] ?? null,
-                    'organisation_name'  => $rec['organisation_name'] ?? null,
-                    'type'               => $rec['type'] ?? 'Geographic overlap',
-                    'relational'         => $rec['relational'] ?? '',
+                    'organisation_name'  => $rec['organisation_name']  ?? null,
+                    'programme_name'     => $rec['programme_name']     ?? null,
+                    'type'               => $rec['type']               ?? 'Geographic overlap',
+                    'relational'         => $rec['relational']         ?? null,
+                    'rationale'          => $rec['rationale']          ?? null,
                 ]);
             }
         }
@@ -410,6 +428,16 @@ class AdviserSubmissionController extends Controller
                 'message' => 'Submission has already been marked as delivered.',
                 'data'    => $advisoryNote,
             ]);
+        }
+
+        // Block delivery if the linked programme entry has not been submitted by the member org
+        if ($advisoryNote->programme_entry_id) {
+            $advisoryNote->loadMissing('programmeEntry');
+            if ($advisoryNote->programmeEntry && ! $advisoryNote->programmeEntry->is_submitted) {
+                return response()->json([
+                    'message' => 'Advisory advice cannot be delivered on a programme that has not been submitted by the member organisation.',
+                ], 422);
+            }
         }
 
         $advisoryNote->update([
