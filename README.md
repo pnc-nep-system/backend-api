@@ -153,15 +153,20 @@ window.Echo = new Echo({
 
 ---
 
-## 🤖 Groq AI Integration
+## 🤖 AI Integration
 
-Used by coordinators to auto-generate advisory notes from uploaded programme documents.
+Used by coordinators to auto-generate advisory notes and suggest taxonomy activities from uploaded programme documents.
+
+- **Flow:** Upload PDF → parse text → send to AI → structured advisory note with 4 sections (A–D)
+- **Rate limiting:** `throttle:10,1` on all AI endpoints
+- **Service class:** `app/Services/AI/GroqService.php`
+- **Used by:** `AdviserAnalysisController` (advisory notes) and `ProgrammeActivityAiController` (activity suggestions, AI autofill)
+
+### Current Provider: Groq
 
 - **Model:** `llama-3.3-70b-versatile` (configurable via `GROQ_MODEL`)
-- **Flow:** Upload PDF → parse text → send to Groq → structured advisory note with 4 sections (A–D)
-- **Rate limiting:** `throttle:10,1` on AI endpoints
+- **API docs:** https://console.groq.com/docs
 
-Configure via `.env`:
 ```env
 GROQ_API_KEY=your-key
 GROQ_MODEL=llama-3.3-70b-versatile
@@ -169,6 +174,54 @@ GROQ_TIMEOUT=30
 GROQ_RETRY_ATTEMPTS=2
 GROQ_RETRY_DELAY=500
 ```
+
+### Switching AI Provider (e.g. Claude)
+
+The controllers never talk to the AI directly — they only call `GroqService::generateContent(string $prompt, array $options): array` and read the returned array. Swapping providers requires changes in **2 places only**:
+
+**1. Create `app/Services/AI/ClaudeService.php`**
+
+The key differences from Groq:
+
+| | Groq | Claude |
+|---|---|---|
+| Endpoint | `api.groq.com/openai/v1/chat/completions` | `api.anthropic.com/v1/messages` |
+| Auth header | `Authorization: Bearer {key}` | `x-api-key: {key}` |
+| Extra header | — | `anthropic-version: 2023-06-01` |
+| Response path | `choices[0].message.content` | `content[0].text` |
+| Model name | `llama-3.3-70b-versatile` | `claude-sonnet-4-5`, `claude-opus-4-5`, etc. |
+
+The `parseResponse()` method extraction line changes from:
+```php
+$text = $data['choices'][0]['message']['content'] ?? null;  // Groq
+$text = $data['content'][0]['text'] ?? null;                // Claude
+```
+
+**2. Update `config/services.php`**
+
+```php
+// Replace the groq block:
+'claude' => [
+    'api_key' => env('CLAUDE_API_KEY'),
+    'model'   => env('CLAUDE_MODEL', 'claude-sonnet-4-5'),
+    'timeout' => env('CLAUDE_TIMEOUT', 30),
+    'retry_attempts' => env('CLAUDE_RETRY_ATTEMPTS', 2),
+    'retry_delay'    => env('CLAUDE_RETRY_DELAY', 500),
+],
+```
+
+**3. Bind in `app/Providers/AppServiceProvider.php`** (no controller changes needed)
+
+```php
+$this->app->bind(
+    \App\Services\AI\GroqService::class,
+    \App\Services\AI\ClaudeService::class
+);
+```
+
+This makes `App::make(GroqService::class)` resolve `ClaudeService` transparently — both controllers continue working without any modification.
+
+> Update `.env` and `.env.example` to replace `GROQ_*` variables with `CLAUDE_*` after switching.
 
 ---
 
@@ -221,7 +274,7 @@ See `.env.example` for the full list. Key variables:
 | `DB_*` | Database connection settings |
 | `REDIS_*` | Redis connection settings |
 | `REVERB_*` | WebSocket server settings |
-| `GROQ_API_KEY` | Groq AI API key (required for advisory note generation) |
+| `GROQ_API_KEY` | Groq AI API key (required for advisory note generation) — replace with `CLAUDE_API_KEY` if switching to Claude |
 | `IMAGEKIT_*` | ImageKit CDN credentials (required for org logo uploads) |
 | `MAIL_*` | SMTP settings for invitation and password reset emails |
 | `SANCTUM_STATEFUL_DOMAINS` | Comma-separated list of frontend domains for Sanctum |
@@ -354,8 +407,9 @@ php artisan route:clear && php artisan config:clear && php artisan cache:clear
 - Check failed jobs: `php artisan queue:failed`
 - Retry: `php artisan queue:retry all`
 
-**Groq AI returns 429**
-- Rate limit hit — increase `GROQ_RETRY_DELAY` or reduce request frequency
+**AI returns 429 (rate limit)**
+- Increase `GROQ_RETRY_DELAY` (or `CLAUDE_RETRY_DELAY`) or reduce request frequency
+- Groq free tier has strict RPM limits — consider upgrading or switching to Claude for higher throughput
 
 **PDF rendering issues**
 - DomPDF does not support CSS gradients, `border-radius` on inline elements, or `display:inline-block` in table cells — use `<table>` layouts
@@ -368,6 +422,7 @@ php artisan route:clear && php artisan config:clear && php artisan cache:clear
 - [Laravel Reverb](https://laravel.com/docs/12.x/reverb)
 - [Laravel Sanctum](https://laravel.com/docs/12.x/sanctum)
 - [Groq API](https://console.groq.com/docs)
+- [Claude API](https://docs.anthropic.com/en/api/getting-started)
 - [DomPDF](https://github.com/barryvdh/laravel-dompdf)
 - [L5-Swagger](https://github.com/darkaonline/l5-swagger)
 - [ImageKit PHP SDK](https://github.com/imagekit-developer/imagekit-php)
