@@ -2,133 +2,352 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Advisory Note - {{ $note->document_name }}</title>
+    <title>Advisory Note</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.5; color: #333; padding: 24px; }
 
-        .header { border-bottom: 3px solid #2c3e50; padding-bottom: 12px; margin-bottom: 20px; }
-        .header h1 { font-size: 16pt; color: #2c3e50; }
-        .header .meta { font-size: 9pt; color: #666; margin-top: 4px; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 9.5pt;
+            color: #1e293b;
+            background: #ffffff;
+        }
 
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8pt; font-weight: bold; background: #e8f4fd; color: #2980b9; border: 1px solid #aed6f1; }
+        /* ── Cover ── */
+        .cover {
+            background-color: #0f3460;
+            padding: 32px 36px 24px 36px;
+        }
+        .cover-eyebrow {
+            font-size: 7pt;
+            color: #93c5fd;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .cover-title {
+            font-size: 17pt;
+            font-weight: bold;
+            color: #ffffff;
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+        .cover-org {
+            font-size: 9pt;
+            color: #bfdbfe;
+        }
 
-        .info-grid { width: 100%; margin-bottom: 20px; }
-        .info-grid td { padding: 4px 8px 4px 0; font-size: 9pt; vertical-align: top; width: 50%; }
-        .info-grid .label { font-weight: bold; color: #555; }
+        /* ── Info strip ── */
+        .info-strip {
+            background-color: #f1f5f9;
+            border-bottom: 2px solid #0f3460;
+            padding: 0;
+        }
+        .info-strip table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-strip td {
+            padding: 8px 14px;
+            font-size: 8pt;
+            color: #475569;
+            border-right: 1px solid #e2e8f0;
+        }
+        .info-strip td:last-child { border-right: none; }
+        .info-strip td strong { color: #0f172a; display: block; margin-bottom: 1px; }
 
-        .section { margin-bottom: 20px; page-break-inside: avoid; }
-        .section-title { font-size: 11pt; font-weight: bold; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 4px; margin-bottom: 10px; }
-        .section-body { font-size: 9.5pt; white-space: pre-wrap; }
+        /* ── Status pill (table-based) ── */
+        .pill {
+            font-size: 7.5pt;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+        .pill-blue     { background-color: #dbeafe; color: #1d4ed8; }
+        .pill-green    { background-color: #dcfce7; color: #15803d; }
+        .pill-yellow   { background-color: #fef9c3; color: #854d0e; }
 
-        .rec-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 6px; }
-        .rec-table th { background: #2c3e50; color: white; padding: 6px 8px; text-align: left; }
-        .rec-table td { padding: 6px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
-        .rec-table tr:nth-child(even) td { background: #f8f9fa; }
+        /* ── Page body ── */
+        .page-body { padding: 24px 36px; }
 
-        .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; text-align: center; font-size: 8pt; color: #777; }
+        /* ── Meta table ── */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            border: 1px solid #e2e8f0;
+        }
+        .meta-table td {
+            padding: 8px 12px;
+            font-size: 8.5pt;
+            vertical-align: top;
+            border-bottom: 1px solid #e2e8f0;
+            width: 50%;
+        }
+        .meta-table tr:last-child td { border-bottom: none; }
+        .meta-table .field-label {
+            font-size: 7pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .meta-table .field-value { color: #0f172a; }
+
+        /* ── Section ── */
+        .section { margin-bottom: 22px; }
+
+        .section-heading {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 0;
+        }
+        .section-heading td { padding-bottom: 6px; vertical-align: middle; }
+        .section-badge {
+            width: 24px;
+            height: 24px;
+            background-color: #0f3460;
+            color: #ffffff;
+            font-size: 10pt;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px 0;
+        }
+        .section-label {
+            font-size: 10.5pt;
+            font-weight: bold;
+            color: #0f3460;
+            padding-left: 8px;
+        }
+
+        .section-text {
+            font-size: 9pt;
+            color: #334155;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            border-left: 3px solid #cbd5e1;
+            padding: 10px 14px;
+            background-color: #f8fafc;
+        }
+
+        /* ── Rec cards ── */
+        .rec-card {
+            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            background-color: #ffffff;
+            page-break-inside: avoid;
+        }
+        .rec-card-top {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+        .rec-card-top td { vertical-align: middle; padding: 0; }
+        .rec-org-name {
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .rec-type-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .rec-type-label {
+            font-size: 7.5pt;
+            color: #475569;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 2px 8px;
+        }
+        .rec-linked {
+            font-size: 8pt;
+            color: #64748b;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        .rec-notes {
+            font-size: 8.5pt;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .no-data {
+            font-size: 8.5pt;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 7.5pt;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Advisory Note &mdash; {{ $note->document_name }}</h1>
-        <div class="meta">
-            Generated: {{ $generatedAt }}
-            &nbsp;&bull;&nbsp;
-            Status: <span class="badge">{{ $note->status }}</span>
-            @if($note->analysis_scope)
-                &nbsp;&bull;&nbsp; Scope: {{ $note->analysis_scope }}
-            @endif
-        </div>
-    </div>
+{{-- ── Cover ── --}}
+<div class="cover">
+    <div class="cover-eyebrow">NEP Programme System &mdash; Confidential Advisory Note</div>
+    <div class="cover-title">{{ $note->document_name }}</div>
+    <div class="cover-org">Submitting Organisation: <strong style="color:#fff;">{{ $note->submitting_party }}</strong></div>
+</div>
 
-    <table class="info-grid">
+{{-- ── Info Strip ── --}}
+@php
+    $pillClass = match($note->status) {
+        'advice_delivered' => 'pill-green',
+        'analysed'         => 'pill-yellow',
+        default            => 'pill-blue',
+    };
+    $statusLabel = ucwords(str_replace('_', ' ', $note->status));
+@endphp
+<div class="info-strip">
+    <table>
         <tr>
-            <td><span class="label">Submitting Party:</span> {{ $note->submitting_party }}</td>
-            <td><span class="label">Submitted At:</span> {{ $note->submitted_at?->format('Y-m-d H:i') ?? 'N/A' }}</td>
+            <td>
+                <strong>Status</strong>
+                <span class="pill {{ $pillClass }}">{{ $statusLabel }}</span>
+            </td>
+            <td>
+                <strong>Scope</strong>
+                {{ ucfirst($note->analysis_scope ?? 'Full Map') }}
+            </td>
+            <td>
+                <strong>Coordinator</strong>
+                {{ $note->coordinator->name ?? 'Unassigned' }}
+            </td>
+            <td>
+                <strong>Generated</strong>
+                {{ $generatedAt }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="page-body">
+
+    {{-- ── Meta ── --}}
+    <table class="meta-table">
+        <tr>
+            <td>
+                <span class="field-label">Submitting Organisation</span>
+                <span class="field-value">{{ $note->submitting_party }}</span>
+            </td>
+            <td>
+                <span class="field-label">Submitted At</span>
+                <span class="field-value">{{ $note->submitted_at?->format('d M Y, H:i') ?? 'N/A' }}</span>
+            </td>
         </tr>
         <tr>
             <td>
-                <span class="label">Source Programme:</span>
-                @if($note->programmeEntry)
-                    #{{ $note->programmeEntry->id }} &mdash; {{ $note->programmeEntry->programme_name }}
-                    ({{ $note->programmeEntry->organisation->name ?? 'Unknown Organisation' }})
-                @else
-                    N/A
-                @endif
+                <span class="field-label">Source Programme</span>
+                <span class="field-value">
+                    @if($note->programmeEntry)
+                        #{{ $note->programmeEntry->id }} &mdash; {{ $note->programmeEntry->programme_name }}
+                        ({{ $note->programmeEntry->organisation->name ?? 'Unknown' }})
+                    @else
+                        N/A
+                    @endif
+                </span>
             </td>
-            <td><span class="label">Coordinator:</span> {{ $note->coordinator->name ?? 'Unassigned' }}</td>
+            <td>
+                <span class="field-label">Delivered At</span>
+                <span class="field-value">{{ $note->delivered_at?->format('d M Y, H:i') ?? 'Not yet delivered' }}</span>
+            </td>
         </tr>
         @if($note->analysis_scope_detail)
         <tr>
-            <td colspan="2"><span class="label">Scope Detail:</span> {{ $note->analysis_scope_detail }}</td>
-        </tr>
-        @endif
-        @if($note->delivered_at)
-        <tr>
-            <td colspan="2"><span class="label">Delivered At:</span> {{ $note->delivered_at->format('Y-m-d H:i') }}</td>
+            <td colspan="2">
+                <span class="field-label">Scope Detail</span>
+                <span class="field-value">{{ $note->analysis_scope_detail }}</span>
+            </td>
         </tr>
         @endif
     </table>
 
+    {{-- ── Section A ── --}}
     @if($note->section_profile)
     <div class="section">
-        <div class="section-title">A &middot; Programme Profile as Interpreted</div>
-        <div class="section-body">{{ $note->section_profile }}</div>
+        <table class="section-heading"><tr>
+            <td class="section-badge">A</td>
+            <td class="section-label">Programme Profile as Interpreted</td>
+        </tr></table>
+        <div class="section-text">{{ $note->section_profile }}</div>
     </div>
     @endif
 
-    @if($note->recommendations->isNotEmpty())
+    {{-- ── Section B ── --}}
     <div class="section">
-        <div class="section-title">B &middot; Similar or Overlapping Programmes</div>
-        <table class="rec-table">
-            <thead>
-                <tr>
-                    <th style="width:30%">Programme</th>
-                    <th style="width:25%">Organisation</th>
-                    <th style="width:20%">Overlap Type</th>
-                    <th style="width:25%">Notes</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($note->recommendations as $rec)
-                <tr>
-                    <td>
-                        @if($rec->programmeEntry)
-                            #{{ $rec->programmeEntry->id }} &mdash; {{ $rec->programmeEntry->programme_name }}
-                        @else
-                            N/A
-                        @endif
-                    </td>
-                    <td>{{ $rec->organisation_name ?? $rec->programmeEntry?->organisation?->name ?? 'N/A' }}</td>
-                    <td>{{ $rec->type }}</td>
-                    <td>{{ $rec->relational }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
+        <table class="section-heading"><tr>
+            <td class="section-badge">B</td>
+            <td class="section-label">Coordination Recommendations</td>
+        </tr></table>
 
+        @if($note->recommendations->isNotEmpty())
+            @foreach($note->recommendations as $i => $rec)
+            @php $linkedName = $rec->programme_name ?? $rec->programmeEntry?->programme_name; @endphp
+            <div class="rec-card">
+                <table class="rec-card-top"><tr>
+                    <td>
+                        <span class="rec-org-name">
+                            {{ $i + 1 }}. {{ $rec->organisation_name ?? $rec->programmeEntry?->organisation?->name ?? 'Unknown Organisation' }}
+                        </span>
+                    </td>
+                    <td class="rec-type-cell">
+                        <span class="rec-type-label">{{ $rec->type }}</span>
+                    </td>
+                </tr></table>
+                @if($linkedName)
+                <div class="rec-linked">Linked: {{ $linkedName }}</div>
+                @endif
+                @if($rec->relational)
+                <div class="rec-notes">{{ $rec->relational }}</div>
+                @endif
+            </div>
+            @endforeach
+        @else
+            <p class="no-data">No overlapping programmes identified.</p>
+        @endif
+    </div>
+
+    {{-- ── Section C ── --}}
     @if($note->section_gaps)
     <div class="section">
-        <div class="section-title">C &middot; Gaps &amp; Coverage Analysis</div>
-        <div class="section-body">{{ $note->section_gaps }}</div>
+        <table class="section-heading"><tr>
+            <td class="section-badge">C</td>
+            <td class="section-label">Gaps &amp; Coverage Analysis</td>
+        </tr></table>
+        <div class="section-text">{{ $note->section_gaps }}</div>
     </div>
     @endif
 
+    {{-- ── Section D ── --}}
     @if($note->section_coordinators_notes)
     <div class="section">
-        <div class="section-title">D &middot; Coordinator Notes</div>
-        <div class="section-body">{{ $note->section_coordinators_notes }}</div>
+        <table class="section-heading"><tr>
+            <td class="section-badge">D</td>
+            <td class="section-label">Coordinator Notes</td>
+        </tr></table>
+        <div class="section-text">{{ $note->section_coordinators_notes }}</div>
     </div>
     @endif
 
     <div class="footer">
-        <p>NEP Programme System &mdash; Confidential Advisory Note</p>
-        <p>Generated on {{ $generatedAt }}</p>
+        <strong>NEP Programme System</strong> &mdash; Confidential &mdash; For internal use only<br>
+        Generated on {{ $generatedAt }}
     </div>
 
+</div>
 </body>
 </html>

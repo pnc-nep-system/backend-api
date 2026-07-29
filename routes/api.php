@@ -25,11 +25,17 @@ use App\Http\Controllers\Api\PolicyDocumentController as ApiPolicyDocumentContro
 use App\Http\Controllers\Api\RefdataController;
 use App\Http\Controllers\Api\PasswordResetController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 Route::get('/adviser/submissions/{advisoryNote}/file', [AdviserSubmissionController::class, 'downloadFile']);
+
+// Broadcasting auth for Sanctum token-authenticated users
+Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+    return Broadcast::auth($request);
+})->middleware('auth:sanctum');
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:5,1')
@@ -116,6 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('throttle:10,1');
 
         Route::get('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'show']);
+        Route::get('/adviser/submissions/{advisoryNote}/export-pdf', [AdviserSubmissionController::class, 'exportPdf']);
         Route::patch('/adviser/submissions/{advisoryNote}', [AdviserSubmissionController::class, 'update']);
         Route::post('/adviser/submissions/{advisoryNote}/file-token', [AdviserSubmissionController::class, 'fileToken']);
         Route::patch('/adviser/submissions/{advisoryNote}/deliver', [AdviserSubmissionController::class, 'markDelivered'])

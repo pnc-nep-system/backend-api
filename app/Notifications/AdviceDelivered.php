@@ -4,11 +4,11 @@ namespace App\Notifications;
 
 use App\Models\AdvisoryNote;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class AdviceDelivered extends Notification implements ShouldBroadcast
+class AdviceDelivered extends Notification implements ShouldBroadcastNow
 {
     private ?int $notifiableId = null;
 

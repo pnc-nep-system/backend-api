@@ -10,6 +10,7 @@ use App\Models\AdvisoryNote;
 use App\Models\User;
 use App\Notifications\AdviserSubmissionAssigned;
 use App\Notifications\AdviceDelivered;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -419,6 +420,24 @@ class AdviserSubmissionController extends Controller
             'Content-Type'        => $mimeType,
             'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
         ]);
+    }
+
+    public function exportPdf(AdvisoryNote $advisoryNote)
+    {
+        $advisoryNote->load([
+            'coordinator:id,name',
+            'programmeEntry.organisation:id,name',
+            'recommendations.programmeEntry.organisation:id,name',
+        ]);
+
+        $pdf = Pdf::loadView('exports.advisory-note-pdf', [
+            'note'        => $advisoryNote,
+            'generatedAt' => now()->format('d M Y, H:i'),
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'advisory-note-' . $advisoryNote->id . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     public function markDelivered(Request $request, AdvisoryNote $advisoryNote)
