@@ -16,13 +16,15 @@ class PromptBuilder
         array $overlappingEntries,
         string $analysisScope = 'full map',
         ?string $analysisScopeDetail = null,
-        ?string $documentText = null
+        ?string $documentText = null,
+        ?string $programmeName = null,
+        ?string $submittingParty = null
     ): string {
         $resolvedProfile = $this->resolveProfileIds($programmeProfile);
 
         $prompt  = $this->buildSystemInstruction();
         $prompt .= "\n\n---\n\n";
-        $prompt .= $this->buildContextSection($analysisScope, $analysisScopeDetail);
+        $prompt .= $this->buildContextSection($analysisScope, $analysisScopeDetail, $programmeName, $submittingParty);
         $prompt .= "\n\n---\n\n";
 
         if ($documentText) {
@@ -30,7 +32,7 @@ class PromptBuilder
             $prompt .= "\n\n---\n\n";
         }
 
-        $prompt .= $this->buildTaxonomyReferenceSection();
+        $prompt .= $this->buildTaxonomyReferenceSection($programmeProfile);
         $prompt .= "\n\n---\n\n";
         $prompt .= $this->buildProgrammeProfileSection($resolvedProfile, $programmeProfile);
         $prompt .= "\n\n---\n\n";
@@ -85,27 +87,38 @@ Base your analysis strictly on the data provided. Do not invent facts, organisat
 SYSTEM;
     }
 
-    private function buildContextSection(string $scope, ?string $scopeDetail): string
+    private function buildContextSection(string $scope, ?string $scopeDetail, ?string $programmeName, ?string $submittingParty): string
     {
         $context = "ANALYSIS CONTEXT\n";
         $context .= "Scope: {$scope}\n";
-        if ($scopeDetail) {
-            $context .= "Detail: {$scopeDetail}\n";
-        }
+        if ($scopeDetail)     $context .= "Detail: {$scopeDetail}\n";
+        if ($programmeName)   $context .= "Programme name: {$programmeName}\n";
+        if ($submittingParty) $context .= "Submitting party: {$submittingParty}\n";
         return $context;
     }
 
     private function buildDocumentSection(string $documentText): string
     {
-        $truncated = mb_substr($documentText, 0, 8000);
+        $truncated = mb_substr($documentText, 0, 6000);
         return "SUBMITTED DOCUMENT CONTENT\n" . $truncated;
     }
 
-    private function buildTaxonomyReferenceSection(): string
+    private function buildTaxonomyReferenceSection(array $programmeProfile): string
     {
-        $categories = ActivityCategory::with('subcategories.items')->get();
+        // Only include taxonomy items relevant to the profile — not the entire tree
+        $itemIds        = $programmeProfile['activities']['item_ids']        ?? [];
+        $subcategoryIds = $programmeProfile['activities']['subcategory_ids'] ?? [];
+        $categoryIds    = $programmeProfile['activities']['category_ids']    ?? [];
 
-        $section = "TAXONOMY REFERENCE (full activity taxonomy)\n";
+        $categories = ActivityCategory::with(['subcategories' => function ($q) use ($itemIds, $subcategoryIds, $categoryIds) {
+            if (!empty($categoryIds)) $q->whereIn('category_id', $categoryIds);
+            $q->with(['items' => function ($iq) use ($itemIds, $subcategoryIds) {
+                if (!empty($itemIds)) $iq->whereIn('id', $itemIds);
+                elseif (!empty($subcategoryIds)) $iq->whereIn('subcategory_id', $subcategoryIds);
+            }]);
+        }])->when(!empty($categoryIds), fn($q) => $q->whereIn('id', $categoryIds))->get();
+
+        $section = "TAXONOMY REFERENCE (matched activity taxonomy only)\n";
         foreach ($categories as $cat) {
             $section .= "- {$cat->label}\n";
             foreach ($cat->subcategories as $sub) {

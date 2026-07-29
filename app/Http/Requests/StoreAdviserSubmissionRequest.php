@@ -73,12 +73,29 @@ class StoreAdviserSubmissionRequest extends FormRequest
         $validator->after(function ($validator) {
             // If analysis scope is geographic or thematic subset, detail is required
             $analysisScope = $this->input('analysis_scope', 'full map');
-            
+
             if (in_array($analysisScope, ['geographic subset', 'thematic subset'])) {
                 if (empty($this->input('analysis_scope_detail'))) {
                     $validator->errors()->add(
                         'analysis_scope_detail',
                         'Analysis scope detail is required for geographic or thematic subsets.'
+                    );
+                }
+            }
+
+            // Block if this programme entry already has an advisory note by another coordinator
+            $programmeEntryId = $this->input('programme_entry_id');
+            $requestedCoordinatorId = $this->input('coordinator_id') ?? $this->user()?->id;
+
+            if ($programmeEntryId) {
+                $existing = \App\Models\AdvisoryNote::where('programme_entry_id', $programmeEntryId)
+                    ->whereNotNull('coordinator_id')
+                    ->first();
+
+                if ($existing && $existing->coordinator_id !== (int) $requestedCoordinatorId) {
+                    $validator->errors()->add(
+                        'programme_entry_id',
+                        'This programme entry has already been advised by another coordinator.'
                     );
                 }
             }

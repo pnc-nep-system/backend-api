@@ -25,6 +25,7 @@ class AdvisoryNote extends Model
         'final_note_file',
         'submitted_at',
         'delivered_at',
+        'document_text',
     ];
 
     protected $casts = [
