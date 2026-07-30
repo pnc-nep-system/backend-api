@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to the NEP System</title>
+    <title>Reset Your NEP System Password</title>
     <style>
         body {
             margin: 0;
@@ -27,7 +27,7 @@
             box-shadow: 0 4px 14px rgba(15,45,41,0.08), 0 1px 3px rgba(15,45,41,0.06);
         }
         .header {
-            background-color: #0f5c56;
+            background-color: #0a3d39;
             padding: 32px 40px;
         }
         .header h1 {
@@ -50,55 +50,9 @@
             font-size: 15px;
             color: #33453f;
         }
-        .credentials {
-            background: #f7faf9;
-            border: 1px solid #e4eae8;
-            border-radius: 8px;
-            padding: 22px 24px;
-            margin: 24px 0;
-        }
-        .credentials-title {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: #647572;
-            margin: 0 0 16px;
-        }
-        .credential-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-        .credential-row:last-child {
-            margin-bottom: 0;
-        }
-        .credential-label {
-            display: table-cell;
-            font-size: 12px;
-            font-weight: 600;
-            color: #647572;
-            white-space: nowrap;
-            padding-right: 14px;
-            vertical-align: middle;
-            width: 1%;
-        }
-        .credential-value {
-            display: table-cell;
-            background: #ffffff;
-            border: 1px solid #e4eae8;
-            border-left: 3px solid #1c8479;
-            border-radius: 6px;
-            padding: 9px 14px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #0f5c56;
-            font-weight: 600;
-            vertical-align: middle;
-        }
         .btn-wrap {
             text-align: center;
-            margin: 28px 0 22px;
+            margin: 32px 0 26px;
         }
         .btn {
             display: inline-block;
@@ -121,6 +75,17 @@
         .fallback-url a {
             color: #1c8479;
             text-decoration: underline;
+        }
+        .expiry {
+            background: #e3f0ee;
+            border: 1px solid #b7c2bf;
+            border-radius: 8px;
+            padding: 13px 18px;
+            margin: 24px 0;
+            font-size: 13px;
+            color: #0f5c56;
+            text-align: center;
+            font-weight: 600;
         }
         .notice {
             background: #fdecd3;
@@ -162,59 +127,49 @@
         <div class="card">
 
             <div class="header">
-                <h1>Welcome to the NEP Programme Mapping System</h1>
-                <p>Your account is ready — we're glad to have you on board.</p>
+                <h1>Password Reset Request</h1>
+                <p>We received a request to reset the password for your NEP System account.</p>
             </div>
 
             <div class="body">
                 <p>Dear <strong>{{ $userName }}</strong>,</p>
 
                 <p>
-                    We are pleased to inform you that your account on the
-                    <strong>NEP Programme Mapping System</strong> has been successfully created.
-                    You may now log in using the credentials provided below.
+                    We received a request to reset the password associated with your account.
+                    Please click the button below to proceed. This link is valid for
+                    <strong>{{ $expiresIn }} minutes</strong> from the time this email was sent.
                 </p>
 
-                <div class="credentials">
-                    <div class="credentials-title">Your Login Credentials</div>
-
-                    <div class="credential-row">
-                        <div class="credential-label">Email Address</div>
-                        <div class="credential-value">{{ $userEmail }}</div>
-                    </div>
-
-                    <div class="credential-row">
-                        <div class="credential-label">Temporary Password</div>
-                        <div class="credential-value">{{ $defaultPassword }}</div>
-                    </div>
-                </div>
-
                 <div class="btn-wrap">
-                    <a href="{{ $loginUrl }}" class="btn">Log In to NEP System</a>
+                    <a href="{{ $resetUrl }}" class="btn">Reset My Password</a>
                 </div>
 
                 <p class="fallback-url">
                     If the button above does not work, please copy and paste the following link into your browser:<br>
-                    <a href="{{ $loginUrl }}">{{ $loginUrl }}</a>
+                    <a href="{{ $resetUrl }}">{{ $resetUrl }}</a>
                 </p>
 
+                <div class="expiry">
+                    🕐 This password reset link will expire in {{ $expiresIn }} minutes.
+                </div>
+
                 <div class="notice">
-                    <strong>⚠️ Please change your password after your first login</strong>
+                    <strong>🔒 Did not request this?</strong>
                     <p>
-                        For the security of your account, we kindly ask that you update your password
-                        as soon as you log in for the first time. Please do not share your credentials
-                        with anyone.
+                        If you did not request a password reset, please disregard this email.
+                        Your password will remain unchanged and your account will not be affected.
+                        If you are concerned about the security of your account, please contact
+                        your NEP Administrator immediately.
                     </p>
                 </div>
 
                 <p>
-                    Should you have any questions or require assistance getting started,
-                    please do not hesitate to reach out to your NEP Administrator.
-                    We look forward to your participation in the system.
+                    If you need any further assistance, please do not hesitate to contact
+                    your NEP Administrator.
                 </p>
 
                 <p>
-                    Warm regards,<br>
+                    Kind regards,<br>
                     <strong>The NEP System Team</strong>
                 </p>
             </div>
@@ -223,8 +178,8 @@
 
             <div class="footer">
                 <p>
-                    This message was sent by the NEP Programme Mapping System on behalf of your organisation's administrator.
-                    If you were not expecting this invitation, you may safely disregard this email.
+                    This is an automated message from the NEP Programme Mapping System.
+                    For security purposes, please do not forward or share this email with anyone.
                 </p>
             </div>
 

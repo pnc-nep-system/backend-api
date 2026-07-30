@@ -13,8 +13,10 @@ class AdvisoryNote extends Model
     protected $fillable = [
         'assign_to_staff_user_id',
         'coordinator_id',
+        'programme_entry_id',
         'submitting_party',
         'document_name',
+        'document_file',
         'analysis_scope',
         'analysis_scope_detail',
         'status',
@@ -24,6 +26,7 @@ class AdvisoryNote extends Model
         'final_note_file',
         'submitted_at',
         'delivered_at',
+        'document_text',
     ];
 
     protected $casts = [
@@ -46,6 +49,11 @@ class AdvisoryNote extends Model
     public function recommendations()
     {
         return $this->hasMany(AdvisoryRecommendation::class);
+    }
+
+    public function programmeEntry()
+    {
+        return $this->belongsTo(ProgrammeEntry::class);
     }
 
     /**

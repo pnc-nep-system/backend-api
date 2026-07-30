@@ -223,7 +223,7 @@ class TaxonomyController extends Controller
         $this->authorizeAdmin($request);
 
         $category->update([
-            'is_active' => false,
+            'is_active' => $request->boolean('is_active', false),
             'version' => now()->toIso8601String(),
         ]);
 
@@ -241,7 +241,6 @@ class TaxonomyController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["category_id", "code", "label"],
                 properties: [
                     new OA\Property(property: "category_id", type: "integer", example: 1),
                     new OA\Property(property: "code", type: "string", example: "primary_ed"),
@@ -364,7 +363,7 @@ class TaxonomyController extends Controller
         $this->authorizeAdmin($request);
 
         $subcategory->update([
-            'is_active' => false,
+            'is_active' => $request->boolean('is_active', false),
             'version' => now()->toIso8601String(),
         ]);
 
@@ -509,7 +508,7 @@ class TaxonomyController extends Controller
         $this->authorizeAdmin($request);
 
         $item->update([
-            'is_active' => false,
+            'is_active' => $request->boolean('is_active', false),
             'version' => now()->toIso8601String(),
         ]);
 

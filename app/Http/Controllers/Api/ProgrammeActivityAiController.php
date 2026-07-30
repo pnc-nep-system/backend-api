@@ -45,7 +45,7 @@ class ProgrammeActivityAiController extends Controller
         $counterparts    = ['MoEYS national level', 'Provincial Office of Education', 'District Office of Education', 'Teacher Education Institution', 'specific school or cluster', 'other government ministry'];
         $natures         = ['MoU', 'Letter of Understanding', 'official approval letter', 'informal working arrangement'];
         $statuses        = ['active', 'expired', 'under renewal', 'under negotiation'];
-        $budgetBands     = ['Under $50,000', '$50,000–$200,000', '$200,000–$500,000', '$500,000–$2,000,000', 'Above $2,000,000'];
+        $budgetBands     = ['Under $50,000', '$50,000ΓÇô$200,000', '$200,000ΓÇô$500,000', '$500,000ΓÇô$2,000,000', 'Above $2,000,000'];
 
         $prompt = <<<PROMPT
 You are an expert in the National Education Policy (NEP) for Cambodia. Analyse the programme description and return a single JSON object with 5 keys: "identity", "activities", "geography", "agreements", "keywords".
@@ -83,7 +83,7 @@ Return ONLY this JSON structure, no explanation:
     "end_year": null,
     "is_ongoing": true,
     "fte_staff": 12,
-    "budget_band": "\$200,000–\$500,000",
+    "budget_band": "\$200,000ΓÇô\$500,000",
     "direct_beneficiaries": 500,
     "indirect_beneficiaries": 2000
   },
@@ -111,10 +111,10 @@ Return ONLY this JSON structure, no explanation:
 }
 
 Rules:
-- identity: extract programme name, years, staff count, budget band (exact value from list), beneficiary numbers — use null for any field not mentioned
+- identity: extract programme name, years, staff count, budget band (exact value from list), beneficiary numbers ΓÇö use null for any field not mentioned
 - activities.codes: max 8 matching taxonomy codes
 - geography.province_ids: only IDs from the provinces list above, only if clearly mentioned
-- agreements: extract ALL government partnerships/agreements mentioned; use exact counterpart_agency/nature/status values from the lists above; institution_name is the specific name of the agency/department — use empty string if not specified; if no agreements mentioned return []
+- agreements: extract ALL government partnerships/agreements mentioned; use exact counterpart_agency/nature/status values from the lists above; institution_name is the specific name of the agency/department ΓÇö use empty string if not specified; if no agreements mentioned return []
 - keywords: 3-5 short descriptive keywords/phrases from the description
 - If a section has no relevant data, return empty array/object for it
 
@@ -235,7 +235,7 @@ Based on the following programme description, return a JSON object with:
 - "codes": array of matching activity codes (max 8)
 - "suggestions": object keyed by code, each with:
   - "education_levels": array of education level IDs (integers) that apply
-  - "inclusion": object with "hasInclusion" (boolean) and "dimensions" (array of {"group": string, "type": "A" or "B"}) — only include if the description clearly mentions a specific target group
+  - "inclusion": object with "hasInclusion" (boolean) and "dimensions" (array of {"group": string, "type": "A" or "B"}) ΓÇö only include if the description clearly mentions a specific target group
 
 Return ONLY valid JSON, no explanation. Example:
 {"codes":["B1.1.01","B2.3.02"],"suggestions":{"B1.1.01":{"education_levels":[2,3],"inclusion":{"hasInclusion":true,"dimensions":[{"group":"Gender","type":"B"}]}},"B2.3.02":{"education_levels":[1],"inclusion":{"hasInclusion":false,"dimensions":[]}}}}

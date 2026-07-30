@@ -199,8 +199,8 @@ class UserManagementController extends Controller
             ])],
         ]);
 
-        $defaultPassword = 'nep@nep!#$';
-        $loginUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/login';
+        $defaultPassword = Str::password(12);
+        $loginUrl = config('app.frontend_url', rtrim($request->getSchemeAndHttpHost(), '/')) . '/login';
 
         try {
             $user = User::create([

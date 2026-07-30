@@ -9,6 +9,8 @@ use App\Models\EntryKeyword;
 use App\Models\ProgrammeActivity;
 use App\Models\ProgrammeActivityLevel;
 use App\Models\ProgrammeLocation;
+use App\Models\User;
+use App\Notifications\ProgrammeEntryCreatedForOrg;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -102,6 +104,13 @@ class AdviserProgrammeEntryController extends Controller
 
             return $entry;
         });
+
+        // Notify all active member_org users of the target organisation
+        User::where('organisation_id', $entry->organisation_id)
+            ->where('role', 'member_org')
+            ->where('status', 'active')
+            ->get()
+            ->each(fn(User $user) => $user->notify(new ProgrammeEntryCreatedForOrg($entry)));
 
         return response()->json([
             'message' => 'Programme entry draft created from AI analysis.',

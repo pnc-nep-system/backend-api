@@ -17,7 +17,7 @@ class StoreProgrammeActivityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'activities' => ['present', 'array'],
+            'activities' => ['nullable', 'array'],
             'activities.*.activity_item_id' => [
                 'required',
                 'integer',
@@ -26,9 +26,8 @@ class StoreProgrammeActivityRequest extends FormRequest
             'activities.*.is_primary' => ['sometimes', 'boolean'],
             'activities.*.inclusion_group' => ['nullable', 'string', 'max:255'],
             'activities.*.inclusion_type' => ['nullable', 'string', 'max:255'],
-            'activities.*.source' => ['sometimes', Rule::in(['ai_confirmed', 'ai_modified', 'human_entered'])],
             'activities.*.other_text' => ['nullable', 'string', 'max:1000'],
-            'activities.*.education_level_ids' => ['required', 'array', 'min:1'],
+            'activities.*.education_level_ids' => ['sometimes', 'array'],
             'activities.*.education_level_ids.*' => [
                 'integer',
                 Rule::exists('education_levels', 'id'),

@@ -8,10 +8,14 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class AdviserSubmissionAssigned extends Notification implements ShouldBroadcastNow
+class AdviceDelivered extends Notification implements ShouldBroadcastNow
 {
     private ?int $notifiableId = null;
-    public function __construct(public readonly AdvisoryNote $submission) {}
+
+    public function __construct(
+        public readonly AdvisoryNote $submission,
+        public readonly string $coordinatorName
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -26,24 +30,28 @@ class AdviserSubmissionAssigned extends Notification implements ShouldBroadcastN
 
     public function broadcastAs(): string
     {
-        return 'adviser.assigned';
+        return 'advice.delivered';
     }
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage($this->toArray($notifiable));
+        return new BroadcastMessage($this->payload());
     }
 
     public function toArray(object $notifiable): array
     {
+        return $this->payload();
+    }
+
+    private function payload(): array
+    {
         return [
             'notification_id'    => $this->id,
-            'type'               => 'adviser_submission_assigned',
-            'title'              => 'Adviser submission assigned',
+            'type'               => 'advice_delivered',
+            'title'              => 'Coordination advice delivered',
             'advisory_note_id'   => $this->submission->id,
-            'submitting_party'   => $this->submission->submitting_party,
-            'document_name'      => $this->submission->document_name,
-            'message'            => "You have been assigned to review \"{$this->submission->document_name}\" from {$this->submission->submitting_party}.",
+            'programme_entry_id' => $this->submission->programme_entry_id,
+            'message'            => "\"{$this->submission->document_name}\" has been advised by {$this->coordinatorName}.",
         ];
     }
 }
