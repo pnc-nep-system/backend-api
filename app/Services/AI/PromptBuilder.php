@@ -99,16 +99,28 @@ SYSTEM;
 
     private function buildDocumentSection(string $documentText): string
     {
-        $truncated = mb_substr($documentText, 0, 6000);
+        $truncated = mb_substr($documentText, 0, 5000);
         return "SUBMITTED DOCUMENT CONTENT\n" . $truncated;
     }
 
     private function buildTaxonomyReferenceSection(array $programmeProfile): string
     {
-        // Only include taxonomy items relevant to the profile — not the entire tree
         $itemIds        = $programmeProfile['activities']['item_ids']        ?? [];
         $subcategoryIds = $programmeProfile['activities']['subcategory_ids'] ?? [];
         $categoryIds    = $programmeProfile['activities']['category_ids']    ?? [];
+
+        $totalCategories = ActivityCategory::count();
+
+        // Skip taxonomy dump when all categories are passed (non-member fallback) —
+        // the full tree is too large and the AI has the document text to reason from.
+        if (count($categoryIds) >= $totalCategories) {
+            $educationLevels = EducationLevel::orderBy('id')->pluck('level_name');
+            $section = "TAXONOMY REFERENCE\n(Full taxonomy available — infer activities from document content above.)\n";
+            if ($educationLevels->isNotEmpty()) {
+                $section .= "EDUCATION LEVELS: " . $educationLevels->implode(', ') . "\n";
+            }
+            return $section;
+        }
 
         $categories = ActivityCategory::with(['subcategories' => function ($q) use ($itemIds, $subcategoryIds, $categoryIds) {
             if (!empty($categoryIds)) $q->whereIn('category_id', $categoryIds);
@@ -142,12 +154,19 @@ SYSTEM;
         $section = "EXTRACTED PROGRAMME PROFILE\n";
 
         $activities = $resolved['activities'];
-        $allActivityNames = array_unique(array_merge(
-            $activities['categories']    ?? [],
-            $activities['subcategories'] ?? [],
-            $activities['items']         ?? []
-        ));
-        $section .= "Activities: " . (empty($allActivityNames) ? '(none recorded)' : implode(', ', $allActivityNames)) . "\n";
+        $hasSpecificActivities = !empty($rawProfile['activities']['item_ids'])
+            || !empty($rawProfile['activities']['subcategory_ids']);
+
+        if ($hasSpecificActivities) {
+            $allActivityNames = array_unique(array_merge(
+                $activities['categories']    ?? [],
+                $activities['subcategories'] ?? [],
+                $activities['items']         ?? []
+            ));
+            $section .= "Activities: " . implode(', ', $allActivityNames) . "\n";
+        } else {
+            $section .= "Activities: (infer from document content above)\n";
+        }
 
         if (!empty($activities['education_levels'])) {
             $section .= "Education levels: " . implode(', ', $activities['education_levels']) . "\n";
@@ -177,6 +196,9 @@ SYSTEM;
                    "For section_d, note that the analysis is limited by the absence of comparable map data.";
         }
 
+        // Cap entries sent to AI to keep prompt within token limits
+        $entries = array_slice($entries, 0, 12);
+
         $section = "OVERLAPPING MAP ENTRIES (" . count($entries) . " found)\n";
         $section .= "These entries were matched because they share geography or activities with the submitted programme.\n\n";
 
@@ -193,14 +215,17 @@ SYSTEM;
                 $parts = array_filter([$prov, $dist]);
                 if ($parts) $locations[] = implode(' > ', $parts);
             }
-            $section .= "  Geography: " . (empty($locations) ? '(not recorded)' : implode('; ', array_unique($locations))) . "\n";
+            // Cap locations and activities per entry to limit token usage
+            $locations = array_slice(array_unique($locations), 0, 5);
+            $section .= "  Geography: " . (empty($locations) ? '(not recorded)' : implode('; ', $locations)) . "\n";
 
             $activityNames = [];
             foreach ($entry['activities'] ?? [] as $act) {
                 $label = $act['name'] ?? null;
                 if ($label) $activityNames[] = $label;
             }
-            $section .= "  Activities: " . (empty($activityNames) ? '(not recorded)' : implode(', ', array_unique($activityNames))) . "\n";
+            $activityNames = array_slice(array_unique($activityNames), 0, 8);
+            $section .= "  Activities: " . (empty($activityNames) ? '(not recorded)' : implode(', ', $activityNames)) . "\n";
             $section .= "\n";
         }
 

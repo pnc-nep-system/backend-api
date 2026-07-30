@@ -16,6 +16,7 @@ class AdvisoryNote extends Model
         'programme_entry_id',
         'submitting_party',
         'document_name',
+        'document_file',
         'analysis_scope',
         'analysis_scope_detail',
         'status',

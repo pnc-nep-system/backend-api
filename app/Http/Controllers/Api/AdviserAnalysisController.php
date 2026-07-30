@@ -8,11 +8,11 @@ use App\Models\Province;
 use App\Services\Adviser\MapOverlapMatcher;
 use App\Services\AI\GroqService;
 use App\Services\AI\PromptBuilder;
-use App\Services\Adviser\ProfileExtractor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Smalot\PdfParser\Parser as PdfParser;
 
 class AdviserAnalysisController extends Controller
@@ -21,8 +21,7 @@ class AdviserAnalysisController extends Controller
         int $id,
         Request $request,
         MapOverlapMatcher $matcher,
-        PromptBuilder $promptBuilder,
-        ProfileExtractor $extractor
+        PromptBuilder $promptBuilder
     ): JsonResponse {
         $submission = AdvisoryNote::findOrFail($id);
 
@@ -35,7 +34,7 @@ class AdviserAnalysisController extends Controller
         $documentText  = $documentText ?: null;
         $analysisScope = $submission->analysis_scope ?? 'full map';
 
-        $profile = $this->resolveProfile($request, $submission, $extractor, $documentText);
+        $profile = $this->resolveProfile($request, $submission, $documentText);
 
         $overlappingEntries = $matcher
             ->match($profile, $analysisScope)
@@ -122,13 +121,13 @@ class AdviserAnalysisController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Advisory note generated successfully.',
-                'data'    => ['map_overlap_entries' => $mapOverlapEntries],
+                'message' => 'Map overlaps found but AI generation failed — please retry.',
+                'data'    => ['map_overlap_entries' => $mapOverlapEntries, 'ai_failed' => true],
             ]);
         }
     }
 
-    private function resolveProfile(Request $request, AdvisoryNote $submission, ProfileExtractor $extractor, ?string $documentText): array
+    private function resolveProfile(Request $request, AdvisoryNote $submission, ?string $documentText): array
     {
         $raw = $request->input('programme_profile', []);
 
@@ -142,23 +141,12 @@ class AdviserAnalysisController extends Controller
             || !empty($profile['activities']['category_ids'])
             || !empty($profile['geography']['province_ids']);
 
-        // Non-member with no signals: extract from stored document_text
-        if (!$hasSignals && !$submission->programme_entry_id && $documentText) {
-            $extracted = $extractor->extract($documentText);
-            $profile['activities'] = $extracted['activities'];
-            $profile['geography']  = $extracted['geography'];
-
-            // If extraction returned nothing, fall back to all categories + all provinces
-            // so the matcher finds candidates and the AI reasons from the document text
-            $hasExtracted = !empty($extracted['activities']['item_ids'])
-                || !empty($extracted['activities']['category_ids'])
-                || !empty($extracted['geography']['province_ids']);
-
-            if (!$hasExtracted) {
-                $profile['activities']['category_ids'] = \App\Models\ActivityCategory::pluck('id')->toArray();
-                $profile['geography']['province_ids']  = \App\Models\Province::pluck('id')->toArray();
-            }
-
+        // Non-member with no signals: use all categories + all provinces so the matcher
+        // finds candidates and the AI reasons directly from the document text.
+        // Skipping ProfileExtractor avoids a second sequential AI call in the same request.
+        if (!$hasSignals && !$submission->programme_entry_id) {
+            $profile['activities']['category_ids'] = \App\Models\ActivityCategory::pluck('id')->toArray();
+            $profile['geography']['province_ids']  = \App\Models\Province::pluck('id')->toArray();
             return $profile;
         }
 
@@ -199,6 +187,43 @@ class AdviserAnalysisController extends Controller
             $code   = $e->getCode();
             $status = in_array($code, [429, 500, 503]) ? $code : 503;
             return response()->json(['message' => $e->getMessage()], $status);
+        }
+    }
+
+    public function parseDocument(int $id): JsonResponse
+    {
+        $submission = AdvisoryNote::findOrFail($id);
+
+        // Return cached text if already parsed
+        if (!empty($submission->document_text)) {
+            return response()->json(['text' => $submission->document_text]);
+        }
+
+        if (!$submission->document_file) {
+            return response()->json(['message' => 'No document file stored for this submission.'], 404);
+        }
+
+        if (!Storage::disk('public')->exists($submission->document_file)) {
+            return response()->json(['message' => 'Document file not found on storage.'], 404);
+        }
+
+        $path = Storage::disk('public')->path($submission->document_file);
+
+        try {
+            $parser = new PdfParser();
+            $text   = trim($parser->parseFile($path)->getText());
+
+            if (empty($text)) {
+                return response()->json(['message' => 'Could not extract text from the stored PDF.'], 422);
+            }
+
+            // Cache parsed text on the record so we never re-parse
+            $submission->update(['document_text' => $text]);
+
+            return response()->json(['text' => $text]);
+        } catch (\Exception $e) {
+            Log::error('Stored PDF parsing failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to parse stored document.'], 422);
         }
     }
 

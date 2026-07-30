@@ -155,6 +155,13 @@ class AdviserSubmissionController extends Controller
             $validated['coordinator_id'] = $user->id;
         }
 
+        // Store uploaded document file if provided
+        if ($request->hasFile('document')) {
+            $validated['document_file'] = $request->file('document')->store('adviser-documents', 'public');
+        }
+
+        unset($validated['document']);
+
         $submission = AdvisoryNote::create([
             ...$validated,
             'submitted_at' => now(),

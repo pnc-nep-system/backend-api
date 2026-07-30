@@ -24,6 +24,7 @@ class StoreAdviserSubmissionRequest extends FormRequest
             'coordinator_id'        => ['nullable', 'integer', 'exists:users,id'],
             'programme_entry_id'    => ['nullable', 'integer', 'exists:programme_entries,id'],
             'status'                => ['nullable', 'string', 'max:255'],
+            'document'              => ['nullable', 'file', 'mimes:pdf,txt', 'max:20480'],
         ];
     }
 
