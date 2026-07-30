@@ -11,6 +11,10 @@ use App\Models\Province;
 
 class PromptBuilder
 {
+    // Groq free tier: 12,000 TPM total (input + output).
+    // With max_tokens=2048 for output, prompt budget = ~9,500 tokens = ~38,000 chars.
+    private const MAX_PROMPT_CHARS = 28000; // conservative: ~7,000 tokens, leaves ~5,000 for output
+
     public function build(
         array $programmeProfile,
         array $overlappingEntries,
@@ -22,23 +26,44 @@ class PromptBuilder
     ): string {
         $resolvedProfile = $this->resolveProfileIds($programmeProfile);
 
+        $fixed  = $this->buildSystemInstruction();
+        $fixed .= "\n\n---\n\n";
+        $fixed .= $this->buildContextSection($analysisScope, $analysisScopeDetail, $programmeName, $submittingParty);
+        $fixed .= "\n\n---\n\n";
+        $fixed .= $this->buildTaxonomyReferenceSection($programmeProfile);
+        $fixed .= "\n\n---\n\n";
+        $fixed .= $this->buildProgrammeProfileSection($resolvedProfile, $programmeProfile);
+        $fixed .= "\n\n---\n\n";
+        $fixed .= $this->buildOutputFormatInstruction();
+
+        $outputFormat = $this->buildOutputFormatInstruction();
+        $budgetForEntries = self::MAX_PROMPT_CHARS - strlen($fixed);
+
+        // Fit as many overlap entries as possible within the remaining budget
+        $entriesSection = $this->buildOverlappingEntriesSection($overlappingEntries, $budgetForEntries);
+
+        // Budget for document text = whatever is left after entries
+        $budgetForDoc = self::MAX_PROMPT_CHARS - strlen($fixed) - strlen($entriesSection);
+        $docSection = '';
+        if ($documentText && $budgetForDoc > 200) {
+            $docSection = $this->buildDocumentSection($documentText, max(200, $budgetForDoc - 50));
+        }
+
         $prompt  = $this->buildSystemInstruction();
         $prompt .= "\n\n---\n\n";
         $prompt .= $this->buildContextSection($analysisScope, $analysisScopeDetail, $programmeName, $submittingParty);
         $prompt .= "\n\n---\n\n";
-
-        if ($documentText) {
-            $prompt .= $this->buildDocumentSection($documentText);
+        if ($docSection) {
+            $prompt .= $docSection;
             $prompt .= "\n\n---\n\n";
         }
-
         $prompt .= $this->buildTaxonomyReferenceSection($programmeProfile);
         $prompt .= "\n\n---\n\n";
         $prompt .= $this->buildProgrammeProfileSection($resolvedProfile, $programmeProfile);
         $prompt .= "\n\n---\n\n";
-        $prompt .= $this->buildOverlappingEntriesSection($overlappingEntries);
+        $prompt .= $entriesSection;
         $prompt .= "\n\n---\n\n";
-        $prompt .= $this->buildOutputFormatInstruction();
+        $prompt .= $outputFormat;
 
         return $prompt;
     }
@@ -97,9 +122,9 @@ SYSTEM;
         return $context;
     }
 
-    private function buildDocumentSection(string $documentText): string
+    private function buildDocumentSection(string $documentText, int $maxChars = 5000): string
     {
-        $truncated = mb_substr($documentText, 0, 5000);
+        $truncated = mb_substr($documentText, 0, $maxChars);
         return "SUBMITTED DOCUMENT CONTENT\n" . $truncated;
     }
 
@@ -182,12 +207,18 @@ SYSTEM;
 
         $geo = $resolved['geography'];
         $allLocationNames = array_unique(array_merge($geo['provinces'] ?? [], $geo['districts'] ?? []));
-        $section .= "Locations: " . (empty($allLocationNames) ? '(none recorded)' : implode(', ', $allLocationNames)) . "\n";
+        $hasSpecificGeo = !empty($rawProfile['geography']['district_ids']) || (
+            !empty($rawProfile['geography']['province_ids']) &&
+            count($rawProfile['geography']['province_ids']) < Province::count()
+        );
+        $section .= "Locations: " . ($hasSpecificGeo && !empty($allLocationNames)
+            ? implode(', ', $allLocationNames)
+            : '(infer from document content above)') . "\n";
 
         return $section;
     }
 
-    private function buildOverlappingEntriesSection(array $entries): string
+    private function buildOverlappingEntriesSection(array $entries, int $charBudget = 8000): string
     {
         if (empty($entries)) {
             return "OVERLAPPING MAP ENTRIES\nNone found in the current map for this profile.\n" .
@@ -196,17 +227,15 @@ SYSTEM;
                    "For section_d, note that the analysis is limited by the absence of comparable map data.";
         }
 
-        // Cap entries sent to AI to keep prompt within token limits
-        $entries = array_slice($entries, 0, 12);
+        $header  = "OVERLAPPING MAP ENTRIES (" . count($entries) . " found)\n";
+        $header .= "These entries were matched because they share geography or activities with the submitted programme.\n\n";
+        $used    = strlen($header);
+        $section = $header;
 
-        $section = "OVERLAPPING MAP ENTRIES (" . count($entries) . " found)\n";
-        $section .= "These entries were matched because they share geography or activities with the submitted programme.\n\n";
-
-        foreach ($entries as $i => $entry) {
+        foreach (array_slice($entries, 0, 15) as $i => $entry) {
             $n   = $i + 1;
             $org = $entry['organisation'] ?? 'N/A';
             $org = is_array($org) ? ($org['name'] ?? 'N/A') : $org;
-            $section .= "#{$n} {$org} — " . ($entry['programme_name'] ?? 'N/A') . "\n";
 
             $locations = [];
             foreach ($entry['locations'] ?? [] as $loc) {
@@ -215,18 +244,21 @@ SYSTEM;
                 $parts = array_filter([$prov, $dist]);
                 if ($parts) $locations[] = implode(' > ', $parts);
             }
-            // Cap locations and activities per entry to limit token usage
-            $locations = array_slice(array_unique($locations), 0, 5);
-            $section .= "  Geography: " . (empty($locations) ? '(not recorded)' : implode('; ', $locations)) . "\n";
+            $locations = array_slice(array_unique($locations), 0, 4);
 
             $activityNames = [];
             foreach ($entry['activities'] ?? [] as $act) {
-                $label = $act['name'] ?? null;
-                if ($label) $activityNames[] = $label;
+                if ($act['name'] ?? null) $activityNames[] = $act['name'];
             }
-            $activityNames = array_slice(array_unique($activityNames), 0, 8);
-            $section .= "  Activities: " . (empty($activityNames) ? '(not recorded)' : implode(', ', $activityNames)) . "\n";
-            $section .= "\n";
+            $activityNames = array_slice(array_unique($activityNames), 0, 6);
+
+            $block  = "#{$n} {$org} — " . ($entry['programme_name'] ?? 'N/A') . "\n";
+            $block .= "  Geography: " . (empty($locations) ? '(not recorded)' : implode('; ', $locations)) . "\n";
+            $block .= "  Activities: " . (empty($activityNames) ? '(not recorded)' : implode(', ', $activityNames)) . "\n\n";
+
+            if ($used + strlen($block) > $charBudget) break;
+            $section .= $block;
+            $used    += strlen($block);
         }
 
         return $section;

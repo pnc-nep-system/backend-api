@@ -34,7 +34,7 @@ class GroqService
             'model' => $this->model,
             'messages' => [['role' => 'user', 'content' => $prompt]],
             'temperature' => 0.7,
-            'max_tokens' => 8192,
+            'max_tokens' => 2048,
         ], $options);
 
         $attempt = 0;
