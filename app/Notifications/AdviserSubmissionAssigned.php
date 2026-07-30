@@ -31,17 +31,13 @@ class AdviserSubmissionAssigned extends Notification implements ShouldBroadcastN
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        return new BroadcastMessage([
-            'advisory_note_id' => $this->submission->id,
-            'document_name'    => $this->submission->document_name,
-            'submitting_party' => $this->submission->submitting_party,
-            'message'          => "You have been assigned to review \"{$this->submission->document_name}\" from {$this->submission->submitting_party}.",
-        ]);
+        return new BroadcastMessage($this->toArray($notifiable));
     }
 
     public function toArray(object $notifiable): array
     {
         return [
+            'notification_id'    => $this->id,
             'type'               => 'adviser_submission_assigned',
             'title'              => 'Adviser submission assigned',
             'advisory_note_id'   => $this->submission->id,

@@ -46,6 +46,7 @@ class AdviceDelivered extends Notification implements ShouldBroadcastNow
     private function payload(): array
     {
         return [
+            'notification_id'    => $this->id,
             'type'               => 'advice_delivered',
             'title'              => 'Coordination advice delivered',
             'advisory_note_id'   => $this->submission->id,

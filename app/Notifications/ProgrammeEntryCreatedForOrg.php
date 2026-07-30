@@ -40,6 +40,7 @@ class ProgrammeEntryCreatedForOrg extends Notification implements ShouldBroadcas
     public function toArray(object $notifiable): array
     {
         return [
+            'notification_id'    => $this->id,
             'type'               => 'programme_draft_created',
             'title'              => 'New programme entry created',
             'programme_entry_id' => $this->entry->id,
