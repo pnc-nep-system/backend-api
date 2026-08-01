@@ -499,6 +499,7 @@ class ProgrammeEntryController extends Controller
         $query = ProgrammeEntry::with([
             'organisation:id,name',
             'locations.province:id,province_name',
+            'locations.district:id,name',
             'activities.activityItem:id,code,label',
         ])->select(
             'id','programme_name','organisation_id','budget_band_id',
