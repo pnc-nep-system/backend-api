@@ -52,6 +52,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::patch('/change-password', [AuthController::class, 'changePassword']);
 
+    // Session/device management — view and revoke individual logged-in devices
+    Route::get('/sessions', function (Request $request) {
+        return $request->user()->tokens()
+            ->select('id', 'name', 'last_used_at', 'created_at')
+            ->get();
+    });
+
+    Route::delete('/sessions/{tokenId}', function (Request $request, $tokenId) {
+        $deleted = $request->user()->tokens()->where('id', $tokenId)->delete();
+
+        if (! $deleted) {
+            return response()->json(['message' => 'Session not found.'], 404);
+        }
+
+        return response()->json(['message' => 'Session revoked.']);
+    });
+
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);

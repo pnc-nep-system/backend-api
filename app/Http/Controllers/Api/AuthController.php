@@ -113,9 +113,13 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $user->tokens()->where('name', 'api-token')->delete();
+        // Give each device/session its own uniquely-named token instead of
+        // reusing 'api-token' for everyone. Do NOT delete existing tokens here —
+        // that's what was logging out other devices.
+        $deviceName = $request->header('X-Device-Name') ?? $request->userAgent() ?? 'unknown-device';
+        $tokenName = $deviceName . '-' . now()->timestamp;
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken($tokenName)->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful.',
