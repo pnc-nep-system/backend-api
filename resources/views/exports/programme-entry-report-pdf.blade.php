@@ -138,8 +138,8 @@
                     <div class="sub-logo">NGO Education Partnership — Self-Service Programme Report</div>
                 </td>
                 <td style="text-align: right;">
-                    <span class="badge {{ $entry->is_verified ? 'badge-verified' : 'badge-unverified' }}">
-                        {{ $entry->is_verified ? 'Verified' : 'Unverified' }}
+                    <span class="badge {{ $entry->is_unverified ? 'badge-unverified' : 'badge-verified' }}">
+                        {{ $entry->is_unverified ? 'Unverified' : 'Verified' }}
                     </span>
                     <div style="font-size: 9.5px; color: #64748b; margin-top: 4px;">
                         Report Date: {{ now()->format('d M Y, H:i') }}
