@@ -110,14 +110,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/adviser/programme-entries/{programmeEntry}/advisory-note', [AdviserSubmissionController::class, 'showByProgrammeEntry'])
         ->middleware('role:nep_admin,nep_coordinator,member_org');
 
-    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
         Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);
         Route::get('/policy-documents/{policyDocument}/file', [ApiPolicyDocumentController::class, 'getFile']);
+    });
+
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::post('/policy-documents', [ApiPolicyDocumentController::class, 'store']);
         Route::patch('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'update']);
-        Route::delete('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'destroy']);
+    });
 
+    Route::middleware('role:nep_admin')->group(function () {
+        Route::delete('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'destroy']);
+    });
+
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
         Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

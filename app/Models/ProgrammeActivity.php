@@ -15,6 +15,7 @@ class ProgrammeActivity extends Model
         'is_primary',
         'inclusion_group',
         'inclusion_type',
+        'other_text',
         'taxonomy_version',
     ];
 

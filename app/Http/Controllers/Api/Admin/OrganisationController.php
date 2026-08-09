@@ -74,7 +74,15 @@ class OrganisationController extends Controller
         $organisations = Organisation::query()
             ->withCount('users')
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->query('status')))
-            ->when($request->filled('search'), fn($q) => $q->where('name', 'like', '%' . $request->query('search') . '%'))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = '%' . $request->query('search') . '%';
+                $q->where(function ($sub) use ($term) {
+                    $sub->where('name', 'like', $term)
+                        ->orWhere('contact_name', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('acronym', 'like', $term);
+                });
+            })
             ->orderBy('name')
             ->paginate($request->integer('per_page', 16));
 

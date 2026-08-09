@@ -109,6 +109,7 @@ class ProgrammeActivityController extends Controller
                     'is_primary'         => !empty($data['is_primary']),
                     'inclusion_group'    => $data['inclusion_group'] ?? null,
                     'inclusion_type'     => $data['inclusion_type'] ?? null,
+                    'other_text'         => $data['other_text'] ?? null,
                     'taxonomy_version'   => $item->version,
                 ]);
 
