@@ -568,6 +568,31 @@ class ProgrammeEntryController extends Controller
         ]);
     }
 
+    public function exportPdf(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if (!$this->canManage($request, $programmeEntry)) {
+            return response()->json(['message' => 'Forbidden. You do not have permission to access reports for this programme.'], 403);
+        }
+
+        $programmeEntry->load([
+            'organisation',
+            'budgetBand',
+            'activities.activityItem',
+            'locations.province',
+            'locations.district',
+            'governmentAgreements',
+            'keywords',
+        ]);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.programme-entry-report-pdf', [
+            'entry' => $programmeEntry,
+        ]);
+
+        $filename = 'programme-report-' . $programmeEntry->id . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool
     {
         $user = $request->user();

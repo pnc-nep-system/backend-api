@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/programme-entries/my-drafts', [ProgrammeEntryController::class, 'myDrafts']);
     Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
+    Route::get('/programme-entries/{programmeEntry}/pdf', [ProgrammeEntryController::class, 'exportPdf']);
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
 
     Route::get('/organisations/me', [OrganisationProfileController::class, 'show']);
