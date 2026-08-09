@@ -577,7 +577,8 @@ class ProgrammeEntryController extends Controller
         $programmeEntry->load([
             'organisation',
             'budgetBand',
-            'activities.activityItem',
+            'activities.activityItem.subcategory.category',
+            'activities.activityLevels.educationLevel',
             'locations.province',
             'locations.district',
             'governmentAgreements',
@@ -589,6 +590,37 @@ class ProgrammeEntryController extends Controller
         ]);
 
         $filename = 'programme-report-' . $programmeEntry->id . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    public function exportOrganisationProgrammesPdf(Request $request, Organisation $organisation)
+    {
+        $user = $request->user();
+        if ($user->role === 'member_org' && (int)$user->organisation_id !== (int)$organisation->id) {
+            return response()->json(['message' => 'Forbidden. You do not have permission to export programmes for this organisation.'], 403);
+        }
+
+        $programmeEntries = ProgrammeEntry::where('organisation_id', $organisation->id)
+            ->where('is_submitted', true)
+            ->with([
+                'organisation',
+                'budgetBand',
+                'activities.activityItem.subcategory.category',
+                'activities.activityLevels.educationLevel',
+                'locations.province',
+                'locations.district',
+                'governmentAgreements',
+                'keywords',
+            ])
+            ->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.organisation-programmes-report-pdf', [
+            'organisation' => $organisation,
+            'entries' => $programmeEntries,
+        ]);
+
+        $filename = 'organisation-programmes-' . $organisation->id . '-' . now()->format('Y-m-d') . '.pdf';
 
         return $pdf->download($filename);
     }

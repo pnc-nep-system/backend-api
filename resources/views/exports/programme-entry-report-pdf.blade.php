@@ -160,27 +160,33 @@
             <table class="grid">
                 <tr>
                     <td class="label">Implementation Period:</td>
-                    <td class="value">{{ $entry->start_year ?? 'N/A' }} – {{ $entry->end_year ?? 'Ongoing' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Implementation Status:</td>
-                    <td class="value">{{ ucfirst($entry->status ?? 'Active') }}</td>
+                    <td class="value">{{ $entry->start_year ?? 'N/A' }} – {{ $entry->ongoing ? 'Ongoing' : ($entry->end_year ?? 'Ongoing') }}</td>
                 </tr>
                 <tr>
                     <td class="label">Total Annual Budget:</td>
                     <td class="value">
-                        @if($entry->annual_budget_usd)
-                            ${{ number_format($entry->annual_budget_usd) }} USD
-                        @elseif($entry->budget_band)
-                            {{ $entry->budget_band }}
+                        @if($entry->budgetBand)
+                            {{ $entry->budgetBand->band_name ?? $entry->budgetBand }}
                         @else
                             Not specified
                         @endif
                     </td>
                 </tr>
+                @if($entry->fte_staff)
+                <tr>
+                    <td class="label">Staffing (FTE):</td>
+                    <td class="value">{{ $entry->fte_staff }} FTE</td>
+                </tr>
+                @endif
+                @if($entry->direct_beneficiaries || $entry->indirect_beneficiaries)
+                <tr>
+                    <td class="label">Beneficiaries:</td>
+                    <td class="value">Direct: {{ $entry->direct_beneficiaries ?? 0 }} · Indirect: {{ $entry->indirect_beneficiaries ?? 0 }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td class="label">Description / Summary:</td>
-                    <td class="value">{{ $entry->description ?? 'No description provided.' }}</td>
+                    <td class="value">{{ $entry->method ?? $entry->description ?? 'No description provided.' }}</td>
                 </tr>
             </table>
         </div>
@@ -203,20 +209,20 @@
                     @foreach($entry->activities as $act)
                         <tr>
                             <td>
-                                <strong>{{ $act->importance === 'primary' || $act->importance === 'core' ? 'Core' : 'Supporting' }}</strong>
+                                <strong>{{ $act->is_primary ? 'Core' : 'Supporting' }}</strong>
                             </td>
-                            <td>{{ $act->category->name ?? $act->activity_code }}</td>
+                            <td>{{ $act->activityItem->subcategory->category->label ?? $act->activityItem->subcategory->category->code ?? 'N/A' }}</td>
                             <td>
-                                {{ $act->subCategory->name ?? $act->activity_code }}
+                                <strong>{{ $act->activityItem->code ? '[' . $act->activityItem->code . '] ' : '' }}{{ $act->activityItem->label ?? 'N/A' }}</strong>
                                 @if($act->other_text)
                                     <div style="font-size: 9px; color: #475569;">Note: {{ $act->other_text }}</div>
                                 @endif
                             </td>
                             <td>
-                                @if(is_array($act->education_levels))
-                                    {{ implode(', ', $act->education_levels) }}
+                                @if($act->activityLevels && count($act->activityLevels) > 0)
+                                    {{ $act->activityLevels->map(fn($l) => $l->educationLevel->level_name ?? null)->filter()->join(', ') }}
                                 @else
-                                    {{ $act->education_levels ?? '—' }}
+                                    —
                                 @endif
                             </td>
                         </tr>
@@ -234,9 +240,16 @@
         <div class="card">
             @if($entry->locations && count($entry->locations) > 0)
                 <div style="margin-bottom: 6px;">
-                    <strong>Covered Provinces:</strong>
+                    <strong>Covered Locations:</strong>
                     @php
-                        $provinces = $entry->locations->map(fn($loc) => $loc->province_name ?? $loc->name)->unique()->filter()->values();
+                        $provinces = $entry->locations->map(function($loc) {
+                            $prov = $loc->province->province_name ?? $loc->province_name ?? $loc->country;
+                            $dist = $loc->district->name ?? $loc->district->district_name ?? null;
+                            if ($prov && $dist) {
+                                return "$prov ($dist)";
+                            }
+                            return $prov;
+                        })->unique()->filter()->values();
                     @endphp
                     {{ $provinces->join(', ') }}
                 </div>
@@ -253,17 +266,17 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Agreement Name / MoU</th>
-                        <th>Counterpart Level</th>
-                        <th>Signatory Entity</th>
+                        <th>Counterpart Agency / Agreement</th>
+                        <th>Nature / Counterpart Level</th>
+                        <th>Institution / Signatory Entity</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($entry->governmentAgreements as $agr)
                         <tr>
-                            <td>{{ $agr->name ?? $agr->agreement_name ?? '—' }}</td>
-                            <td>{{ $agr->counterpartStatus->name ?? $agr->counterpart_level ?? '—' }}</td>
-                            <td>{{ $agr->signatory_entity ?? '—' }}</td>
+                            <td>{{ $agr->counterpart_agency ?? $agr->counterpart ?? '—' }}</td>
+                            <td>{{ $agr->nature ?? $agr->status ?? '—' }}</td>
+                            <td>{{ $agr->institution_name ?? $agr->institution ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

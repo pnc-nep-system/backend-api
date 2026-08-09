@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
     Route::get('/programme-entries/{programmeEntry}/pdf', [ProgrammeEntryController::class, 'exportPdf']);
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
+    Route::get('/organisations/{organisation}/programme-entries/pdf', [ProgrammeEntryController::class, 'exportOrganisationProgrammesPdf']);
 
     Route::get('/organisations/me', [OrganisationProfileController::class, 'show']);
     Route::patch('/organisations/me', [OrganisationProfileController::class, 'update']);
