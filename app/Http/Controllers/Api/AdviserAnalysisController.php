@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdvisoryNote;
 use App\Models\Province;
 use App\Services\Adviser\MapOverlapMatcher;
-use App\Services\AI\GroqService;
+use App\Services\AI\ClaudeService;
 use App\Services\AI\PromptBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -80,8 +80,8 @@ class AdviserAnalysisController extends Controller
         );
 
         try {
-            $groq       = App::make(GroqService::class);
-            $aiResponse = $groq->generateContent($prompt);
+            $claude     = App::make(ClaudeService::class);
+            $aiResponse = $claude->generateContent($prompt);
 
             $updateData = ['status' => 'analysed'];
             if (!empty($aiResponse['section_a'])) $updateData['section_profile']            = $aiResponse['section_a'];

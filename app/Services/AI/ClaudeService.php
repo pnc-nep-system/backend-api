@@ -30,6 +30,11 @@ class ClaudeService
 
     public function generateContent(string $prompt, array $options = []): array
     {
+        // `response_format` is an OpenAI-compatible option used by the former
+        // Groq integration. Claude is already instructed to return JSON in the
+        // prompt, so do not forward this unsupported field to Anthropic.
+        unset($options['response_format']);
+
         $payload = array_merge([
             'model' => $this->model,
             'messages' => [['role' => 'user', 'content' => $prompt]],
