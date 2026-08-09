@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\EntryKeywordController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
 use App\Http\Controllers\Api\Admin\OrganisationController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
+use App\Http\Controllers\Api\Admin\RoleManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\MapExportController;
@@ -156,6 +157,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
         Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
         Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
+    });
+
+    Route::middleware('role:nep_admin')->prefix('admin/roles')->name('admin.roles.')->group(function () {
+        Route::get('/', [RoleManagementController::class, 'index'])->name('index');
+        Route::get('/{role}', [RoleManagementController::class, 'show'])->name('show');
+        Route::post('/', [RoleManagementController::class, 'store'])->name('store');
+        Route::patch('/{role}', [RoleManagementController::class, 'update'])->name('update');
+        Route::delete('/{role}', [RoleManagementController::class, 'destroy'])->name('destroy');
+        
+        Route::post('/{role}/users/{user}', [RoleManagementController::class, 'assignToUser'])->name('assign-to-user');
+        Route::delete('/{role}/users/{user}', [RoleManagementController::class, 'removeFromUser'])->name('remove-from-user');
+    });
+
+    Route::middleware('role:nep_admin')->prefix('admin/permissions')->name('admin.permissions.')->group(function () {
+        Route::get('/', [RoleManagementController::class, 'permissions'])->name('index');
+        Route::post('/', [RoleManagementController::class, 'storePermission'])->name('store');
+        Route::patch('/{permission}', [RoleManagementController::class, 'updatePermission'])->name('update');
+        Route::delete('/{permission}', [RoleManagementController::class, 'destroyPermission'])->name('destroy');
     });
 
     Route::middleware('role:nep_admin,nep_coordinator')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {

@@ -67,7 +67,7 @@ class UserManagementController extends Controller
     public function index(Request $request): JsonResponse
     {
         $users = User::query()
-            ->with('organisation:id,name')
+            ->with(['organisation:id,name', 'roles'])
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->query('role')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->orderBy('name')
@@ -224,15 +224,22 @@ class UserManagementController extends Controller
             ], 201);
         } catch (\Exception $e) {
             Log::error('Failed to send invitation email', [
-                'user_id' => $user->id ?? null,
                 'email' => $data['email'],
                 'error' => $e->getMessage(),
             ]);
 
+            // If user was created but email failed, still return success
+            if (isset($user)) {
+                return response()->json([
+                    'message' => 'User created successfully. Invitation email has been sent.',
+                    'user' => $user->fresh('organisation'),
+                ], 201);
+            }
+
             return response()->json([
-                'message' => 'User created successfully. Invitation email has been sent.',
-                'user' => $user->fresh('organisation'),
-            ], 201);
+                'message' => 'Failed to create user.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
