@@ -5312,6 +5312,637 @@
                     }
                 ]
             }
+        },
+        "/admin/roles": {
+            "get": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "List all roles",
+                "description": "Returns all roles with user counts and permissions. Only accessible to nep_admin.",
+                "operationId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+                "responses": {
+                    "200": {
+                        "description": "List of roles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Role"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Create a new role",
+                "description": "Creates a new custom role with specified permissions. Only accessible to nep_admin.",
+                "operationId": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "display_name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "custom_role"
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Custom Role"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "A custom role for specific use case",
+                                        "nullable": true
+                                    },
+                                    "is_system": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [1, 2, 3]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Role created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/roles/{role}": {
+            "get": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Get role details",
+                "description": "Returns detailed information about a specific role including its users and permissions. Only accessible to nep_admin.",
+                "operationId": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Update a role",
+                "description": "Updates role details and permissions. System roles cannot be modified. Only accessible to nep_admin.",
+                "operationId": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Updated Role Name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [1, 2, 3]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin or system role"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Delete a role",
+                "description": "Deletes a custom role. System roles cannot be deleted. Only accessible to nep_admin.",
+                "operationId": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Role deleted successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin or system role"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/roles/{role}/users/{user}": {
+            "post": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Assign role to user",
+                "description": "Assigns a role to a user. Only accessible to nep_admin.",
+                "operationId": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role assigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Role assigned to user successfully."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Role or user not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Role Management"
+                ],
+                "summary": "Remove role from user",
+                "description": "Removes a role from a user. Only accessible to nep_admin.",
+                "operationId": "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role removed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Role removed from user successfully."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Role or user not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/permissions": {
+            "get": {
+                "tags": [
+                    "Admin - Permission Management"
+                ],
+                "summary": "List all permissions",
+                "description": "Returns all permissions grouped by group. Only accessible to nep_admin.",
+                "operationId": "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
+                "responses": {
+                    "200": {
+                        "description": "List of permissions grouped by group",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/Permission"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Permission Management"
+                ],
+                "summary": "Create a new permission",
+                "description": "Creates a new permission. Only accessible to nep_admin.",
+                "operationId": "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "display_name",
+                                    "group"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "custom.permission"
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Custom Permission"
+                                    },
+                                    "group": {
+                                        "type": "string",
+                                        "example": "Custom"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Permission created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Permission"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/permissions/{permission}": {
+            "patch": {
+                "tags": [
+                    "Admin - Permission Management"
+                ],
+                "summary": "Update a permission",
+                "description": "Updates permission details. Only accessible to nep_admin.",
+                "operationId": "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5",
+                "parameters": [
+                    {
+                        "name": "permission",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string"
+                                    },
+                                    "group": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Permission updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Permission"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Permission not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Permission Management"
+                ],
+                "summary": "Delete a permission",
+                "description": "Deletes a permission. Only accessible to nep_admin.",
+                "operationId": "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+                "parameters": [
+                    {
+                        "name": "permission",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Permission deleted successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "Permission not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -5418,6 +6049,74 @@
                     "updated_at": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Role"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Role": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "nep_admin"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "NEP Administrator"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Full system access with all permissions",
+                        "nullable": true
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "users_count": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Permission"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Permission": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "users.view"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "View Users"
+                    },
+                    "group": {
+                        "type": "string",
+                        "example": "Users"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "View user accounts",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -6184,6 +6883,14 @@
         {
             "name": "Admin - User Management",
             "description": "Admin - User Management"
+        },
+        {
+            "name": "Admin - Role Management",
+            "description": "Admin - Role Management"
+        },
+        {
+            "name": "Admin - Permission Management",
+            "description": "Admin - Permission Management"
         },
         {
             "name": "Authentication",
