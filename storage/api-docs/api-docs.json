@@ -716,7 +716,7 @@
                         "description": "Role not found"
                     },
                     "422": {
-                        "description": "Validation failed or system role"
+                        "description": "Validation failed, or modifying a system role identity (system roles may only have their permissions updated)"
                     }
                 },
                 "security": [
@@ -1134,6 +1134,14 @@
                                             "nep_coordinator",
                                             "member_org"
                                         ]
+                                    },
+                                    "permissions": {
+                                        "description": "Permission IDs to assign directly to this user. Omit to keep role-derived permissions.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -1171,6 +1179,160 @@
                     },
                     "403": {
                         "description": "Forbidden — not a nep_admin"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users/{user}": {
+            "get": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Show user account",
+                "description": "Returns a user with organisation, roles and role permissions.",
+                "operationId": "83fee950dcaa2e42fd20859c37b945ce",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Admin - User Management"
+                ],
+                "summary": "Edit a user account",
+                "description": "Update user account fields. Leave password blank to keep the current password.",
+                "operationId": "3e6aefdfa93166efe9a2b859cd4e937b",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "organisation_id": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "description": "Leave blank to keep current password",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "nep_admin",
+                                            "nep_coordinator",
+                                            "member_org"
+                                        ]
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "active",
+                                            "inactive"
+                                        ]
+                                    },
+                                    "permissions": {
+                                        "description": "Permission IDs. An empty array clears all individually assigned permissions (falls back to role defaults).",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Account updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Account updated."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden — not a nep_admin"
+                    },
+                    "404": {
+                        "description": "User not found"
                     },
                     "422": {
                         "description": "Validation error"
@@ -1254,108 +1416,6 @@
                     },
                     "422": {
                         "description": "Validation error or email already exists"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/admin/users/{user}": {
-            "patch": {
-                "tags": [
-                    "Admin - User Management"
-                ],
-                "summary": "Edit a user account",
-                "description": "Update user account fields. Leave password blank to keep the current password.",
-                "operationId": "3e6aefdfa93166efe9a2b859cd4e937b",
-                "parameters": [
-                    {
-                        "name": "user",
-                        "in": "path",
-                        "description": "User ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "organisation_id": {
-                                        "type": "integer",
-                                        "nullable": true
-                                    },
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "email": {
-                                        "type": "string",
-                                        "format": "email"
-                                    },
-                                    "password": {
-                                        "description": "Leave blank to keep current password",
-                                        "type": "string",
-                                        "nullable": true
-                                    },
-                                    "role": {
-                                        "type": "string",
-                                        "enum": [
-                                            "nep_admin",
-                                            "nep_coordinator",
-                                            "member_org"
-                                        ]
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "inactive"
-                                        ]
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Account updated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Account updated."
-                                        },
-                                        "user": {
-                                            "$ref": "#/components/schemas/User"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden — not a nep_admin"
-                    },
-                    "404": {
-                        "description": "User not found"
-                    },
-                    "422": {
-                        "description": "Validation error"
                     }
                 },
                 "security": [
@@ -6129,6 +6189,14 @@
                             "active",
                             "inactive"
                         ]
+                    },
+                    "permissions": {
+                        "description": "Individually assigned permissions (authoritative when present)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Permission"
+                        },
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",

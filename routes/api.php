@@ -161,6 +161,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('admin/users')->name('admin.users.')->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->middleware('permission:users.view')->name('index');
+        Route::get('/{user}', [UserManagementController::class, 'show'])->middleware('permission:users.view')->name('show');
         Route::post('/', [UserManagementController::class, 'store'])->middleware('permission:users.create')->name('store');
         Route::post('/invite', [UserManagementController::class, 'invite'])->middleware('permission:users.create')->name('invite');
         Route::patch('/{user}', [UserManagementController::class, 'update'])->middleware('permission:users.update')->name('update');

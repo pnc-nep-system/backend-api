@@ -53,6 +53,16 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class, 'role_user');
     }
 
+    /**
+     * Permissions assigned directly to this individual user.
+     * When present, they are authoritative over role-derived permissions
+     * (see hasPermission).
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'permission_user');
+    }
+
     public function hasRole(string $roleName): bool
     {
         return $this->role === $roleName || $this->roles()->where('name', $roleName)->exists();
@@ -67,6 +77,14 @@ class User extends Authenticatable
     {
         if ($this->role === self::ROLE_NEP_ADMIN) {
             return true;
+        }
+
+        // Individually-assigned permissions are authoritative: when the admin
+        // explicitly picked abilities for this user, exactly those apply and
+        // role-derived permissions are ignored.
+        $directPermissions = $this->permissions()->pluck('name');
+        if ($directPermissions->isNotEmpty()) {
+            return $directPermissions->contains($permissionName);
         }
 
         $hasPermission = $this->roles()
@@ -139,6 +157,8 @@ class User extends Authenticatable
                 self::ROLE_MEMBER_ORG,
             ])],
             'status' => ['sometimes', Rule::in([self::STATUS_ACTIVE, self::STATUS_INACTIVE])],
+            'permissions' => ['sometimes', 'array'],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
         ];
     }
 }

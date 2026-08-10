@@ -161,17 +161,11 @@ class RoleManagementController extends Controller
             new OA\Response(response: 401, description: 'Unauthenticated'),
             new OA\Response(response: 403, description: 'Forbidden'),
             new OA\Response(response: 404, description: 'Role not found'),
-            new OA\Response(response: 422, description: 'Validation failed or system role'),
+            new OA\Response(response: 422, description: 'Validation failed, or modifying a system role identity (system roles may only have their permissions updated)'),
         ]
     )]
     public function update(Request $request, Role $role): JsonResponse
     {
-        if ($role->is_system) {
-            return response()->json([
-                'message' => 'System roles cannot be modified.',
-            ], 422);
-        }
-
         $data = $request->validate([
             'display_name' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -180,15 +174,27 @@ class RoleManagementController extends Controller
             'permissions.*' => ['exists:permissions,id'],
         ]);
 
-        $role = DB::transaction(function () use ($role, $data) {
-            $role->update([
-                'display_name' => $data['display_name'] ?? $role->display_name,
-                'description' => $data['description'] ?? $role->description,
-                'is_system' => $data['is_system'] ?? $role->is_system,
-            ]);
+        $isSystem = $role->is_system;
+        $updatingPermissions = array_key_exists('permissions', $data);
 
-            if (isset($data['permissions'])) {
-                $role->permissions()->sync($data['permissions']);
+        // System roles keep their identity — only their permission set may change.
+        if ($isSystem && ! $updatingPermissions) {
+            return response()->json([
+                'message' => 'System roles cannot be modified.',
+            ], 422);
+        }
+
+        $role = DB::transaction(function () use ($role, $data, $isSystem, $updatingPermissions) {
+            if (! $isSystem) {
+                $role->update([
+                    'display_name' => $data['display_name'] ?? $role->display_name,
+                    'description' => $data['description'] ?? $role->description,
+                    'is_system' => $data['is_system'] ?? $role->is_system,
+                ]);
+            }
+
+            if ($updatingPermissions) {
+                $role->permissions()->sync($data['permissions'] ?? []);
             }
 
             return $role->load('permissions');

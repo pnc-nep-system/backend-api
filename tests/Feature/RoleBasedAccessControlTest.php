@@ -279,6 +279,40 @@ class RoleBasedAccessControlTest extends TestCase
             ]);
     }
 
+    public function test_system_role_permissions_can_be_updated(): void
+    {
+        $this->actingAs($this->adminUser, 'sanctum');
+
+        $coordinatorRole = Role::where('name', 'nep_coordinator')->first();
+        $permission = Permission::where('name', 'organisations.create')->first();
+
+        $response = $this->patchJson("/api/admin/roles/{$coordinatorRole->id}", [
+            'permissions' => [$permission->id],
+        ]);
+
+        $response->assertStatus(200);
+
+        $coordinatorRole->refresh();
+        $this->assertTrue($coordinatorRole->permissions()->where('permissions.id', $permission->id)->exists());
+        $this->assertEquals('nep_coordinator', $coordinatorRole->name); // identity untouched
+    }
+
+    public function test_empty_permissions_array_clears_role_permissions(): void
+    {
+        $this->actingAs($this->adminUser, 'sanctum');
+
+        $coordinatorRole = Role::where('name', 'nep_coordinator')->first();
+        $permission = Permission::where('name', 'users.view')->first();
+        $coordinatorRole->permissions()->sync([$permission->id]);
+
+        $this->patchJson("/api/admin/roles/{$coordinatorRole->id}", [
+            'permissions' => [],
+        ])->assertStatus(200);
+
+        $coordinatorRole->refresh();
+        $this->assertCount(0, $coordinatorRole->permissions);
+    }
+
     public function test_coordinator_can_view_organisations(): void
     {
         $this->actingAs($this->coordinatorUser, 'sanctum');

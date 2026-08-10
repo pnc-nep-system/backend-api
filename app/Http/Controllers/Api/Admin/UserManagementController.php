@@ -25,6 +25,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: "email", type: "string", format: "email", example: "jane@example.com"),
         new OA\Property(property: "role", type: "string", enum: ["nep_admin", "nep_coordinator", "member_org"]),
         new OA\Property(property: "status", type: "string", enum: ["active", "inactive"]),
+        new OA\Property(property: "permissions", type: "array", nullable: true, description: "Individually assigned permissions (authoritative when present)", items: new OA\Items(ref: "#/components/schemas/Permission")),
         new OA\Property(property: "created_at", type: "string", format: "date-time"),
         new OA\Property(property: "updated_at", type: "string", format: "date-time"),
     ]
@@ -76,6 +77,31 @@ class UserManagementController extends Controller
         return response()->json($users);
     }
 
+    #[OA\Get(
+        path: "/admin/users/{user}",
+        tags: ["Admin - User Management"],
+        summary: "Show user account",
+        description: "Returns a user with organisation, roles and role permissions.",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "user", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "User details", content: new OA\JsonContent(ref: "#/components/schemas/User")),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden"),
+            new OA\Response(response: 404, description: "User not found"),
+        ]
+    )]
+    public function show(User $user): JsonResponse
+    {
+        return response()->json($user->load([
+            'organisation:id,name',
+            'roles.permissions',
+            'permissions',
+        ]));
+    }
+
     #[OA\Post(
         path: "/admin/users",
         tags: ["Admin - User Management"],
@@ -92,6 +118,7 @@ class UserManagementController extends Controller
                     new OA\Property(property: "email", type: "string", format: "email", example: "jane@example.com"),
                     new OA\Property(property: "password", type: "string", nullable: true, example: "optional-plain-text"),
                     new OA\Property(property: "role", type: "string", enum: ["nep_admin", "nep_coordinator", "member_org"]),
+                    new OA\Property(property: "permissions", type: "array", nullable: true, description: "Permission IDs to assign directly to this user. Omit to keep role-derived permissions.", items: new OA\Items(type: "integer")),
                 ]
             )
         ),
@@ -123,14 +150,20 @@ class UserManagementController extends Controller
         }
 
         $plainPassword = $data['password'];
+        $permissionIds = $data['permissions'] ?? null;
+        unset($data['permissions']);
 
-        $user = DB::transaction(function () use ($data, $plainPassword) {
+        $user = DB::transaction(function () use ($data, $plainPassword, $permissionIds) {
             $user = User::create([
                 ...$data,
                 'password' => Hash::make($plainPassword),
                 'status' => User::STATUS_ACTIVE,
             ]);
             $user->syncLegacyRole();
+
+            if ($permissionIds !== null) {
+                $user->permissions()->sync($permissionIds);
+            }
 
             return $user;
         });
@@ -154,7 +187,7 @@ class UserManagementController extends Controller
 
         return response()->json([
             'message' => 'Account created. Invitation email has been sent.',
-            'user' => $user->fresh('organisation'),
+            'user' => $user->fresh(['organisation', 'permissions']),
             'temporary_password' => $tempPassword,
         ], 201);
     }
@@ -268,6 +301,7 @@ class UserManagementController extends Controller
                     new OA\Property(property: "password", type: "string", nullable: true, description: "Leave blank to keep current password"),
                     new OA\Property(property: "role", type: "string", enum: ["nep_admin", "nep_coordinator", "member_org"]),
                     new OA\Property(property: "status", type: "string", enum: ["active", "inactive"]),
+                    new OA\Property(property: "permissions", type: "array", nullable: true, description: "Permission IDs. An empty array clears all individually assigned permissions (falls back to role defaults).", items: new OA\Items(type: "integer")),
                 ]
             )
         ),
@@ -298,12 +332,19 @@ class UserManagementController extends Controller
             unset($data['password']);
         }
 
-        DB::transaction(function () use ($user, $data) {
+        $permissionIds = $data['permissions'] ?? null;
+        unset($data['permissions']);
+
+        DB::transaction(function () use ($user, $data, $permissionIds) {
             $user->update($data);
 
             if (array_key_exists('role', $data)) {
                 $user->roles()->detach();
                 $user->syncLegacyRole();
+            }
+
+            if ($permissionIds !== null) {
+                $user->permissions()->sync($permissionIds);
             }
 
             if (($data['status'] ?? null) === User::STATUS_INACTIVE) {
@@ -313,7 +354,7 @@ class UserManagementController extends Controller
 
         return response()->json([
             'message' => 'Account updated.',
-            'user' => $user->fresh('organisation'),
+            'user' => $user->fresh(['organisation', 'permissions']),
         ]);
     }
 
