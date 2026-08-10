@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -45,6 +46,54 @@ class User extends Authenticatable
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        return $this->role === $roleName || $this->roles()->where('name', $roleName)->exists();
+    }
+
+    public function hasAnyRole(array $roleNames): bool
+    {
+        return in_array($this->role, $roleNames, true) || $this->roles()->whereIn('name', $roleNames)->exists();
+    }
+
+    public function hasPermission(string $permissionName): bool
+    {
+        if ($this->role === self::ROLE_NEP_ADMIN) {
+            return true;
+        }
+
+        $hasPermission = $this->roles()
+            ->whereHas('permissions', function ($query) use ($permissionName) {
+                $query->where('name', $permissionName);
+            })
+            ->exists();
+
+        if ($hasPermission) {
+            return true;
+        }
+
+        return Role::query()
+            ->where('name', $this->role)
+            ->whereHas('permissions', function ($query) use ($permissionName) {
+                $query->where('name', $permissionName);
+            })
+            ->exists();
+    }
+
+    public function syncLegacyRole(): void
+    {
+        $role = Role::query()->where('name', $this->role)->first();
+
+        if ($role) {
+            $this->roles()->syncWithoutDetaching([$role->id]);
+        }
     }
 
     public function sendPasswordResetNotification($token): void

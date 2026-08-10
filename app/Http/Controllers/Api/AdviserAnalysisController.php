@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdvisoryNote;
 use App\Models\Province;
 use App\Services\Adviser\MapOverlapMatcher;
+use App\Services\Adviser\ProfileExtractor;
 use App\Services\AI\ClaudeService;
 use App\Services\AI\PromptBuilder;
 use Illuminate\Http\JsonResponse;

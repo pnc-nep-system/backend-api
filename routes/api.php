@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\EntryKeywordController;
 use App\Http\Controllers\Api\GovernmentAgreementController;
 use App\Http\Controllers\Api\Admin\OrganisationController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
+use App\Http\Controllers\Api\Admin\RoleManagementController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapEntryController;
 use App\Http\Controllers\Api\MapExportController;
@@ -79,7 +80,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/programme-entries/my-drafts', [ProgrammeEntryController::class, 'myDrafts']);
     Route::get('/programme-entries/submitted', [ProgrammeEntryController::class, 'submitted']);
     Route::get('/programme-entries/{programmeEntry}', [ProgrammeEntryController::class, 'show']);
+    Route::get('/programme-entries/{programmeEntry}/pdf', [ProgrammeEntryController::class, 'exportPdf']);
     Route::get('/organisations/{organisation}/programme-entries', [ProgrammeEntryController::class, 'index']);
+    Route::get('/organisations/{organisation}/programme-entries/pdf', [ProgrammeEntryController::class, 'exportOrganisationProgrammesPdf']);
 
     Route::get('/organisations/me', [OrganisationProfileController::class, 'show']);
     Route::patch('/organisations/me', [OrganisationProfileController::class, 'update']);
@@ -109,14 +112,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/adviser/programme-entries/{programmeEntry}/advisory-note', [AdviserSubmissionController::class, 'showByProgrammeEntry'])
         ->middleware('role:nep_admin,nep_coordinator,member_org');
 
-    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
+    Route::middleware('role:nep_admin,nep_coordinator,member_org')->group(function () {
         Route::get('/policy-documents', [ApiPolicyDocumentController::class, 'index']);
         Route::get('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'show']);
         Route::get('/policy-documents/{policyDocument}/file', [ApiPolicyDocumentController::class, 'getFile']);
+    });
+
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::post('/policy-documents', [ApiPolicyDocumentController::class, 'store']);
         Route::patch('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'update']);
-        Route::delete('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'destroy']);
+    });
 
+    Route::middleware('role:nep_admin')->group(function () {
+        Route::delete('/policy-documents/{policyDocument}', [ApiPolicyDocumentController::class, 'destroy']);
+    });
+
+    Route::middleware('role:nep_admin,nep_coordinator')->group(function () {
         Route::get('/provinces/counts', [LocationController::class, 'provinceProgrammeCounts']);
         Route::get('/taxonomy/categories/counts', [TaxonomyController::class, 'categoryProgrammeCounts']);
         Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
@@ -148,42 +159,60 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/adviser/submissions/{id}/create-programme-entry', [AdviserProgrammeEntryController::class, 'createProgrammeEntry']);
     });
 
-    Route::middleware('role:nep_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
-        Route::get('/', [UserManagementController::class, 'index'])->name('index');
-        Route::post('/', [UserManagementController::class, 'store'])->name('store');
-        Route::post('/invite', [UserManagementController::class, 'invite'])->name('invite');
-        Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
-        Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('deactivate');
-        Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->name('reactivate');
-        Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->name('reset-credentials');
+    Route::prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->middleware('permission:users.view')->name('index');
+        Route::post('/', [UserManagementController::class, 'store'])->middleware('permission:users.create')->name('store');
+        Route::post('/invite', [UserManagementController::class, 'invite'])->middleware('permission:users.create')->name('invite');
+        Route::patch('/{user}', [UserManagementController::class, 'update'])->middleware('permission:users.update')->name('update');
+        Route::post('/{user}/deactivate', [UserManagementController::class, 'deactivate'])->middleware('permission:users.update')->name('deactivate');
+        Route::post('/{user}/reactivate', [UserManagementController::class, 'reactivate'])->middleware('permission:users.update')->name('reactivate');
+        Route::post('/{user}/reset-credentials', [UserManagementController::class, 'resetCredentials'])->middleware('permission:users.update')->name('reset-credentials');
     });
 
-    Route::middleware('role:nep_admin,nep_coordinator')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
+    Route::prefix('admin/roles')->name('admin.roles.')->group(function () {
+        Route::get('/', [RoleManagementController::class, 'index'])->middleware('permission:roles.view')->name('index');
+        Route::get('/{role}', [RoleManagementController::class, 'show'])->middleware('permission:roles.view')->name('show');
+        Route::post('/', [RoleManagementController::class, 'store'])->middleware('permission:roles.create')->name('store');
+        Route::patch('/{role}', [RoleManagementController::class, 'update'])->middleware('permission:roles.update')->name('update');
+        Route::delete('/{role}', [RoleManagementController::class, 'destroy'])->middleware('permission:roles.delete')->name('destroy');
+        
+        Route::post('/{role}/users/{user}', [RoleManagementController::class, 'assignToUser'])->middleware('permission:roles.assign')->name('assign-to-user');
+        Route::delete('/{role}/users/{user}', [RoleManagementController::class, 'removeFromUser'])->middleware('permission:roles.assign')->name('remove-from-user');
+    });
+
+    Route::prefix('admin/permissions')->name('admin.permissions.')->group(function () {
+        Route::get('/', [RoleManagementController::class, 'permissions'])->middleware('permission:permissions.view')->name('index');
+        Route::post('/', [RoleManagementController::class, 'storePermission'])->middleware('permission:permissions.create')->name('store');
+        Route::patch('/{permission}', [RoleManagementController::class, 'updatePermission'])->middleware('permission:permissions.update')->name('update');
+        Route::delete('/{permission}', [RoleManagementController::class, 'destroyPermission'])->middleware('permission:permissions.delete')->name('destroy');
+    });
+
+    Route::middleware('permission:organisations.view')->prefix('admin/organisations')->name('admin.organisations.')->group(function () {
         Route::get('/', [OrganisationController::class, 'index'])->name('index');
         Route::get('/{organisation}', [OrganisationController::class, 'show'])->name('show');
     });
 
-    Route::middleware('role:nep_admin')->prefix('admin/organisations')->name('admin.organisations.write.')->group(function () {
-        Route::post('/', [OrganisationController::class, 'store'])->name('store');
-        Route::post('/{organisation}/logo', [OrganisationController::class, 'uploadLogo'])->name('logo');
-        Route::put('/{organisation}', [OrganisationController::class, 'update'])->name('update');
-        Route::patch('/{organisation}/deactivate', [OrganisationController::class, 'deactivate'])->name('deactivate');
-        Route::patch('/{organisation}/activate', [OrganisationController::class, 'activate'])->name('activate');
+    Route::prefix('admin/organisations')->name('admin.organisations.write.')->group(function () {
+        Route::post('/', [OrganisationController::class, 'store'])->middleware('permission:organisations.create')->name('store');
+        Route::post('/{organisation}/logo', [OrganisationController::class, 'uploadLogo'])->middleware('permission:organisations.update')->name('logo');
+        Route::put('/{organisation}', [OrganisationController::class, 'update'])->middleware('permission:organisations.update')->name('update');
+        Route::patch('/{organisation}/deactivate', [OrganisationController::class, 'deactivate'])->middleware('permission:organisations.update')->name('deactivate');
+        Route::patch('/{organisation}/activate', [OrganisationController::class, 'activate'])->middleware('permission:organisations.update')->name('activate');
     });
 
-    Route::middleware('role:nep_admin')->prefix('taxonomy')->group(function () {
-        Route::post('/categories', [TaxonomyController::class, 'createCategory']);
-        Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory']);
-        Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory']);
+    Route::prefix('taxonomy')->group(function () {
+        Route::post('/categories', [TaxonomyController::class, 'createCategory'])->middleware('permission:taxonomy.create');
+        Route::put('/categories/{category}', [TaxonomyController::class, 'renameCategory'])->middleware('permission:taxonomy.update');
+        Route::patch('/categories/{category}/deprecate', [TaxonomyController::class, 'deprecateCategory'])->middleware('permission:taxonomy.delete');
 
-        Route::post('/subcategories', [TaxonomyController::class, 'createSubcategory']);
-        Route::put('/subcategories/{subcategory}', [TaxonomyController::class, 'renameSubcategory']);
-        Route::patch('/subcategories/{subcategory}/deprecate', [TaxonomyController::class, 'deprecateSubcategory']);
+        Route::post('/subcategories', [TaxonomyController::class, 'createSubcategory'])->middleware('permission:taxonomy.create');
+        Route::put('/subcategories/{subcategory}', [TaxonomyController::class, 'renameSubcategory'])->middleware('permission:taxonomy.update');
+        Route::patch('/subcategories/{subcategory}/deprecate', [TaxonomyController::class, 'deprecateSubcategory'])->middleware('permission:taxonomy.delete');
 
-        Route::post('/items', [TaxonomyController::class, 'createItem']);
-        Route::put('/items/{item}', [TaxonomyController::class, 'renameItem']);
-        Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem']);
+        Route::post('/items', [TaxonomyController::class, 'createItem'])->middleware('permission:taxonomy.create');
+        Route::put('/items/{item}', [TaxonomyController::class, 'renameItem'])->middleware('permission:taxonomy.update');
+        Route::patch('/items/{item}/deprecate', [TaxonomyController::class, 'deprecateItem'])->middleware('permission:taxonomy.delete');
 
-        Route::get('/other-entries', [TaxonomyController::class, 'listOtherEntries']);
+        Route::get('/other-entries', [TaxonomyController::class, 'listOtherEntries'])->middleware('permission:taxonomy.view');
     });
 });

@@ -453,6 +453,570 @@
                 ]
             }
         },
+        "/admin/roles": {
+            "get": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "List roles",
+                "operationId": "cbb3764e5828706c79eaf9f4c9dad542",
+                "responses": {
+                    "200": {
+                        "description": "Roles with permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Role"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Create role",
+                "operationId": "59cd26a6ad1818b62931818b457fc80c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "display_name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "programme_manager"
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Programme Manager"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_system": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Role created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/roles/{role}": {
+            "get": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Show role",
+                "operationId": "91c0594b9fbb5048ae2bd935325a4edb",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Delete role",
+                "operationId": "405354a7ddd4d61bb6ce7a167ee1f561",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    },
+                    "422": {
+                        "description": "System role cannot be deleted"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Update role",
+                "operationId": "a9d939e7c70b81b67a07dd91643cb910",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Programme Manager"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "is_system": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    },
+                    "422": {
+                        "description": "Validation failed or system role"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/roles/{role}/users/{user}": {
+            "post": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Assign role to user",
+                "operationId": "384c4461091c47c5d1e6540a7155bbee",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role assigned"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Role or user not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Remove role from user",
+                "operationId": "47425637946266ca41d48fbeed2a7f90",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role removed"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Role or user not found"
+                    },
+                    "422": {
+                        "description": "Primary role cannot be removed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/permissions": {
+            "get": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "List permissions",
+                "operationId": "529242cb59bfffe11769095bb422cf45",
+                "responses": {
+                    "200": {
+                        "description": "Permissions grouped by group"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Create permission",
+                "operationId": "e9100dc0df4921c79a30af45434552fd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "display_name",
+                                    "group"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "reports.export"
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Export Reports"
+                                    },
+                                    "group": {
+                                        "type": "string",
+                                        "example": "Reports"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Permission created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Permission"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/permissions/{permission}": {
+            "delete": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Delete permission",
+                "operationId": "5df9da6ede8d7a61fc22f9b81077169d",
+                "parameters": [
+                    {
+                        "name": "permission",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission deleted"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Permission not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Admin - Roles & Permissions"
+                ],
+                "summary": "Update permission",
+                "operationId": "d9911b5bb14f4d8f3fb4a9ebf4b41e13",
+                "parameters": [
+                    {
+                        "name": "permission",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "display_name": {
+                                        "type": "string",
+                                        "example": "Export Reports"
+                                    },
+                                    "group": {
+                                        "type": "string",
+                                        "example": "Reports"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Permission updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Permission"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Permission not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/admin/users": {
             "get": {
                 "tags": [
@@ -1433,6 +1997,57 @@
                 ]
             }
         },
+        "/adviser/programme-entries/{programmeEntry}/advisory-note": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Get the advisory note for a programme entry",
+                "description": "Returns the advisory note (with all sections and recommendations) linked to a specific programme entry. Used by the 'Analyse in the Adviser' button on the programme entry view.",
+                "operationId": "5eb0e58641eb3b660564e83373fbd0b7",
+                "parameters": [
+                    {
+                        "name": "programmeEntry",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Advisory note found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/AdviserSubmission"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No advisory note found for this programme entry"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/adviser/submissions/{id}/deliver": {
             "patch": {
                 "tags": [
@@ -1479,6 +2094,53 @@
                     },
                     "404": {
                         "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/adviser/submissions/{id}/file": {
+            "get": {
+                "tags": [
+                    "Adviser"
+                ],
+                "summary": "Download the uploaded advisory note PDF file",
+                "description": "Streams the uploaded final advisory note PDF file. Only accessible by NEP Admin and NEP Coordinator.",
+                "operationId": "8563f4a79453a6c44e276c118152a4bd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File download successful",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No file uploaded for this advisory note"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 },
                 "security": [
@@ -4870,11 +5532,6 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "category_id",
-                                    "code",
-                                    "label"
-                                ],
                                 "properties": {
                                     "category_id": {
                                         "type": "integer",
@@ -5371,6 +6028,68 @@
                     "logo_url": {
                         "type": "string",
                         "example": "https://ik.imagekit.io/rn6hppesw/organisation-logos/6789abc123def456",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Role": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "nep_admin"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "NEP Administrator"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Full system access",
+                        "nullable": true
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Permission"
+                        }
+                    },
+                    "users_count": {
+                        "type": "integer",
+                        "example": 3
+                    }
+                },
+                "type": "object"
+            },
+            "Permission": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "users.view"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "View Users"
+                    },
+                    "group": {
+                        "type": "string",
+                        "example": "Users"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "View user accounts",
                         "nullable": true
                     }
                 },
@@ -6174,6 +6893,9 @@
         }
     },
     "tags": [
+        {
+            "name": "Admin - Roles & Permissions"
+        },
         {
             "name": "Adviser"
         },
