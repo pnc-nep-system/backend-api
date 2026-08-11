@@ -79,30 +79,45 @@ class User extends Authenticatable
             return true;
         }
 
-        // Individually-assigned permissions are authoritative: when the admin
-        // explicitly picked abilities for this user, exactly those apply and
-        // role-derived permissions are ignored.
-        $directPermissions = $this->permissions()->pluck('name');
-        if ($directPermissions->isNotEmpty()) {
-            return $directPermissions->contains($permissionName);
+        // Resolve all permission names once per request and cache in-memory.
+        // This prevents repeated DB queries when multiple middleware/gates
+        // check permissions on the same request.
+        $allPermissions = $this->resolvePermissions();
+
+        return $allPermissions->contains($permissionName);
+    }
+
+    /**
+     * Resolve the full set of permission names for this user, cached for the
+     * lifetime of the current request to avoid repeated DB round-trips.
+     */
+    protected function resolvePermissions(): \Illuminate\Support\Collection
+    {
+        $cacheKey = 'user_permissions_' . $this->id;
+
+        if (\Illuminate\Support\Facades\Cache::store('array')->has($cacheKey)) {
+            return \Illuminate\Support\Facades\Cache::store('array')->get($cacheKey);
         }
 
-        $hasPermission = $this->roles()
-            ->whereHas('permissions', function ($query) use ($permissionName) {
-                $query->where('name', $permissionName);
-            })
-            ->exists();
-
-        if ($hasPermission) {
-            return true;
+        // Individually-assigned permissions are authoritative.
+        $direct = $this->permissions()->pluck('name');
+        if ($direct->isNotEmpty()) {
+            \Illuminate\Support\Facades\Cache::store('array')->put($cacheKey, $direct);
+            return $direct;
         }
 
-        return Role::query()
-            ->where('name', $this->role)
-            ->whereHas('permissions', function ($query) use ($permissionName) {
-                $query->where('name', $permissionName);
-            })
-            ->exists();
+        // Fall back to role-derived permissions (assigned roles + primary role).
+        $fromRoles = Role::query()
+            ->whereIn('name', $this->roles()->pluck('name')->push($this->role)->unique())
+            ->with('permissions:name')
+            ->get()
+            ->flatMap(fn($r) => $r->permissions->pluck('name'))
+            ->unique()
+            ->values();
+
+        \Illuminate\Support\Facades\Cache::store('array')->put($cacheKey, $fromRoles);
+
+        return $fromRoles;
     }
 
     public function syncLegacyRole(): void

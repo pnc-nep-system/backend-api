@@ -169,13 +169,24 @@ class UserManagementTest extends TestCase
 
         Auth::forgetGuards();
 
-        $login = $this->postJson('/api/login', [
+        $login = $this->withHeaders([
+            'Origin' => 'http://localhost:5173',
+            'Referer' => 'http://localhost:5173/login',
+        ])->postJson('/api/login', [
             'email' => $member->email,
             'password' => $reset['temporary_password'],
         ]);
 
         $login->assertOk();
         $login->assertJsonPath('user.email', $member->email);
-        $this->assertNotNull($login->json('token'));
+        $login->assertJsonMissingPath('token');
+
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('email', $member->email);
+
+        $this->postJson('/api/logout')->assertOk();
+        Auth::forgetGuards();
+        $this->getJson('/api/user')->assertUnauthorized();
     }
 }

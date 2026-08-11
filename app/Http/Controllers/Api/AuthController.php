@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
@@ -15,7 +16,7 @@ class AuthController extends Controller
     #[OA\Post(
         path: "/login",
         summary: "User Login",
-        description: "Authenticate a user with email and password and return a Sanctum access token.",
+        description: "Authenticate a user with email and password using a secure Sanctum session cookie.",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
@@ -113,13 +114,10 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Give each device/session its own uniquely-named token instead of
-        // reusing 'api-token' for everyone. Do NOT delete existing tokens here —
-        // that's what was logging out other devices.
-        $deviceName = $request->header('X-Device-Name') ?? $request->userAgent() ?? 'unknown-device';
-        $tokenName = $deviceName . '-' . now()->timestamp;
-
-        $token = $user->createToken($tokenName)->plainTextToken;
+        // Each browser keeps its own session cookie. Regenerating only this
+        // session ID does not sign out the user's other devices.
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Login successful.',
@@ -135,7 +133,6 @@ class AuthController extends Controller
                     'name' => $user->organisation->name,
                 ] : null,
             ],
-            'token' => $token,
         ]);
     }
 
@@ -226,11 +223,9 @@ class AuthController extends Controller
     )]
     public function logout(Request $request)
     {
-        $accessToken = $request->user()->currentAccessToken();
-
-        if ($accessToken && method_exists($accessToken, 'delete')) {
-            $accessToken->delete();
-        }
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'message' => 'Logged out successfully.',

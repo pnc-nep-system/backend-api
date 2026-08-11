@@ -11,6 +11,7 @@ use App\Services\PdfReportCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -194,6 +195,22 @@ class ProgrammeEntryController extends Controller
             }
         }
 
+        // Return the same eager-loaded shape as show() so the create wizard can
+        // render Section 2+ (activities, locations, keywords, agreements) straight
+        // from this response without an extra round-trip.
+        $entry->load([
+            'organisation',
+            'budgetBand',
+            'keywords',
+            'locations.province',
+            'locations.district',
+            'locations.commune',
+            'locations.village',
+            'activities.activityItem.subcategory.category',
+            'activities.activityLevels.educationLevel',
+            'governmentAgreements',
+        ]);
+
         return response()->json([
             'message' => 'Programme entry created.',
             'data' => $entry,
@@ -288,6 +305,144 @@ class ProgrammeEntryController extends Controller
             'data' => $programmeEntry->fresh(),
         ]);
     }
+
+    #[OA\Patch(
+        path: "/programme-entries/{programmeEntry}/autosave",
+        summary: "Autosave draft changes to a programme entry",
+        description: "Lightweight debounced autosave for the entry form. Persists whichever fields are currently valid and silently skips incomplete ones (e.g. a year still being typed), so a mid-typing save never fails with 422. Never changes submission status. Only NEP Admins, NEP Coordinators, or the owning organisation may autosave.",
+        security: [["bearerAuth" => []]],
+        tags: ["Programme Entries"],
+        parameters: [
+            new OA\Parameter(
+                name: "programmeEntry",
+                in: "path",
+                required: true,
+                description: "Programme entry ID",
+                schema: new OA\Schema(type: "integer")
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "programme_name", type: "string", example: "Youth Skills Initiative"),
+                    new OA\Property(property: "start_year", type: "integer", example: 2026),
+                    new OA\Property(property: "end_year", type: "integer", example: 2027, nullable: true),
+                    new OA\Property(property: "ongoing", type: "boolean", example: false),
+                    new OA\Property(property: "fte_staff", type: "number", format: "float", example: 2.5),
+                    new OA\Property(property: "direct_beneficiaries", type: "integer", example: 150),
+                    new OA\Property(property: "indirect_beneficiaries", type: "integer", example: 600),
+                    new OA\Property(property: "method", type: "string", example: "Workshops and mentoring", nullable: true),
+                    new OA\Property(property: "budget_band_id", type: "integer", example: 3, nullable: true),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Autosaved — fields that failed validation are skipped, not rejected",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "saved", type: "boolean", example: true),
+                        new OA\Property(property: "saved_fields", type: "array", items: new OA\Items(type: "string")),
+                        new OA\Property(property: "skipped_fields", type: "array", items: new OA\Items(type: "string")),
+                        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(
+                response: 403,
+                description: "Not authorized to update this entry",
+                content: new OA\JsonContent(
+                    properties: [new OA\Property(property: "message", type: "string", example: "You are not authorized to update this entry.")]
+                )
+            ),
+            new OA\Response(response: 404, description: "Entry not found"),
+        ]
+    )]
+    public function autosave(Request $request, ProgrammeEntry $programmeEntry)
+    {
+        if (! $this->canManage($request, $programmeEntry)) {
+            return response()->json([
+                'message' => 'You are not authorized to update this entry.',
+            ], 403);
+        }
+
+        // Autosave may only touch these fields. is_submitted and verified_date
+        // are deliberately excluded — autosave must never submit or verify an entry.
+        $rules = [
+            'budget_band_id' => ['nullable', 'exists:budget_bands,id'],
+            'programme_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'start_year' => ['sometimes', 'required', 'integer', 'min:1900', 'max:2100'],
+            'end_year' => ['nullable', 'integer', 'min:1900', 'max:2100', 'gte:start_year'],
+            'ongoing' => ['sometimes', 'boolean'],
+            'fte_staff' => ['sometimes', 'numeric', 'min:0'],
+            'indirect_beneficiaries' => ['sometimes', 'integer', 'min:0'],
+            'direct_beneficiaries' => ['sometimes', 'integer', 'min:0'],
+            'method' => ['nullable', 'string'],
+        ];
+
+        $incoming = $request->only(array_keys($rules));
+
+        if ($incoming === []) {
+            return response()->json([
+                'saved' => false,
+                'message' => 'Nothing to save.',
+                'skipped_fields' => [],
+            ]);
+        }
+
+        // Cross-field rules (end_year >= start_year) must compare against freshly
+        // typed values where present, falling back to stored values elsewhere.
+        $context = array_merge(
+            array_intersect_key($programmeEntry->getAttributes(), $rules),
+            $incoming
+        );
+
+        $validator = Validator::make($context, $rules);
+
+        // Best-effort: persist only fields that are currently valid, skip the rest.
+        $toSave = [];
+        $skipped = [];
+        foreach ($incoming as $field => $value) {
+            if ($validator->errors()->has($field)) {
+                $skipped[] = $field;
+                continue;
+            }
+            $toSave[$field] = $value;
+        }
+
+        if ($toSave === []) {
+            return response()->json([
+                'saved' => false,
+                'message' => 'No valid fields to save.',
+                'skipped_fields' => $skipped,
+            ]);
+        }
+
+        // Admin/coordinator cannot submit on behalf of org — keep draft (mirrors update()).
+        if (in_array($request->user()->role, ['nep_admin', 'nep_coordinator'])) {
+            $toSave['is_submitted'] = false;
+        }
+
+        $programmeEntry->update($toSave);
+
+        // saved_fields reports what the client requested — hide internally-forced flags.
+        $savedFields = array_keys($toSave);
+        if (isset($toSave['is_submitted'])) {
+            $savedFields = array_values(array_diff($savedFields, ['is_submitted']));
+        }
+
+        return response()->json([
+            'saved' => true,
+            'message' => 'Autosaved.',
+            'saved_fields' => $savedFields,
+            'skipped_fields' => $skipped,
+            'updated_at' => $programmeEntry->fresh()->updated_at,
+        ]);
+    }
+
     #[OA\Get(
         path: "/organisations/{organisation}/programme-entries",
         summary: "List programme entries for an organisation",
