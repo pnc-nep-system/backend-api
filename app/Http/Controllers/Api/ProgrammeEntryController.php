@@ -7,8 +7,10 @@ use App\Http\Requests\StoreProgrammeEntryRequest;
 use App\Http\Requests\UpdateProgrammeEntryRequest;
 use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
+use App\Services\PdfReportCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -574,24 +576,54 @@ class ProgrammeEntryController extends Controller
             return response()->json(['message' => 'Forbidden. You do not have permission to access reports for this programme.'], 403);
         }
 
-        $programmeEntry->load([
-            'organisation',
-            'budgetBand',
-            'activities.activityItem.subcategory.category',
-            'activities.activityLevels.educationLevel',
-            'locations.province',
-            'locations.district',
-            'governmentAgreements',
-            'keywords',
+        $entryId = $programmeEntry->id;
+
+        // Fingerprint the underlying data so the cached PDF is automatically
+        // regenerated whenever the entry, its organisation, or any related row
+        // (activities, geography, keywords, agreements) changes. Taxonomy /
+        // budget-band renames are intentionally excluded — staleness is bounded
+        // by the daily date segment of the cache key.
+        $state = DB::table('programme_entries as pe')
+            ->leftJoin('organisations as org', 'org.id', '=', 'pe.organisation_id')
+            ->where('pe.id', $entryId)
+            ->selectRaw(
+                'pe.updated_at as m0, org.updated_at as mo,'
+                . ' (SELECT MAX(updated_at) FROM programme_activities WHERE programme_entry_id = pe.id) as m1,'
+                . ' (SELECT MAX(updated_at) FROM programme_geography WHERE programme_entry_id = pe.id) as m2,'
+                . ' (SELECT MAX(updated_at) FROM entry_keywords WHERE programme_entry_id = pe.id) as m3,'
+                . ' (SELECT MAX(updated_at) FROM government_agreements WHERE programme_entry_id = pe.id) as m4'
+            )
+            ->first();
+
+        $fingerprint = implode('|', [
+            $state->m0 ?? 0,
+            $state->mo ?? '',
+            $state->m1 ?? '',
+            $state->m2 ?? '',
+            $state->m3 ?? '',
+            $state->m4 ?? '',
         ]);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.programme-entry-report-pdf', [
-            'entry' => $programmeEntry,
-        ]);
+        $cacheKey = PdfReportCache::key('programme-entry:' . $entryId, $fingerprint);
+        $filename = 'programme-report-' . $entryId . '-' . now()->format('Y-m-d') . '.pdf';
 
-        $filename = 'programme-report-' . $programmeEntry->id . '-' . now()->format('Y-m-d') . '.pdf';
+        return PdfReportCache::respond($cacheKey, $filename, function () use ($programmeEntry) {
+            // Eager loads + DomPDF rendering only run on a cache miss.
+            $programmeEntry->load([
+                'organisation',
+                'budgetBand',
+                'activities.activityItem.subcategory.category',
+                'activities.activityLevels.educationLevel',
+                'locations.province',
+                'locations.district',
+                'governmentAgreements',
+                'keywords',
+            ]);
 
-        return $pdf->download($filename);
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.programme-entry-report-pdf', [
+                'entry' => $programmeEntry,
+            ]);
+        }, str_contains($request->header('Accept-Encoding', ''), 'gzip'));
     }
 
     public function exportOrganisationProgrammesPdf(Request $request, Organisation $organisation)
@@ -601,28 +633,54 @@ class ProgrammeEntryController extends Controller
             return response()->json(['message' => 'Forbidden. You do not have permission to export programmes for this organisation.'], 403);
         }
 
-        $programmeEntries = ProgrammeEntry::where('organisation_id', $organisation->id)
-            ->where('is_submitted', true)
-            ->with([
-                'organisation',
-                'budgetBand',
-                'activities.activityItem.subcategory.category',
-                'activities.activityLevels.educationLevel',
-                'locations.province',
-                'locations.district',
-                'governmentAgreements',
-                'keywords',
-            ])
-            ->get();
+        // Cheap fingerprint: aggregates over the submitted entries and their
+        // related rows. Runs in a few milliseconds, yet it changes whenever
+        // anything that appears in the report changes, so a stale cached PDF
+        // is never served.
+        $state = DB::table('programme_entries as pe')
+            ->leftJoin('programme_activities as pa', 'pa.programme_entry_id', '=', 'pe.id')
+            ->leftJoin('programme_geography as pl', 'pl.programme_entry_id', '=', 'pe.id')
+            ->leftJoin('entry_keywords as ek', 'ek.programme_entry_id', '=', 'pe.id')
+            ->leftJoin('government_agreements as ga', 'ga.programme_entry_id', '=', 'pe.id')
+            ->where('pe.organisation_id', $organisation->id)
+            ->where('pe.is_submitted', true)
+            ->selectRaw('COUNT(DISTINCT pe.id) as c, MAX(pe.updated_at) as m0, MAX(pa.updated_at) as m1, MAX(pl.updated_at) as m2, MAX(ek.updated_at) as m3, MAX(ga.updated_at) as m4')
+            ->first();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.organisation-programmes-report-pdf', [
-            'organisation' => $organisation,
-            'entries' => $programmeEntries,
+        $fingerprint = implode('|', [
+            $state->c ?? 0,
+            $state->m0 ?? '',
+            $state->m1 ?? '',
+            $state->m2 ?? '',
+            $state->m3 ?? '',
+            $state->m4 ?? '',
+            $organisation->updated_at?->timestamp ?? '',
         ]);
 
+        $cacheKey = PdfReportCache::key('org-programmes:' . $organisation->id, $fingerprint);
         $filename = 'organisation-programmes-' . $organisation->id . '-' . now()->format('Y-m-d') . '.pdf';
 
-        return $pdf->download($filename);
+        return PdfReportCache::respond($cacheKey, $filename, function () use ($organisation) {
+            // The heavy query + DomPDF render only run on a cache miss.
+            $programmeEntries = ProgrammeEntry::where('organisation_id', $organisation->id)
+                ->where('is_submitted', true)
+                ->with([
+                    'organisation',
+                    'budgetBand',
+                    'activities.activityItem.subcategory.category',
+                    'activities.activityLevels.educationLevel',
+                    'locations.province',
+                    'locations.district',
+                    'governmentAgreements',
+                    'keywords',
+                ])
+                ->get();
+
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.organisation-programmes-report-pdf', [
+                'organisation' => $organisation,
+                'entries' => $programmeEntries,
+            ]);
+        }, str_contains($request->header('Accept-Encoding', ''), 'gzip'));
     }
 
     protected function canManage(Request $request, ProgrammeEntry $programmeEntry): bool

@@ -31,7 +31,7 @@ return [
 
         'log_output_file' => null,
 
-        'enable_font_subsetting' => false,
+        'enable_font_subsetting' => true,
 
         'pdf_backend' => 'CPDF',
 
@@ -47,7 +47,7 @@ return [
 
         'enable_php' => false,
 
-        'enable_javascript' => true,
+        'enable_javascript' => false,
 
         'enable_remote' => false,
 

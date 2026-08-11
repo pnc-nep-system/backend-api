@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Concerns\BuildsMapQuery;
+use App\Services\PdfReportCache;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class MapExportController extends Controller
@@ -102,20 +104,52 @@ class MapExportController extends Controller
     )]
     public function exportPdf(Request $request)
     {
-        $entries = collect();
-        $this->buildMapQuery($request, $request->user())
-            ->with(self::EXPORT_WITH)
-            ->chunk(50, function ($chunk) use ($entries) {
-                $entries->push(...$chunk);
-            });
+        $query = $this->buildMapQuery($request, $request->user());
 
-        $pdf = Pdf::loadView('exports.programme-entries-pdf', [
-            'entries'       => $entries,
-            'generatedAt'   => now()->format('Y-m-d H:i:s'),
-            'totalEntries'  => $entries->count(),
+        // Cheap fingerprint: the filter parameters plus aggregates over the
+        // matching entries and their related rows. Different filters produce a
+        // different key and any data change invalidates it, so a stale cached
+        // report is never served.
+        $state = (clone $query)
+            ->leftJoin('programme_activities as pa', 'pa.programme_entry_id', '=', 'programme_entries.id')
+            ->leftJoin('programme_geography as pl', 'pl.programme_entry_id', '=', 'programme_entries.id')
+            ->leftJoin('entry_keywords as ek', 'ek.programme_entry_id', '=', 'programme_entries.id')
+            ->leftJoin('government_agreements as ga', 'ga.programme_entry_id', '=', 'programme_entries.id')
+            ->selectRaw('COUNT(DISTINCT programme_entries.id) as c, MAX(programme_entries.updated_at) as m0, MAX(pa.updated_at) as m1, MAX(pl.updated_at) as m2, MAX(ek.updated_at) as m3, MAX(ga.updated_at) as m4')
+            ->first();
+
+        $params = collect($request->query())
+            ->map(fn ($value) => is_array($value) ? implode(',', $value) : $value)
+            ->sortKeys()
+            ->implode('|');
+
+        $fingerprint = $params . '|' . implode('|', [
+            $state->c ?? 0,
+            $state->m0 ?? '',
+            $state->m1 ?? '',
+            $state->m2 ?? '',
+            $state->m3 ?? '',
+            $state->m4 ?? '',
         ]);
 
-        return $pdf->download('programme-entries-report-' . now()->format('Y-m-d-H-i-s') . '.pdf');
+        $cacheKey = PdfReportCache::key('map-entries', $fingerprint);
+        $filename = 'programme-entries-report-' . now()->format('Y-m-d-H-i-s') . '.pdf';
+
+        return PdfReportCache::respond($cacheKey, $filename, function () use ($query) {
+            // The chunked hydration + DomPDF render only run on a cache miss.
+            $entries = collect();
+            (clone $query)
+                ->with(self::EXPORT_WITH)
+                ->chunk(50, function ($chunk) use ($entries) {
+                    $entries->push(...$chunk);
+                });
+
+            return Pdf::loadView('exports.programme-entries-pdf', [
+                'entries'       => $entries,
+                'generatedAt'   => now()->format('Y-m-d H:i:s'),
+                'totalEntries'  => $entries->count(),
+            ]);
+        }, str_contains($request->header('Accept-Encoding', ''), 'gzip'));
     }
 
     private function generateCsv(array $entries): string
