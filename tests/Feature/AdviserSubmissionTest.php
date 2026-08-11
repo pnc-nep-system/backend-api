@@ -98,7 +98,7 @@ class AdviserSubmissionTest extends TestCase
 
         $response->assertForbidden();
         $response->assertJson([
-            'message' => 'Forbidden. You do not have the required access level.',
+            'message' => 'Forbidden. You do not have the required permissions.',
         ]);
 
         $this->assertDatabaseMissing('advisory_notes', [

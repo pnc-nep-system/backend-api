@@ -16,8 +16,9 @@ class DatabaseSeeder extends Seeder
             OrganisationSeeder::class,
             OrganisationAccountSeeder::class,
             ProgrammeEntriesSeeder::class,
-            RolePermissionSeeder::class,
             UserSeeder::class,
+            // Runs after UserSeeder so its user/role backfill picks up seeded accounts.
+            RolePermissionSeeder::class,
         ]);
     }
 }

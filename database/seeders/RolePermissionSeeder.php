@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
@@ -32,11 +33,28 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'programmes.verify', 'display_name' => 'Verify Programmes', 'group' => 'Programmes', 'description' => 'Verify programme entries'],
             
             // Advisory management
-            ['name' => 'advisory.view', 'display_name' => 'View Advisory', 'group' => 'Advisory', 'description' => 'View advisory submissions'],
-            ['name' => 'advisory.create', 'display_name' => 'Create Advisory', 'group' => 'Advisory', 'description' => 'Create advisory submissions'],
-            ['name' => 'advisory.update', 'display_name' => 'Update Advisory', 'group' => 'Advisory', 'description' => 'Update advisory submissions'],
+            // advisory.view is intentionally narrow: viewing a single delivered
+            // advisory note for a programme entry you already have access to
+            // (this is what member_org holds). advisory.manage is the broader
+            // staff-only "Adviser workspace" (list every submission, create,
+            // update, parse/generate, map-overlap) — kept as a SEPARATE
+            // permission on purpose so granting one never leaks the other.
+            ['name' => 'advisory.view', 'display_name' => 'View Advisory Note', 'group' => 'Advisory', 'description' => 'View a delivered advisory note for a programme entry'],
+            ['name' => 'advisory.manage', 'display_name' => 'Manage Adviser Workspace', 'group' => 'Advisory', 'description' => 'List, create, and update advisory submissions in the Adviser workspace'],
+            ['name' => 'advisory.create', 'display_name' => 'Create Advisory', 'group' => 'Advisory', 'description' => 'Create advisory submissions (reserved for finer-grained future use)'],
+            ['name' => 'advisory.update', 'display_name' => 'Update Advisory', 'group' => 'Advisory', 'description' => 'Update advisory submissions (reserved for finer-grained future use)'],
             ['name' => 'advisory.deliver', 'display_name' => 'Deliver Advisory', 'group' => 'Advisory', 'description' => 'Deliver advisory notes'],
-            
+
+            // Policy document library
+            ['name' => 'policy.view', 'display_name' => 'View Policy Documents', 'group' => 'Policy', 'description' => 'View the policy document library'],
+            ['name' => 'policy.create', 'display_name' => 'Upload Policy Documents', 'group' => 'Policy', 'description' => 'Upload new policy documents'],
+            ['name' => 'policy.update', 'display_name' => 'Update Policy Documents', 'group' => 'Policy', 'description' => 'Update policy documents'],
+            ['name' => 'policy.delete', 'display_name' => 'Delete Policy Documents', 'group' => 'Policy', 'description' => 'Delete policy documents'],
+
+            // Map
+            ['name' => 'map.view', 'display_name' => 'View Map', 'group' => 'Map', 'description' => 'View programme entries on the map'],
+            ['name' => 'map.export', 'display_name' => 'Export Map Data', 'group' => 'Map', 'description' => 'Export map entries (CSV/PDF)'],
+
             // Role management
             ['name' => 'roles.view', 'display_name' => 'View Roles', 'group' => 'Roles', 'description' => 'View roles'],
             ['name' => 'roles.create', 'display_name' => 'Create Roles', 'group' => 'Roles', 'description' => 'Create new roles'],
@@ -60,6 +78,9 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'dashboard.view', 'display_name' => 'View Dashboard', 'group' => 'Dashboard', 'description' => 'View dashboard and statistics'],
             ['name' => 'reports.view', 'display_name' => 'View Reports', 'group' => 'Reports', 'description' => 'View reports'],
             ['name' => 'reports.export', 'display_name' => 'Export Reports', 'group' => 'Reports', 'description' => 'Export reports'],
+
+            // System
+            ['name' => 'system.test-email', 'display_name' => 'Test Email Configuration', 'group' => 'System', 'description' => 'Send a test email to verify SMTP settings'],
         ];
 
         foreach ($permissions as $permission) {
@@ -110,12 +131,17 @@ class RolePermissionSeeder extends Seeder
                 'programmes.create',
                 'programmes.update',
                 'advisory.view',
-                'advisory.create',
-                'advisory.update',
+                'advisory.manage',
+                'advisory.deliver',
                 'dashboard.view',
                 'reports.view',
                 'reports.export',
                 'taxonomy.view',
+                'policy.view',
+                'policy.create',
+                'policy.update',
+                'map.view',
+                'map.export',
             ];
             $coordinator->permissions()->sync(
                 Permission::whereIn('name', $coordinatorPermissions)->pluck('id')
@@ -130,10 +156,34 @@ class RolePermissionSeeder extends Seeder
                 'programmes.create',
                 'programmes.update',
                 'advisory.view',
+                'taxonomy.view',
+                'policy.view',
             ];
             $member->permissions()->sync(
                 Permission::whereIn('name', $memberPermissions)->pluck('id')
             );
         }
+
+        $this->backfillUserRoles();
+    }
+
+    /**
+     * Ensure every existing user (including ones inserted via raw DB::table
+     * calls, e.g. UserSeeder, which bypass Eloquent model events) has a
+     * role_user pivot row matching their legacy `role` column. Idempotent —
+     * safe to run repeatedly.
+     */
+    private function backfillUserRoles(): void
+    {
+        $rolesByName = Role::all()->keyBy('name');
+
+        User::query()->select(['id', 'role'])->chunkById(200, function ($users) use ($rolesByName) {
+            foreach ($users as $user) {
+                $role = $rolesByName->get($user->role);
+                if ($role) {
+                    $user->roles()->syncWithoutDetaching([$role->id]);
+                }
+            }
+        });
     }
 }

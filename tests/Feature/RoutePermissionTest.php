@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Organisation;
 use App\Models\ProgrammeEntry;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,6 +23,11 @@ class RoutePermissionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Routes are now gated by the granular permission: middleware, backed
+        // by real Role/Permission rows — seed them so User::booted()'s
+        // role_user auto-sync has something to attach to below.
+        $this->seed(RolePermissionSeeder::class);
 
         $this->organisation = Organisation::factory()->create();
         $this->programmeEntry = ProgrammeEntry::factory()->create([
@@ -162,31 +168,36 @@ class RoutePermissionTest extends TestCase
         // Coordinator should be forbidden
         $response = $this->actingAs($this->coordinatorUser)->patchJson($endpoint);
         $response->assertForbidden();
-        $response->assertJsonPath('message', 'Forbidden. You do not have the required access level.');
+        $response->assertJsonPath('message', 'Forbidden. You do not have the required permissions.');
 
         // Member should be forbidden
         $response = $this->actingAs($this->memberUser)->patchJson($endpoint);
         $response->assertForbidden();
-        $response->assertJsonPath('message', 'Forbidden. You do not have the required access level.');
+        $response->assertJsonPath('message', 'Forbidden. You do not have the required permissions.');
     }
 
     // ==================== Admin-Only Routes ====================
 
-    public function test_only_nep_admin_can_access_admin_user_routes(): void
+    public function test_admin_and_coordinator_can_view_users_but_only_admin_can_write(): void
     {
-        // Admin should have access to list users
+        // Admin holds users.view — can list users
         $response = $this->actingAs($this->adminUser)->getJson('/api/admin/users');
         $response->assertStatus(200);
 
-        // Coordinator should be forbidden
+        // Coordinator holds users.view (RolePermissionSeeder) so can list users
+        // too, but NOT users.create/users.update — read-only.
         $response = $this->actingAs($this->coordinatorUser)->getJson('/api/admin/users');
-        $response->assertForbidden();
-        $response->assertJsonPath('message', 'Forbidden. You do not have the required access level.');
+        $response->assertStatus(200);
 
-        // Member should be forbidden
+        $response = $this->actingAs($this->coordinatorUser)->postJson('/api/admin/users', [
+            'name' => 'New User', 'email' => 'blocked@test.com', 'role' => 'member_org',
+        ]);
+        $response->assertForbidden();
+
+        // Member should be forbidden entirely (holds neither users.view nor users.create)
         $response = $this->actingAs($this->memberUser)->getJson('/api/admin/users');
         $response->assertForbidden();
-        $response->assertJsonPath('message', 'Forbidden. You do not have the required access level.');
+        $response->assertJsonPath('message', 'Forbidden. You do not have the required permissions.');
     }
 
     public function test_only_nep_admin_can_access_admin_organisation_routes(): void
@@ -620,7 +631,7 @@ class RoutePermissionTest extends TestCase
 
         $response->assertStatus(403);
         $response->assertJson([
-            'message' => 'Forbidden. You do not have the required access level.',
+            'message' => 'Forbidden. You do not have the required permissions.',
         ]);
         $response->assertJsonStructure([
             'message',

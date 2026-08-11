@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\UserInvitationMail;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\Mail\SmtpDiagnostics;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -70,10 +72,43 @@ class UserManagementController extends Controller
             ->with(['organisation:id,name', 'roles'])
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->query('role')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->query('search');
+                $q->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
             ->orderBy('name')
             ->paginate($request->integer('per_page', 25));
 
         return response()->json($users);
+    }
+
+    #[OA\Get(
+        path: "/admin/users/{user}",
+        tags: ["Admin - User Management"],
+        summary: "Show a single user account",
+        description: "Returns the user with their organisation and assigned roles (with permissions) loaded.",
+        security: [["bearerAuth" => []]],
+        parameters: [
+            new OA\Parameter(name: "user", in: "path", required: true, description: "User ID", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "User details", content: new OA\JsonContent(ref: "#/components/schemas/User")),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 403, description: "Forbidden — not a nep_admin"),
+            new OA\Response(response: 404, description: "User not found"),
+        ]
+    )]
+    public function show(User $user): JsonResponse
+    {
+        $user->load(['organisation:id,name', 'roles.permissions']);
+
+        return response()->json([
+            ...$user->toArray(),
+            'effective_permissions' => $user->effectivePermissions(),
+        ]);
     }
 
     #[OA\Post(
@@ -116,6 +151,10 @@ class UserManagementController extends Controller
     {
         $data = $request->validate(User::validationRules());
 
+        if ($error = $this->rejectRoleEscalation($request, $data['role'])) {
+            return $error;
+        }
+
         $tempPassword = null;
         if (empty($data['password'])) {
             $tempPassword = Str::password(12);
@@ -132,6 +171,7 @@ class UserManagementController extends Controller
 
         $loginUrl = config('app.frontend_url') . '/login';
 
+        $emailSent = true;
         try {
             Mail::to($user->email)->send(new UserInvitationMail(
                 $user->name,
@@ -139,16 +179,22 @@ class UserManagementController extends Controller
                 $plainPassword,
                 $loginUrl
             ));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            $emailSent = false;
+            $diagnosis = SmtpDiagnostics::classify($e);
             Log::error('Failed to send invitation email on account creation', [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'error' => $e->getMessage(),
+                'category' => $diagnosis['category'],
+                'error' => $diagnosis['raw'],
             ]);
         }
 
         return response()->json([
-            'message' => 'Account created. Invitation email has been sent.',
+            'message' => $emailSent
+                ? 'Account created. Invitation email has been sent.'
+                : 'Account created, but the invitation email could not be sent — check the mail server configuration ('
+                    . 'admin/mail/test can help diagnose this) and use "Reset Credentials" to resend once fixed.',
             'user' => $user->fresh('organisation'),
             'temporary_password' => $tempPassword,
         ], 201);
@@ -192,12 +238,12 @@ class UserManagementController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', Rule::in([
-                User::ROLE_NEP_ADMIN,
-                User::ROLE_NEP_COORDINATOR,
-                User::ROLE_MEMBER_ORG,
-            ])],
+            'role' => ['required', 'string', Rule::exists('roles', 'name')],
         ]);
+
+        if ($error = $this->rejectRoleEscalation($request, $data['role'])) {
+            return $error;
+        }
 
         $defaultPassword = Str::password(12);
         $loginUrl = config('app.frontend_url', rtrim($request->getSchemeAndHttpHost(), '/')) . '/login';
@@ -210,37 +256,44 @@ class UserManagementController extends Controller
                 'role' => $data['role'],
                 'status' => User::STATUS_ACTIVE,
             ]);
-
-            Mail::to($user->email)->send(new UserInvitationMail(
-                $user->name,
-                $user->email,
-                $defaultPassword,
-                $loginUrl
-            ));
-
-            return response()->json([
-                'message' => 'User created successfully. Invitation email has been sent.',
-                'user' => $user->fresh('organisation'),
-            ], 201);
-        } catch (\Exception $e) {
-            Log::error('Failed to send invitation email', [
+        } catch (\Throwable $e) {
+            Log::error('Failed to create invited user account', [
                 'email' => $data['email'],
                 'error' => $e->getMessage(),
             ]);
-
-            // If user was created but email failed, still return success
-            if (isset($user)) {
-                return response()->json([
-                    'message' => 'User created successfully. Invitation email has been sent.',
-                    'user' => $user->fresh('organisation'),
-                ], 201);
-            }
 
             return response()->json([
                 'message' => 'Failed to create user.',
                 'error' => $e->getMessage(),
             ], 500);
         }
+
+        $emailSent = true;
+        try {
+            Mail::to($user->email)->send(new UserInvitationMail(
+                $user->name,
+                $user->email,
+                $defaultPassword,
+                $loginUrl
+            ));
+        } catch (\Throwable $e) {
+            $emailSent = false;
+            $diagnosis = SmtpDiagnostics::classify($e);
+            Log::error('Failed to send invitation email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'category' => $diagnosis['category'],
+                'error' => $diagnosis['raw'],
+            ]);
+        }
+
+        return response()->json([
+            'message' => $emailSent
+                ? 'User created successfully. Invitation email has been sent.'
+                : 'User created, but the invitation email could not be sent — check the mail server configuration '
+                    . 'and use "Reset Credentials" to resend once fixed.',
+            'user' => $user->fresh('organisation'),
+        ], 201);
     }
 
     #[OA\Patch(
@@ -285,6 +338,37 @@ class UserManagementController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $data = $request->validate(User::validationRules(update: true, userId: $user->id));
+
+        if (array_key_exists('role', $data)) {
+            // Self-service role changes are never allowed here, even for
+            // nep_admin — prevents accidental self-lockout and closes off a
+            // whole class of self-escalation bugs at the door. Checked before
+            // the last-admin guard below so the actor gets the precise reason.
+            if ($request->user()->id === $user->id) {
+                return response()->json([
+                    'message' => 'You cannot change your own role.',
+                ], 422);
+            }
+
+            if ($error = $this->rejectRoleEscalation($request, $data['role'])) {
+                return $error;
+            }
+        }
+
+        // Guard the last active nep_admin from being demoted or deactivated via
+        // this endpoint — doing so would lock every admin-only screen (including
+        // this one) with nobody able to reverse it.
+        $isLastAdminLosingAccess = $user->isLastActiveAdmin()
+            && (
+                (array_key_exists('role', $data) && $data['role'] !== User::ROLE_NEP_ADMIN)
+                || (array_key_exists('status', $data) && $data['status'] !== User::STATUS_ACTIVE)
+            );
+
+        if ($isLastAdminLosingAccess) {
+            return response()->json([
+                'message' => 'Cannot change the role or status of the last active NEP Administrator.',
+            ], 422);
+        }
 
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -337,6 +421,12 @@ class UserManagementController extends Controller
         if ($request->user()->id === $user->id) {
             return response()->json([
                 'message' => 'You cannot deactivate your own account.',
+            ], 422);
+        }
+
+        if ($user->isLastActiveAdmin()) {
+            return response()->json([
+                'message' => 'Cannot deactivate the last active NEP Administrator.',
             ], 422);
         }
 
@@ -424,5 +514,24 @@ class UserManagementController extends Controller
             'message' => 'Credentials reset. Share the temporary password with the user securely.',
             'temporary_password' => $tempPassword,
         ]);
+    }
+
+    /**
+     * Privilege-escalation guard shared by store()/invite()/update(): an actor
+     * may never assign a role that grants permissions they don't themselves
+     * hold. Returns a 403 JsonResponse to short-circuit the caller, or null to
+     * proceed. Fully dynamic — never compares role names.
+     */
+    private function rejectRoleEscalation(Request $request, string $roleName): ?JsonResponse
+    {
+        $role = Role::where('name', $roleName)->first();
+
+        if ($role && ! $request->user()->canGrantRole($role)) {
+            return response()->json([
+                'message' => 'You cannot assign a role that grants permissions you do not have yourself.',
+            ], 403);
+        }
+
+        return null;
     }
 }

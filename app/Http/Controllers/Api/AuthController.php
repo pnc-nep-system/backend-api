@@ -12,6 +12,36 @@ use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
+    /**
+     * The canonical "who am I" payload shared by /login, /session, and /user.
+     * Always includes the user's assigned roles and effective permissions so
+     * the frontend never has to hard-code access by role name — it derives
+     * what to show/allow purely from `permissions`.
+     */
+    public static function currentUserPayload(User $user): array
+    {
+        $user->loadMissing(['organisation:id,name', 'roles:id,name,display_name']);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'status' => $user->status,
+            'organisation_id' => $user->organisation_id,
+            'organisation' => $user->organisation ? [
+                'id' => $user->organisation->id,
+                'name' => $user->organisation->name,
+            ] : null,
+            'roles' => $user->roles->map(fn ($role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'display_name' => $role->display_name,
+            ])->values(),
+            'permissions' => $user->effectivePermissions(),
+        ];
+    }
+
     #[OA\Post(
         path: "/login",
         summary: "User Login",
@@ -123,18 +153,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful.',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status,
-                'organisation_id' => $user->organisation_id,
-                'organisation' => $user->organisation ? [
-                    'id' => $user->organisation->id,
-                    'name' => $user->organisation->name,
-                ] : null,
-            ],
+            'user' => self::currentUserPayload($user),
             'token' => $token,
         ]);
     }
@@ -179,21 +198,8 @@ class AuthController extends Controller
     )]
     public function session(Request $request)
     {
-        $user = $request->user()->load('organisation');
-
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status,
-                'organisation_id' => $user->organisation_id,
-                'organisation' => $user->organisation ? [
-                    'id' => $user->organisation->id,
-                    'name' => $user->organisation->name,
-                ] : null,
-            ],
+            'user' => self::currentUserPayload($request->user()),
         ]);
     }
 

@@ -26,7 +26,10 @@ class AdviserAnalysisController extends Controller
         $submission = AdvisoryNote::findOrFail($id);
 
         $user = $request->user();
-        if (!$user->isNepAdmin() && $user->role !== 'nep_coordinator') {
+        // Redundant with the route-level `permission:advisory.manage` gate on
+        // this endpoint, but kept as defense-in-depth — must stay permission-based
+        // so it doesn't silently diverge from the route gate for custom roles.
+        if (!$user->hasPermission('advisory.manage')) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
